@@ -224,3 +224,32 @@ dat <- rename_columns(dat, "ulva_GR", "green_algae")
 setwd(data_output)
 write.csv(dat, "revised_CoralNet_categories.csv")
 ## END export ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## sample down to 50pts per image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sample.data <- function(data, nrows, replace.logic){
+  new.dat <- data %>%
+    group_by(key) %>%
+    sample_n(size = nrows, replace = replace.logic) %>%
+    ungroup()
+  return(new.dat)
+}
+
+## run function - sample 50 data points without replacement
+dat2 <- sample.data(dat, 50, FALSE)
+
+
+## delete the SU column, no longer needed
+dat2 <- dat2[,-1]
+
+
+## save the data frame 
+setwd(data_output)
+write.csv(dat2, "2022_T1_50pts.csv", row.names=FALSE)
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
