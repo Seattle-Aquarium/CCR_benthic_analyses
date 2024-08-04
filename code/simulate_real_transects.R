@@ -38,7 +38,7 @@ dat <- read.csv("revised_CoralNet_categories.csv")
 ## invoke functions from other script
 setwd(code)
 source("revise_CoralNet_categories.R")
-remove(dat2, metadata)
+remove(metadata)
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -91,10 +91,12 @@ random_sampling_multiple_columns <- function(data_frame, key_column, value_colum
 ## invoke functions to simulate transects & wrangle data ~~~~~~~~~~~~~~~~~~~~~~~
 
 ## invoke the functions on real data 
-dat <- random_sampling_multiple_columns(dat, "key", c("kelp_bryozoan",
-                                                       "soft_sediment",
+dat <- random_sampling_multiple_columns(dat, "key", c( "soft_sediment",
+                                                       "shell_debris",
                                                        "cobble",
                                                        "pebble",
+                                                       "hard_substrate",
+                                                       "anthro_substrate",
                                                        "unknown",
                                                        "filamentous_brown",
                                                        "kelp_holdfast",
@@ -104,11 +106,10 @@ dat <- random_sampling_multiple_columns(dat, "key", c("kelp_bryozoan",
                                                        "textured_kelp",
                                                        "other_brown_kelp",
                                                        "red_algae",
-                                                       "shell_debris",
-                                                       "anthro_substrate",
+                                                       "coralline_algae",
+                                                       "kelp_bryozoan",
                                                        "sessile_invert",
-                                                       "mobile_invert",
-                                                       "coralline_algae"), 25, 4)
+                                                       "mobile_invert"), 25, 4)
 
 
 
@@ -181,5 +182,13 @@ avg <- front.ofthe.line(avg)
 
 
 ## save combined average categories and stipes
-#save.csv(avg, "combined_stipes.csv")
+save.csv(avg, "combined_stipes.csv")
 ## END stipe addition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END of script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
