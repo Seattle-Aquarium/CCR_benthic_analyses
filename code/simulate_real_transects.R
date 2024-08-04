@@ -144,7 +144,7 @@ write.csv(dat, "simulated_real_transects.csv", row.names=FALSE)
 
 
 
-## take the average of each transect ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## take the average of each transect and clean data in prep for stipes ~~~~~~~~~
 avg <- dat %>% 
   group_by(key) %>%
   summarize(across(3:24, \(x) mean(x, na.rm = TRUE)))
@@ -159,5 +159,27 @@ avg <- remove_characters(avg, "transect", "left", 2)
 avg$site <- avg$key
 avg <- front.ofthe.line(avg)
 avg <- remove_characters(avg, "site", "right", 2)
+## END avg and data prep for stipes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
+
+
+
+## bind bull kelp stipe data into df ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+setwd(data_input)
+stipes <- read.csv("stipe_categories_summed.csv")
+
+
+## trim down and format stipe data
+stipes <- stipes[,3:6]
+stipes <- create.key(stipes)
+
+
+## bind stipes and bundles into avg df 
+avg <- avg %>%
+  left_join(stipes %>% select(key, stipes, bundles), by = "key")
+
+
+## bring stipes and bundles to the left most position for easy viewing 
+avg <- front.ofthe.line(avg)
+avg <- front.ofthe.line(avg)
