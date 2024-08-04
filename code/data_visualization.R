@@ -57,14 +57,32 @@ my.window <- function(width, height){
   graphics.off()
   windows(width, height, record=TRUE)
 }
-## END graphing params ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+## function for pairwise visualization
+pairwise.plot <- function(data, x, y, x.lab, y.lab){
+  fig <- ggplot(data=data, aes(x, y)) + my.theme + 
+    geom_point(size=2) + 
+    geom_smooth(method = "loess", se = FALSE, color = "red") +
+    xlab(x.lab) + ylab(y.lab)
+  return(fig)
+}
+
+
+## function to save both pdf and png files of each fig 
+save.figs <- function(pdf, png, plot.lab, width.x, height.y){
+  setwd(figs)
+  ggsave(pdf, plot = plot.lab, width = width.x, height = height.y)
+  ggsave(png, plot = plot.lab, width = width.x, height = height.y)
+}
+## END graphing params & graphing functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 
 ## visualize bull kelp stipe and bundle data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-my.window(15,5)
+my.window(5,5)
 
 
 ## convert site and transect to factor
@@ -72,13 +90,28 @@ dat$site <- as.factor(dat$site)
 dat$transect <- as.factor(dat$transect)
 
 
-## visualize stipes ~ bundles
-p1 <- ggplot(data=dat, aes(bundles, stipes)) + my.theme + 
-  geom_point(size=2) + 
-  geom_smooth(method = "loess", se = FALSE, color = "red") +
-  xlab("bull kelp bundles") + ylab("bull kelp stipes")
-
+## plot stipes as a function of bundles
+p1 <- pairwise.plot(dat, 
+                    dat$bundles, 
+                    dat$stipes, 
+                    "bull kelp bundles", 
+                    "bull kelp stipes")
 print(p1)
+
+
+## other pairwise plots
+p3 <- pairwise.plot(dat, 
+                    dat$shell_debris, 
+                    dat$sugar_kelp, 
+                    "shell debris avg. % of seafloor", 
+                    "sugar kelp avg. % of seafloor")
+print(p3)
+
+
+## save figures as pdf and png, if desired
+save.figs("sugar-kelp_soft-sediment.pdf", 
+          "sugar-kelp_soft-sediment.png", 
+          p3, 5, 5)
 
 
 ## plot stipes across all transects
@@ -86,9 +119,27 @@ p2 <- ggplot(data=dat, aes(key, stipes, group_by(site))) + my.theme +
   geom_point(size=4, pch=21, color="black", aes(fill=site)) + 
   theme(axis.text.x = element_text(angle = 45, vjust = 0, hjust=0)) + 
   xlab("'site_transect' throughout Elliott Bay") + ylab("2022 bull kelp stipes")
-
 print(p2)
-## END stipe figs ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#library(patchwork)
+windows(20,10)
+
+plots <- map(6:23, ~ {
+  ggplot(dat, aes_string(x = names(dat)[.x], y = "stipes")) +
+    geom_point() + my.theme +
+    geom_smooth(method = "loess", color = "red", se=FALSE) +
+    theme(axis.title.y = element_blank(),  # Remove x-axis labels
+          axis.text.y = element_blank(),   # Remove x-axis text
+          plot.title = element_blank(),
+          axis.text.x = element_blank())    # Remove plot titles
+})
+
+
+## view all plots
+combined_plot <- wrap_plots(plots, ncol=6)
+combined_plot
+## END figs ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
