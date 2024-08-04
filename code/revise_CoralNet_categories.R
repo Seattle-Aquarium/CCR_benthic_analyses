@@ -255,9 +255,54 @@ dat2 <- sample.data(dat, 50, FALSE)
 dat2 <- dat2[,-1]
 
 
+## new ordering of columns
+new.order <- c("key", "site", "transect", "img_name",
+               "soft_sediment",
+               "shell_debris",
+               "cobble",
+               "pebble",
+               "hard_substrate",
+               "anthro_substrate",
+               "unknown",
+               "filamentous_brown",
+               "kelp_holdfast",
+               "sargassum",
+               "sugar_kelp",
+               "green_algae",
+               "textured_kelp",
+               "other_brown_kelp",
+               "red_algae",
+               "coralline_algae",
+               "kelp_bryozoan",
+               "sessile_invert",
+               "mobile_invert")
+
+
+## Reorder the columns
+dat2 <- dat2 %>% select(all_of(new.order))
+
+
+## as.factor for future plotting
+dat2$site <- as.factor(dat2$site)
+dat2$transect <- as.factor(dat2$transect)
+dat2$key <- as.factor(dat2$key)
+
+
 ## save the data frame 
 save.csv(dat2, "2022_T1_50pts.csv")
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
 
 
 
