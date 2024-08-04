@@ -82,4 +82,4 @@ data_filtered <- data %>%
   filter(!(Label %in% c("unk_BR", "senes_AL", "UNIdent", "undaria_BR")))
 
 # Write the updated data to a new CSV file
-write.csv(data_filtered, "NewLabel_annotations.csv", row.names = FALSE)
+write.csv(data_filtered, "new_label_annotations.csv", row.names = FALSE)
