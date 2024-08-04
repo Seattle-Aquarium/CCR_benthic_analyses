@@ -136,8 +136,8 @@ dat$transect <- as.factor(dat$transect)
 
 
 ## save dat
-#setwd(data_output)
-#write.csv(dat, "simulated_real_transects.csv", row.names=FALSE)
+setwd(data_output)
+write.csv(dat, "simulated_real_transects.csv", row.names=FALSE)
 ## END data structuring - we are now ready to take an average ~~~~~~~~~~~~~~~~~~
 
 
@@ -150,5 +150,14 @@ avg <- dat %>%
   summarize(across(3:24, \(x) mean(x, na.rm = TRUE)))
 
 
+## bring site and transect information into avg
+avg$transect <- avg$key
+avg <- front.ofthe.line(avg)
+avg <- remove_characters(avg, "transect", "left", 2)
+
+
+avg$site <- avg$key
+avg <- front.ofthe.line(avg)
+avg <- remove_characters(avg, "site", "right", 2)
 
 
