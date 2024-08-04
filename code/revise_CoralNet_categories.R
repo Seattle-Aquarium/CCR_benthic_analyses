@@ -190,7 +190,7 @@ dat <- revise_categories(dat, c("filam_RE", "bushy_RE", "branch_RE", "leaf_RE", 
 dat <- revise_categories(dat, c("Shell_SU", "lgshell_SU"), "shell_SU")
 
 ## revise hard substrate categories
-dat <- revise_categories(dat, c("reef_SU", "bould_SU", "concr_SU"), "reef_SU")
+dat <- revise_categories(dat, c("reef_SU", "bould_SU", "concr_SU"), "hard_substrate")
 
 ## revise hard substrate categories
 dat <- revise_categories(dat, c("glass_SU", "metal_SU", "poly_SU", "wood_SU", "anth_SU"), "anthro_substrate")
@@ -221,6 +221,9 @@ dat <- rename_columns(dat, c("KelpBry_SI", "UNIdent", "filam_BR", "FlatAci_BR", 
                       c("kelp_bryozoan", "unknown", "filamentous_brown", "acid_weed", "rock_weed", "kelp_holdfast", "sargassum", "sugar_kelp", "shell_debris"))
 
 dat <- rename_columns(dat, "ulva_GR", "green_algae")
+
+## remove columns with very few observations
+dat <- remove_columns(dat, c("rock_weed", "acid_weed", "smooth_kelp", "seagrass"))
 ## END CoralNet category editing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -228,7 +231,7 @@ dat <- rename_columns(dat, "ulva_GR", "green_algae")
 
 
 ## export ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#save.csv(dat, "revised_CoralNet_categories.csv")
+save.csv(dat, "revised_CoralNet_categories.csv")
 ## END export ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -253,7 +256,7 @@ dat2 <- dat2[,-1]
 
 
 ## save the data frame 
-#save.csv(dat2, "2022_T1_50pts.csv")
+save.csv(dat2, "2022_T1_50pts.csv")
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

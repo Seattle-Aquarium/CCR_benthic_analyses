@@ -97,19 +97,15 @@ dat <- random_sampling_multiple_columns(dat, "key", c("kelp_bryozoan",
                                                        "pebble",
                                                        "unknown",
                                                        "filamentous_brown",
-                                                       "acid_weed",
-                                                       "rock_weed",
                                                        "kelp_holdfast",
                                                        "sargassum",
                                                        "sugar_kelp",
                                                        "green_algae",
                                                        "textured_kelp",
-                                                       "smooth_kelp",
                                                        "other_brown_kelp",
                                                        "red_algae",
                                                        "shell_debris",
                                                        "anthro_substrate",
-                                                       "seagrass",
                                                        "sessile_invert",
                                                        "mobile_invert",
                                                        "coralline_algae"), 25, 4)
@@ -136,7 +132,7 @@ dat$transect <- as.factor(dat$transect)
 
 
 ## save dat
-#save.csv(dat, "simulated_real_transects.csv")
+save.csv(dat, "simulated_real_transects.csv")
 ## END data structuring - we are now ready to take an average ~~~~~~~~~~~~~~~~~~
 
 
@@ -146,7 +142,7 @@ dat$transect <- as.factor(dat$transect)
 ## take the average of each transect and clean data in prep for stipes ~~~~~~~~~
 avg <- dat %>% 
   group_by(key) %>%
-  summarize(across(3:24, \(x) mean(x, na.rm = TRUE)))
+  summarize(across(3:20, \(x) mean(x, na.rm = TRUE)))
 
 
 ## bring site and transect information into avg
