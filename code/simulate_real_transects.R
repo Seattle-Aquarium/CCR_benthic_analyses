@@ -183,3 +183,14 @@ avg <- avg %>%
 ## bring stipes and bundles to the left most position for easy viewing 
 avg <- front.ofthe.line(avg)
 avg <- front.ofthe.line(avg)
+
+
+## function to save a csv file
+save.csv <- function(data, file.name){
+  setwd(data_output)
+  write.csv(data, file.name, row.names=FALSE)
+}
+
+
+## save combined average categories and stipes
+save.csv(avg, "combined_stipes.csv")
