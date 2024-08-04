@@ -136,8 +136,7 @@ dat$transect <- as.factor(dat$transect)
 
 
 ## save dat
-setwd(data_output)
-write.csv(dat, "simulated_real_transects.csv", row.names=FALSE)
+#save.csv(dat, "simulated_real_transects.csv")
 ## END data structuring - we are now ready to take an average ~~~~~~~~~~~~~~~~~~
 
 
@@ -185,12 +184,6 @@ avg <- front.ofthe.line(avg)
 avg <- front.ofthe.line(avg)
 
 
-## function to save a csv file
-save.csv <- function(data, file.name){
-  setwd(data_output)
-  write.csv(data, file.name, row.names=FALSE)
-}
-
-
 ## save combined average categories and stipes
-save.csv(avg, "combined_stipes.csv")
+#save.csv(avg, "combined_stipes.csv")
+## END stipe addition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

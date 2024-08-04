@@ -127,6 +127,13 @@ rename_columns <- function(data, old, new) {
   names(data)[names(data) %in% old] <- new
   return(data)
 }
+
+
+## function to save a csv file
+save.csv <- function(data, file.name){
+  setwd(data_output)
+  write.csv(data, file.name, row.names=FALSE)
+}
 ## END function definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -221,8 +228,7 @@ dat <- rename_columns(dat, "ulva_GR", "green_algae")
 
 
 ## export ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-setwd(data_output)
-write.csv(dat, "revised_CoralNet_categories.csv")
+#save.csv(dat, "revised_CoralNet_categories.csv")
 ## END export ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -247,8 +253,7 @@ dat2 <- dat2[,-1]
 
 
 ## save the data frame 
-setwd(data_output)
-write.csv(dat2, "2022_T1_50pts.csv", row.names=FALSE)
+#save.csv(dat2, "2022_T1_50pts.csv")
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
