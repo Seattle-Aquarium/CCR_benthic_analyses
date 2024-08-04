@@ -136,8 +136,8 @@ dat$transect <- as.factor(dat$transect)
 
 
 ## save dat
-setwd(data_output)
-write.csv(dat, "simulated_real_transects.csv", row.names=FALSE)
+#setwd(data_output)
+#write.csv(dat, "simulated_real_transects.csv", row.names=FALSE)
 ## END data structuring - we are now ready to take an average ~~~~~~~~~~~~~~~~~~
 
 
