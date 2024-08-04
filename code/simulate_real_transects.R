@@ -33,6 +33,12 @@ setwd(data_output)
 
 ## read in csv file 
 dat <- read.csv("revised_CoralNet_categories.csv")
+
+
+## invoke functions from other script
+setwd(code)
+source("revise_CoralNet_categories.R")
+remove(dat2, metadata)
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -40,8 +46,8 @@ dat <- read.csv("revised_CoralNet_categories.csv")
 
 
 ## function to sample rows by group, with multiple separate draws ~~~~~~~~~~~~~~
-## function simulates multiple transects from a single data source
 
+## function simulates multiple transects from a single data source
 # Define the function for a single column
 random_sampling_by_group <- function(data_frame, key_column, value_column, n_samples, n_draws) {
   # Nested function to perform a single draw within a group
@@ -76,22 +82,16 @@ random_sampling_multiple_columns <- function(data_frame, key_column, value_colum
   
   return(combined_result_df)
 }
+## END function to simulate transects ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-# Example usage of the functions 
-data_frame <- data.frame(
-  key = rep(letters[1:3], each = 100), # Example key column with 3 groups
-  value1 = rnorm(300), # Example value column 1 with 300 rows
-  value2 = rnorm(300), # Example value column 2 with 300 rows
-  value3 = rnorm(300)  # Example value column 3 with 300 rows
-)
 
-# Apply the function to draw 10 samples from each group, repeated 4 times, for multiple columns
-draws_df <- random_sampling_multiple_columns(data_frame, "key", c("value1", "value2", "value3"), 10, 4)
 
+
+## invoke functions to simulate transects & wrangle data ~~~~~~~~~~~~~~~~~~~~~~~
 
 ## invoke the functions on real data 
-dat2 <- random_sampling_multiple_columns(dat, "key", c("kelp_bryozoan",
+dat <- random_sampling_multiple_columns(dat, "key", c("kelp_bryozoan",
                                                        "soft_sediment",
                                                        "cobble",
                                                        "pebble",
@@ -113,6 +113,42 @@ dat2 <- random_sampling_multiple_columns(dat, "key", c("kelp_bryozoan",
                                                        "sessile_invert",
                                                        "mobile_invert",
                                                        "coralline_algae"), 25, 4)
+
+
+
+## clean up simulated data prior to analyses - rename cols
+names(dat)[names(dat) == "draw"] <- "transect"
+names(dat)[names(dat) == "key"] <- "site"
+
+
+## order by key/site - key no longer fully captures "site_transect" formating, so
+## we will restructire it
+dat <- dat %>% arrange(site)
+
+
+## transform key to site label
+dat <- remove_characters(dat, "site", "right", 2)
+
+
+## create key using proper "site_transect" labeling
+dat <- create.key(dat)
+dat$transect <- as.factor(dat$transect)
+
+
+## save dat
+setwd(data_output)
+write.csv(dat, "simulated_real_transects.csv", row.names=FALSE)
+## END data structuring - we are now ready to take an average ~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## take the average of each transect ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+avg <- dat %>% 
+  group_by(key) %>%
+  summarize(across(3:24, \(x) mean(x, na.rm = TRUE)))
+
 
 
 
