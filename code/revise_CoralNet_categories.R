@@ -32,7 +32,8 @@ setwd(data_input)
 
 
 ## read in csv file 
-dat <- read.csv("combined_csv.csv")
+#dat <- read.csv("combined_csv.csv")
+#dat <- read.csv("annotations.csv")
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
