@@ -34,6 +34,7 @@ source("visualization_functions.R")
 ## invoke relative file path 
 setwd(data_output)
 dat <- read.csv("2022_T1_50pts.csv")
+dat$site <- as.factor(dat$site)
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -60,7 +61,7 @@ print(p1)
 ## "n" pairwise comparisons ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # List of columns to visualize
-columns_to_visualize <- c("red_algae", "green_algae", "sugar_kelp", "soft_sediment")
+columns_to_visualize <- c("red_algae", "green_algae", "sugar_kelp", "soft_sediment", "shell_debris")
 
 
 # Create a list to store the plots
