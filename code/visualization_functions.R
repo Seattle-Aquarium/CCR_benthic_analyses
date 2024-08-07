@@ -50,9 +50,9 @@ mult.theme = theme(panel.grid.major = element_blank(),
                    panel.grid.minor = element_blank(),
                    panel.background = element_blank(), 
                    axis.line = element_line(colour = "black"),
-                   axis.title.x=element_text(size=5),
-                   axis.title.y=element_text(size=5),
-                   axis.text=element_text(size=4),
+                   axis.title.x=element_text(size=8),
+                   axis.title.y=element_text(size=8),
+                   axis.text=element_text(size=7),
                    plot.title = element_text(size=4),
                    legend.text = element_text(size=5),
                    legend.title = element_text(size=5)
@@ -81,7 +81,7 @@ pairwise.plot <- function(data, x, y, x.lab, y.lab){
 mult.pairwise.plot <- function(data, x, y, x.lab, y.lab) {
   ggplot(data, aes_string(x = x, y = y)) + 
     mult.theme + coord_fixed() + 
-    geom_point(size = 1, alpha = 0.5) +
+    geom_point(size = 1, alpha = 0.5, aes(color=site)) +
     #geom_smooth(method = "loess", se = FALSE, color = "red") +
     xlab(x.lab) + ylab(y.lab) + xlim(0, 100) + ylim(0, 100) +
     theme(legend.position = "none")
