@@ -25,6 +25,12 @@ code <- "../code"
 data_input <- "../data_input"
 data_output <- "../data_output"
 figs <- "../figs"
+urban_kelp <- "../data_output/Port_of_Seattle"
+
+
+## source functions - remove unnecessary functions
+setwd(code)
+source("revise_categories_functions.R")
 
 
 ## invoke relative file path 
@@ -32,110 +38,8 @@ setwd(data_input)
 
 
 ## read in csv file 
-#dat <- read.csv("combined_csv.csv")
-#dat <- read.csv("annotations.csv")
+dat <- read.csv("combined_csv.csv")
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-
-## process metadata ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## function to remove characters from columns
-remove_characters <- function(df, column_name, direction, num_chars) {
-  trim_chars <- function(x, direction, num_chars) {
-    if (direction == "left") {
-      return(substr(x, num_chars + 1, nchar(x)))
-    } else if (direction == "right") {
-      return(substr(x, 1, nchar(x) - num_chars))
-    } else {
-      stop("Invalid direction. Use 'left' or 'right'.")
-    }
-  }
-  
-  df[[column_name]] <- sapply(df[[column_name]], trim_chars, direction = direction, num_chars = num_chars)
-  return(df)
-}
-
-
-## function to bring new column to the [1] position 
-front.ofthe.line <- function(data){
-  num.col <- ncol(data)
-  data <- data[c(num.col, 1:num.col-1)]
-  return(data)
-}
-
-
-## function to create a unique key identifier combining site and transect info
-create.key <- function(data){
-  data$key <- data$site
-  data$key <- with(data, paste0(key,"_",transect))
-  data <- front.ofthe.line(data)
-  return(data)
-}
-
-
-## function to create 1:nrow SU - sample unit - variable 
-create.SU <- function(data){
-  data$SU <- 1:nrow(data)
-  data <- front.ofthe.line(data)
-  return(data)
-}
-
-
-## copy columns to new dataframe (create metadata df)
-split_dataframe <- function(df, num_cols){
-  new.df <- df[, 1:num_cols]
-  return(new.df)
-}
-
-
-## delete columns, but preserve some
-delete_columns <- function(df, cols_to_delete, cols_to_preserve) {
-  cols_to_delete_names <- names(df)[cols_to_delete]   # Convert column indices to names
-  cols_to_delete_names <- setdiff(cols_to_delete_names, cols_to_preserve)    # Remove the columns to be preserved from the delete list
-  df <- df[, !names(df) %in% cols_to_delete_names]    # Select columns that are not in the delete list
-  return(df)
-}
-
-
-## combine columns - add together the CoralNet counts from multiple categories
-combine_columns <- function(df, columns, new_column_name) {
-  df <- df %>%
-    mutate(!!sym(new_column_name) := rowSums(select(., all_of(columns))))
-  return(df)
-}
-
-
-## delete columns once they have been combined
-remove_columns <- function(df, columns_to_delete) {
-  df <- df %>% select(-all_of(columns_to_delete))
-  return(df)
-}
-
-
-## function that uses previous two functions to edit categories
-revise_categories <- function(data, category_list, new_column){
-  new_category <- category_list
-  data <- combine_columns(data, new_category, new_column)
-  data <- remove_columns(data, new_category)
-  return(data)
-}
-
-
-## function to rename columns
-rename_columns <- function(data, old, new) {
-  names(data)[names(data) %in% old] <- new
-  return(data)
-}
-
-
-## function to save a csv file
-save.csv <- function(data, file.name){
-  setwd(data_output)
-  write.csv(data, file.name, row.names=FALSE)
-}
-## END function definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -209,19 +113,41 @@ dat <- revise_categories(dat, c("CaCuc_MS", "crab_MS", "gastro_MS",
 
 ## revise eelgrass, surfgrass categories
 dat <- revise_categories(dat, c("art_CA", "crust_CA"), "coralline_algae")
+## end category revision ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+## renmame columns and double-check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## print df with names to check against renamed columns
+original_names <- as.data.frame(print(colnames(dat)))
+
+
+## rename cols
+dat <- rename_columns(dat, "SS_SU", "soft_sediment")
+dat <- rename_columns(dat, "cob_SU", "cobble")
+dat <- rename_columns(dat, "peb_SU", "pebble")
+dat <- rename_columns(dat, "KelpBry_SI", "kelp_bryozoan")
+dat <- rename_columns(dat, "UNIdent", "unknown")
+dat <- rename_columns(dat, "filam_BR", "filamentous_brown")
+dat <- rename_columns(dat, "FlatAci_BR", "acid_weed")
+dat <- rename_columns(dat, "fucus_BR", "rock_weed")
+dat <- rename_columns(dat, "holdfas_BR", "kelp_holdfast")
+dat <- rename_columns(dat, "sargass_BR", "sargassum")
+dat <- rename_columns(dat, "sugar_KE", "sugar_kelp")
+dat <- rename_columns(dat, "shell_SU", "shell_debris")
+dat <- rename_columns(dat, "ulva_GR", "green_algae")
+
+
+## print revised names
+revised_names <- as.data.frame(print(colnames(dat)))
+combined <- cbind(original_names, revised_names)
+
 
 ## delete extraneous columns
 dat <- remove_columns(dat, c("StriAci_BR", "undaria_BR", "unk_BR", "giant_KE", 
                              "bullBL_KE", "bullST_KE", "senes_RE", "senes_AL"))
 
-## rename columns
-dat <- rename_columns(dat, c("SS_SU", "cob_SU", "peb_SU"), c("soft_sediment","cobble","pebble")) 
-
-## rename additional columns 
-dat <- rename_columns(dat, c("KelpBry_SI", "UNIdent", "filam_BR", "FlatAci_BR", "fucus_BR", "holdfas_BR", "sargass_BR", "sugar_KE", "shell_SU"),
-                      c("kelp_bryozoan", "unknown", "filamentous_brown", "acid_weed", "rock_weed", "kelp_holdfast", "sargassum", "sugar_kelp", "shell_debris"))
-
-dat <- rename_columns(dat, "ulva_GR", "green_algae")
 
 ## remove columns with very few observations
 dat <- remove_columns(dat, c("rock_weed", "acid_weed", "smooth_kelp", "seagrass"))
@@ -232,22 +158,16 @@ dat <- remove_columns(dat, c("rock_weed", "acid_weed", "smooth_kelp", "seagrass"
 
 
 ## export ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-save.csv(dat, "revised_CoralNet_categories.csv")
+setwd(urban_kelp)
+write.csv(dat, "2022_T1_revised_categories.csv", row.names=FALSE)
 ## END export ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 
-## sample down to 50pts per image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-sample.data <- function(data, nrows, replace.logic){
-  new.dat <- data %>%
-    group_by(key) %>%
-    sample_n(size = nrows, replace = replace.logic) %>%
-    ungroup()
-  return(new.dat)
-}
 
+## sample down to 50pts per image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## run function - sample 50 data points without replacement
 dat2 <- sample.data(dat, 50, FALSE)
 
@@ -290,7 +210,8 @@ dat2$key <- as.factor(dat2$key)
 
 
 ## save the data frame 
-save.csv(dat2, "2022_T1_50pts.csv")
+setwd(urban_kelp)
+write.csv(dat2, "2022_T1_50-photos.csv", row.names=FALSE)
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -300,10 +221,3 @@ save.csv(dat2, "2022_T1_50pts.csv")
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## END script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-
-
-
