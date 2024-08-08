@@ -13,7 +13,7 @@ rm(list=ls())
 
 ## add libraries
 library(tidyverse)
-
+library(patchwork)
 
 ## list out current path
 getwd()
@@ -24,7 +24,7 @@ code <- "../code"
 data_input <- "../data_input"
 data_output <- "../data_output"
 figs <- "../figs"
-
+urban_kelp <- "../data_output/Port_of_Seattle"
 
 ## graphing functions 
 setwd(code)
@@ -32,8 +32,12 @@ source("visualization_functions.R")
 
 
 ## invoke relative file path 
-setwd(data_output)
-dat <- read.csv("2022_T1_50pts.csv")
+setwd(urban_kelp)
+dat <- read.csv("2022_T1_T2.csv")
+
+
+## classify as factor for color plotting
+dat$transect <- as.factor(dat$transect)
 dat$site <- as.factor(dat$site)
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -42,7 +46,7 @@ dat$site <- as.factor(dat$site)
 
 
 ## visualize bull kelp stipe and bundle data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-my.window(5,5)
+my.window(20,10)
 
 
 ## plot y as a function of x - simple pairwise plot
@@ -52,6 +56,15 @@ p1 <- pairwise.plot(dat,
                     "soft sediment seafloor %", 
                     "red algae seafloor %")
 print(p1)
+
+
+p2 <- facet.site(dat, 
+                 dat$red_algae, 
+                 dat$sugar_kelp, 
+                 "red algae seafloor %",
+                 "sugar kelp seafloor %")
+
+print(p2)
 ## END simple pairwise plot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -61,7 +74,7 @@ print(p1)
 ## "n" pairwise comparisons ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # List of columns to visualize
-columns_to_visualize <- c("red_algae", "green_algae", "sugar_kelp", "soft_sediment", "shell_debris")
+columns_to_visualize <- c("red_algae", "sugar_kelp")
 
 
 # Create a list to store the plots
