@@ -119,6 +119,24 @@ revised_cols <- revise_categories(revised_cols, c("CaCuc_MS", "crab_MS", "gastro
 
 ## revise eelgrass, surfgrass categories
 revised_cols <- revise_categories(revised_cols, c("art_CA", "crust_CA"), "coralline_algae")
+## end column combination ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## sanity check on column combination ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ordered_cols$leaf_RE + ordered_cols$filam_RE + ordered_cols$branch_RE + ordered_cols$bushy_RE + ordered_cols$unk_RE
+revised_cols$red_algae
+## END sanity check on column combination ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## rename columns and double check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## print df with names to check against renamed columns
+original_names <- as.data.frame(print(colnames(revised_cols)))
 
 
 ## rename columns
@@ -133,6 +151,11 @@ revised_cols <- rename_columns(revised_cols, "sargass_BR", "sargassum")
 revised_cols <- rename_columns(revised_cols, "sugar_KE", "sugar_kelp")
 revised_cols <- rename_columns(revised_cols, "Shell_SU", "shell_debris")
 revised_cols <- rename_columns(revised_cols, "ulva_GR", "green_algae")
+
+
+## print revised names
+revised_names <- as.data.frame(print(colnames(revised_cols)))
+combined <- cbind(original_names, revised_names)
 
       
 ## delete extraneous columns
