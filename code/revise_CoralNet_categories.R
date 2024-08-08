@@ -230,19 +230,18 @@ write.csv(revised, "2022_all_current_photos.csv", row.names=FALSE)
 
 
 
-
-## sample down to 50pts per image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## run function - sample 50 data points without replacement
-dat2 <- sample.data(dat, 50, FALSE)
+## filter and sample down to 50pts per image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+T1_T2 <- revised %>% filter(transect %in% c("1", "2"))
+T1_T2 <- sample.data(T1_T2, 50, FALSE)
 
 
 ## delete the SU column, no longer needed
-dat2 <- dat2[,-1]
+#dat2 <- dat2[,-1]
 
 
 ## save the data frame 
 setwd(urban_kelp)
-write.csv(dat2, "2022_T1_50-photos.csv", row.names=FALSE)
+write.csv(T1_T2, "T1_T2.csv", row.names=FALSE)
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
