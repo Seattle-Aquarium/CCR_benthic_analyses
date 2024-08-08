@@ -87,9 +87,12 @@ rename_columns <- function(data, old, new) {
 }
 
 
-## function to save a csv file
-save.csv <- function(data, file.name){
-  setwd(data_output)
-  write.csv(data, file.name, row.names=FALSE)
+## sample down to 50 rows
+sample.data <- function(data, nrows, replace.logic){
+  new.dat <- data %>%
+    group_by(key) %>%
+    sample_n(size = nrows, replace = replace.logic) %>%
+    ungroup()
+  return(new.dat)
 }
 ## END function definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
