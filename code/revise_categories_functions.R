@@ -150,4 +150,17 @@ photo.list <- function(data){
   colnames(transect_summary)[1] <- "transect"
   return(transect_summary)
 }
+
+
+## function to tabulate the total number of annotations
+annotation.sum <- function(data, first.col, last.col){
+  df <- data %>%
+    summarise(across(first.col:last.col, sum, na.rm = TRUE))
+  df$total_annotations <- sum(df[1, ])
+  df <- front.ofthe.line(df)
+  df <- df[, order(-as.numeric(df[1, ]))]
+  df <- as.data.frame(t(df))
+  colnames(df)[1] <- "total_annotations"
+  return(df)
+}
 ## END function definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
