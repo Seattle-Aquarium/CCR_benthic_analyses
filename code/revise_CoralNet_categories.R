@@ -30,13 +30,14 @@ figs <- "figs"
 urban_kelp <- "data_output/Port_of_Seattle"
 
 
-## source functions - remove unnecessary functions
+## source functions 
 source(file.path(code, "revise_categories_functions.R"))
 
 
 #dat <- read.csv("2022_multiple_transects.csv")
 #dat <- read.csv(file.path(urban_kelp, "2022_T1_T2.csv"))
 dat <- read.csv(file.path(data_input, "2022_multiple_transects.csv"))
+#dat <- read.csv(file.path(urban_kelp, "2022_all_current_photos.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -65,22 +66,6 @@ cols_to_preserve <- c("SU", "key", "site", "transect", "img_name") # Columns to 
 ## Invoke the function to delete columns between "SU" and "Points", but preserve certain columns
 dat <- delete_columns(dat, "SU", "Points", cols_to_preserve)
 ## END data processing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-
-## summarize data - photos per transect ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#transect_summary <- dat %>%
-#  group_by(key) %>% summarise(count = n())
-
-## rename col 
-#colnames(transect_summary)[1] <- "transect"
-
-## save summary dat 
-#setwd(urban_kelp)
-#write.csv(transect_summary, "2022_photos_complete_per_transect.csv", row.names=FALSE)
-## END data summary ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -202,6 +187,11 @@ revised <- revised %>% select(all_of(new.order))
 revised$site <- as.factor(revised$site)
 revised$transect <- as.factor(revised$transect)
 revised$key <- as.factor(revised$key)
+
+
+## category summary
+
+
 ## END column revision ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -217,7 +207,9 @@ revised$sum <- rowSums(select(revised, soft_sediment:mobile_invert))
 revised <- front.ofthe.line(revised)
 
 
-#write.csv(revised, file.path(urban_kelp, "2022_all_current_photos.csv"), row.names=FALSE)
+## open or save csv 
+# dat <- read.csv(file.path(urban_kelp, "2022_all_current_photos.csv"))
+# write.csv(revised, file.path(urban_kelp, "2022_all_current_photos.csv"), row.names=FALSE)
 ## END export and revised data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -235,7 +227,13 @@ count_rows(T1_T2, "key")
 
 
 ## save the data frame 
-#write.csv(T1_T2, file.path(urban_kelp, "2022_T1_T2.csv"), row.names = FALSE)
+# T1_T2 <- read.csv(file.path(urban_kelp, "2022_T1_T2.csv"))
+# write.csv(T1_T2, file.path(urban_kelp, "2022_T1_T2.csv"), row.names = FALSE)
+
+
+## calculate and save photo list
+# T1_T2_list <- photo.list(T1_T2)
+# write.csv(T1_T2_list, file.path(urban_kelp, "2022_T1_T2_photos.csv"), row.names=FALSE)
 
 
 ## filter down to T3 
@@ -251,9 +249,15 @@ T1_T2_T3 <- sample.down(T3, "key", row_min)
 count_rows(T1_T2_T3, "key")
 
 
-## save the data
-write.csv(T1_T2_T3, file.path(urban_kelp, "2022_T1_T2_T3.csv"), row.names = FALSE)
-## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## save or read the data
+# T1_T2_T3 <- read.csv(file.path(urban_kelp, "2022_T1_T2_T3.csv"))
+# write.csv(T1_T2_T3, file.path(urban_kelp, "2022_T1_T2_T3.csv"), row.names = FALSE)
+
+
+## calculate and save photo list
+#T1_T2_T3_list <- photo.list(T1_T2_T3)
+#write.csv(T1_T2_T3_list, file.path(urban_kelp, "2022_T1_T2_T3_photos.csv"), row.names = FALSE)
+## end data filtering and csv export ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
