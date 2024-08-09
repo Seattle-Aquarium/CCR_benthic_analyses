@@ -13,29 +13,27 @@ rm(list=ls())
 
 ## add libraries
 library(tidyverse)
-library(reshape)
 
 
-## list out current path
+## set working directory to home folder
+setwd("../")
 getwd()
 
 
-## hardcode relative file paths
-code <- "../code"
-data_input <- "../data_input"
-data_output <- "../data_output"
-figs <- "../figs"
+## relative file paths
+code <- "code"
+data_input <- "data_input"
+data_output <- "data_output"
+figs <- "figs"
 annotations_sum <- "../data_output/annotations_summary"
 
 
-## source functions - remove unnecessary functions
-setwd(code)
-source("revise_categories_functions.R")
+## source functions 
+source(file.path(code, "revise_categories_functions.R"))
 
 
 ## read in csv file 
-setwd(data_input)
-dat <- read.csv("annotations.csv")
+dat <- read.csv(file.path(data_input, "annotations.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -74,9 +72,8 @@ ordered_list <- as.data.frame(t(ordered_cols))
 
 
 ## save raw data
-#setwd(annotations_sum)
-#write.csv(ordered_cols, "sum_of_all_categories_by_column.csv")
-#write.csv(ordered_list, "sum_of_all_categories_by_list.csv")
+# write.csv(ordered_cols, file.path(annotations_sum, "sum_of_all_categories_by_column.csv"), row.names = FALSE)
+# write.csv(ordered_list, file.path(annotations_sum, "sum_of_all_categories_by_list.csv"), row.names = FALSE)
 ## END sum calculation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
