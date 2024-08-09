@@ -28,7 +28,7 @@ data_input <- "data_input"
 data_output <- "data_output"
 figs <- "figs"
 urban_kelp <- "data_output/Port_of_Seattle"
-
+annotation_sum <- "data_output/annotation_summary"
 
 ## source functions 
 source(file.path(code, "revise_categories_functions.R"))
@@ -190,8 +190,8 @@ revised$key <- as.factor(revised$key)
 
 
 ## category summary
-
-
+# sums_all_categories <- annotation.sum(revised, "soft_sediment", "mobile_invert")
+# write.csv(sums_all_categories, file.path(annotation_sum, "sum_2022_all.csv"))
 ## END column revision ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -226,6 +226,11 @@ T1_T2 <- sample.data(T1_T2, 50, FALSE)
 count_rows(T1_T2, "key")
 
 
+## calculate category sums and save 
+# sum_T1_T2 <- annotation.sum(T1_T2, "soft_sediment", "mobile_invert")
+# write.csv(sum_T1_T2, file.path(urban_kelp, "sum_2022_T1_T2.csv"))
+
+
 ## save the data frame 
 # T1_T2 <- read.csv(file.path(urban_kelp, "2022_T1_T2.csv"))
 # write.csv(T1_T2, file.path(urban_kelp, "2022_T1_T2.csv"), row.names = FALSE)
@@ -247,6 +252,11 @@ T1_T2_T3 <- sample.down(T3, "key", row_min)
 
 ## test how many rows are present - double check 
 count_rows(T1_T2_T3, "key")
+
+
+## calculate category sums and save 
+# sum_T1_T2_T3 <- annotation.sum(T1_T2_T3, "soft_sediment", "mobile_invert")
+# write.csv(sum_T1_T2_T3, file.path(urban_kelp, "sum_2022_T1_T2_T3.csv"))
 
 
 ## save or read the data
