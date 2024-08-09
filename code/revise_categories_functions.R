@@ -163,4 +163,37 @@ annotation.sum <- function(data, first.col, last.col){
   colnames(df)[1] <- "total_annotations"
   return(df)
 }
+
+
+## function to calculate the average across columns and round to 2 decimal places
+calculate.avg <- function(data, first.col, last.col){
+  df <- data %>% 
+    group_by(key) %>%
+    summarize(across(all_of(first.col):all_of(last.col), \(x) mean(x, na.rm = TRUE))) %>%
+    mutate(across(all_of(first.col):all_of(last.col), ~ round(., 2)))
+  return(df)
+}
+
+
+## add site and transect back in once avgs have been calculated
+reconstruct.metadata <- function(data){
+  data$site <- data$key
+  data$transect <- data$key
+  data <- front.ofthe.line(data)
+  data <- front.ofthe.line(data)
+  data <- remove_characters(data, "site", "right", 2)
+  data <- remove_characters(data, "transect", "left", 2)
+  return(data)
+}
+
+
+## bind bull kelp stipes to averaged CoralNet data
+bind.stipes <- function(data, stipe.df){
+  data <- data %>%
+    left_join(stipe.df %>% select(key, stipes, bundles), by = "key")
+  data <- front.ofthe.line(data)
+  data <- front.ofthe.line(data)
+  return(data)
+}
+
 ## END function definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
