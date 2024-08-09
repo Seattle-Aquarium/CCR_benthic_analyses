@@ -48,12 +48,24 @@ split_dataframe <- function(df, num_cols){
 
 
 ## delete columns, but preserve some
-delete_columns <- function(df, cols_to_delete, cols_to_preserve) {
-  cols_to_delete_names <- names(df)[cols_to_delete]   # Convert column indices to names
-  cols_to_delete_names <- setdiff(cols_to_delete_names, cols_to_preserve)    # Remove the columns to be preserved from the delete list
-  df <- df[, !names(df) %in% cols_to_delete_names]    # Select columns that are not in the delete list
-  return(df)
+#delete_columns <- function(df, cols_to_delete, cols_to_preserve) {
+#  cols_to_delete_names <- names(df)[cols_to_delete]   # Convert column indices to names
+#  cols_to_delete_names <- setdiff(cols_to_delete_names, cols_to_preserve)    # Remove the columns to be preserved from the delete list
+#  df <- df[, !names(df) %in% cols_to_delete_names]    # Select columns that are not in the delete list
+#  return(df)
+#}
+
+
+## revised function that uses column names, not positions
+delete_columns <- function(data, first_col, last_col, cols_to_preserve) {
+  cols_to_delete_names <- names(data)[which(names(data) %in% first_col):which(names(data) %in% last_col)]
+  cols_to_delete_names <- setdiff(cols_to_delete_names, cols_to_preserve)
+  data <- data[, !names(data) %in% cols_to_delete_names]
+  return(data)
 }
+
+
+
 
 
 ## combine columns - add together the CoralNet counts from multiple categories
@@ -87,7 +99,7 @@ rename_columns <- function(data, old, new) {
 }
 
 
-## sample down to 50 rows
+## sample down to 50 rows when all categories have 50 or more rows
 sample.data <- function(data, nrows, replace.logic){
   new.dat <- data %>%
     group_by(key) %>%
@@ -95,4 +107,42 @@ sample.data <- function(data, nrows, replace.logic){
     ungroup()
   return(new.dat)
 }
+
+
+## sample down to 50 rows OR return however many rows are present
+sample.down <- function(data, col, row_min) {
+  data %>%
+    group_by(!!sym(col)) %>%
+    do(if (nrow(.) > row_min) {
+      sample_n(., row_min)
+    } else {
+      .
+    }) %>%
+    ungroup()
+}
+
+
+## double check how many rows are present with each unique factor of col 
+count_rows <- function(data, col) {
+  data %>%
+    group_by(!!sym(col)) %>%
+    summarise(count = n()) %>%
+    print(n=32)
+}
+
+
+## calculate percent-cover from CoralNet pt data
+calculate.percent <- function(data, first.col, last.col, decimal.place){
+  
+  cols <- select(data, {{first.col}}:{{last.col}}) ## specify columns 
+  data$data_pts <- rowSums(cols) ## calculate sum number of data points per image
+  data <- front.ofthe.line(data) ## move sum column to front for easy viewing
+  data <- data %>% ## divide cols by sum column to calculate %
+    mutate(across(all_of(names(cols)), ~ . / data_pts))
+  data <- data %>% ## round to 2 decimal places
+    mutate(across(all_of(names(cols)), ~ round(., decimal.place)))
+
+  return(data)
+}
+
 ## END function definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
