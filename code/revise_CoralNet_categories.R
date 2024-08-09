@@ -17,31 +17,27 @@ library(tidyverse)
 library(reshape)
 
 
-## list out current path
+## set working directory to home folder
+setwd("../")
 getwd()
 
 
-## hardcode relative file paths
-code <- "../code"
-data_input <- "../data_input"
-data_output <- "../data_output"
-figs <- "../figs"
-urban_kelp <- "../data_output/Port_of_Seattle"
+## relative file paths
+code <- "code"
+data_input <- "data_input"
+data_output <- "data_output"
+figs <- "figs"
+urban_kelp <- "data_output/Port_of_Seattle"
 
 
 ## source functions - remove unnecessary functions
-setwd(code)
-source("revise_categories_functions.R")
+source(file.path(code, "revise_categories_functions.R"))
 
 
-## invoke relative file path 
-setwd(data_input)
-
-
-## read in csv file 
-dat <- read.csv("2022_multiple_transects.csv")
+#dat <- read.csv("2022_multiple_transects.csv")
+#dat <- read.csv(file.path(urban_kelp, "2022_T1_T2.csv"))
+dat <- read.csv(file.path(data_input, "2022_multiple_transects.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 
 
@@ -58,22 +54,16 @@ dat <- read.csv("2022_multiple_transects.csv")
 dat <- create.SU(dat)
 
 
-## split off metadata
-metadata <- split_dataframe(dat, 27)
+## split off metadata and save, if desired
+#metadata <- split_dataframe(dat, 27)
 
 
-## columns to delete (most metadata)
-#cols_to_delete <- 1:31
-cols_to_delete <- 1:27
-
-
-## but preserve these specific columns 
+## Columns to preserve
 cols_to_preserve <- c("SU", "key", "site", "transect", "img_name") # Columns to preserve
 
 
-## invoke function
-dat <- delete_columns(dat, cols_to_delete, cols_to_preserve) # Delete columns and get the updated dataframe
-dat$key <- as.factor(dat$key)
+## Invoke the function to delete columns between "SU" and "Points", but preserve certain columns
+dat <- delete_columns(dat, "SU", "Points", cols_to_preserve)
 ## END data processing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -81,15 +71,15 @@ dat$key <- as.factor(dat$key)
 
 
 ## summarize data - photos per transect ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-transect_summary <- dat %>%
-  group_by(key) %>% summarise(count = n())
+#transect_summary <- dat %>%
+#  group_by(key) %>% summarise(count = n())
 
 ## rename col 
-colnames(transect_summary)[1] <- "transect"
+#colnames(transect_summary)[1] <- "transect"
 
 ## save summary dat 
-setwd(urban_kelp)
-write.csv(transect_summary, "2022_photos_complete_per_transect.csv", row.names=FALSE)
+#setwd(urban_kelp)
+#write.csv(transect_summary, "2022_photos_complete_per_transect.csv", row.names=FALSE)
 ## END data summary ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -143,7 +133,7 @@ revised <- revise_categories(revised, c("art_CA", "crust_CA"), "coralline_algae"
 
 ## renmame columns and double-check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## print df with names to check against renamed columns
-original_names <- as.data.frame(print(colnames(revised)))
+#original_names <- as.data.frame(print(colnames(revised)))
 
 
 ## rename cols
@@ -163,8 +153,9 @@ revised <- rename_columns(revised, "ulva_GR", "green_algae")
 
 
 ## print revised names
-revised_names <- as.data.frame(print(colnames(revised)))
-combined <- cbind(original_names, revised_names)
+#revised_names <- as.data.frame(print(colnames(revised)))
+#combined <- cbind(original_names, revised_names)
+#remove(original_names, revised_names, combined)
 
 
 ## delete extraneous columns
@@ -178,10 +169,6 @@ revised <- remove_columns(revised, c("rock_weed", "acid_weed", "smooth_kelp", "s
 
 ## remove extra telemetry log columns
 revised <- remove_columns(revised, c("alt_smooth", "SimDIS"))
-
-
-## trim dfs
-remove(original_names, revised_names)
 
 
 ## new ordering of columns
@@ -215,16 +202,23 @@ revised <- revised %>% select(all_of(new.order))
 revised$site <- as.factor(revised$site)
 revised$transect <- as.factor(revised$transect)
 revised$key <- as.factor(revised$key)
-## END CoralNet category editing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END column revision ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 
-## export ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-setwd(urban_kelp)
-write.csv(revised, "2022_all_current_photos.csv", row.names=FALSE)
-## END export ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## invoke function to calculate percent-cover ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+revised <- calculate.percent(revised, soft_sediment, mobile_invert, 2)
+
+
+## add total percent column at front of data.frame - check that sums to 1 
+revised$sum <- rowSums(select(revised, soft_sediment:mobile_invert))
+revised <- front.ofthe.line(revised)
+
+
+#write.csv(revised, file.path(urban_kelp, "2022_all_current_photos.csv"), row.names=FALSE)
+## END export and revised data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -232,16 +226,33 @@ write.csv(revised, "2022_all_current_photos.csv", row.names=FALSE)
 
 ## filter and sample down to 50pts per image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 T1_T2 <- revised %>% filter(transect %in% c("1", "2"))
+count_rows(T1_T2, "key")
+
+
+## sample down to 50 per transect
 T1_T2 <- sample.data(T1_T2, 50, FALSE)
-
-
-## delete the SU column, no longer needed
-#dat2 <- dat2[,-1]
+count_rows(T1_T2, "key")
 
 
 ## save the data frame 
-setwd(urban_kelp)
-write.csv(T1_T2, "T1_T2.csv", row.names=FALSE)
+#write.csv(T1_T2, file.path(urban_kelp, "2022_T1_T2.csv"), row.names = FALSE)
+
+
+## filter down to T3 
+T3 <- revised %>% filter(transect %in% c("1", "2", "3"))
+
+
+## sample 50 rows, or however many present, for T1, T2, and T3 
+row_min <- 50
+T1_T2_T3 <- sample.down(T3, "key", row_min)
+
+
+## test how many rows are present - double check 
+count_rows(T1_T2_T3, "key")
+
+
+## save the data
+write.csv(T1_T2_T3, file.path(urban_kelp, "2022_T1_T2_T3.csv"), row.names = FALSE)
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
