@@ -65,9 +65,6 @@ delete_columns <- function(data, first_col, last_col, cols_to_preserve) {
 }
 
 
-
-
-
 ## combine columns - add together the CoralNet counts from multiple categories
 combine_columns <- function(df, columns, new_column_name) {
   df <- df %>%
@@ -145,4 +142,12 @@ calculate.percent <- function(data, first.col, last.col, decimal.place){
   return(data)
 }
 
+
+## function to print a dataframe with the number of photos per transect
+photo.list <- function(data){
+  transect_summary <- data %>%
+    group_by(key) %>% summarise(count = n())
+  colnames(transect_summary)[1] <- "transect"
+  return(transect_summary)
+}
 ## END function definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
