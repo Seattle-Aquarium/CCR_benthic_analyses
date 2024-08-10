@@ -15,30 +15,31 @@ rm(list=ls())
 library(tidyverse)
 library(patchwork)
 
-## list out current path
+
+## set working directory to home folder
+setwd("../")
 getwd()
 
 
-## hardcode relative file paths
-code <- "../code"
-data_input <- "../data_input"
-data_output <- "../data_output"
-figs <- "../figs"
-urban_kelp <- "../data_output/Port_of_Seattle"
+## relative file paths
+code <- "code"
+data_input <- "data_input"
+data_output <- "data_output"
+figs <- "figs"
+urban_kelp <- "data_output/urban_kelp"
 
 ## graphing functions 
-setwd(code)
-source("visualization_functions.R")
+source(file.path(code, "data_visualization_functions.R"))
 
 
 ## invoke relative file path 
-setwd(urban_kelp)
-dat <- read.csv("2022_T1_T2.csv")
+dat <- read.csv(file.path(urban_kelp, "2022_T1_T2_T3.csv"))
 
 
 ## classify as factor for color plotting
 dat$transect <- as.factor(dat$transect)
 dat$site <- as.factor(dat$site)
+dat$key <- as.factor(dat$key)
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -62,9 +63,17 @@ p2 <- facet.site(dat,
                  dat$red_algae, 
                  dat$sugar_kelp, 
                  "red algae seafloor %",
-                 "sugar kelp seafloor %")
+                 "sugar kelp seafloor %",
+                 0.95, 0.95)
 
 print(p2)
+
+
+## save figs 
+save.figs(p2, figs, 
+          "red-algae_sugar-kelp.pdf", 
+          "red-algae_sugar-kelp.png", 
+          13, 6.5, 600)
 ## END simple pairwise plot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
