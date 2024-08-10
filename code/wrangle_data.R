@@ -26,7 +26,7 @@ code <- "code"
 data_input <- "data_input"
 data_output <- "data_output"
 figs <- "figs"
-urban_kelp <- "data_output/Port_of_Seattle"
+urban_kelp <- "data_output/urban_kelp"
 
 
 ## source functions 
@@ -125,8 +125,8 @@ avg_T3 <- reconstruct.metadata(avg_T3)
 
 
 ## read in stipes
-stipes <- read.csv(file.path(data_input, "bull_kelp_stipes.csv"))
-stipes <- create.key(stipes)
+#stipes <- read.csv(file.path(data_input, "bull_kelp_stipes.csv"))
+#stipes <- create.key(stipes)
 
 
 ## bind stipes
