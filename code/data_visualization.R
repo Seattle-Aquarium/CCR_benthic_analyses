@@ -53,26 +53,25 @@ my.window(20,10)
 ## plot y as a function of x - simple pairwise plot
 p1 <- pairwise.plot(dat, 
                     dat$soft_sediment, 
-                    dat$red_algae, 
+                    dat$hard_substrate, 
                     "soft sediment seafloor %", 
-                    "red algae seafloor %")
+                    "hard substrate seafloor %")
 print(p1)
 
 
 p2 <- facet.site(dat, 
-                 dat$red_algae, 
+                 dat$shell_debris, 
                  dat$sugar_kelp, 
-                 "red algae seafloor %",
-                 "sugar kelp seafloor %",
+                 "shell debris %",
+                 "sugar kelp %",
                  0.95, 0.95)
-
 print(p2)
 
 
 ## save figs 
 save.figs(p2, figs, 
-          "red-algae_sugar-kelp.pdf", 
-          "red-algae_sugar-kelp.png", 
+          "shell-debris_sugar-kelp.pdf", 
+          "shell-debris_sugar-kelp.png", 
           13, 6.5, 600)
 ## END simple pairwise plot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -83,7 +82,7 @@ save.figs(p2, figs,
 ## "n" pairwise comparisons ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # List of columns to visualize
-columns_to_visualize <- c("red_algae", "sugar_kelp")
+columns_to_visualize <- c("shell_debris", "hard_substrate", "sugar_kelp", "textured_kelp", "red_algae", "green_algae")
 
 
 # Create a list to store the plots
@@ -104,14 +103,14 @@ for (i in 1:(length(columns_to_visualize) - 1)) {
 
 
 # Combine all the plots into a single large figure using patchwork
-combined_plot <- wrap_plots(plot_list, ncol = 4)
+combined_plot <- wrap_plots(plot_list, ncol = 5)
 combined_plot 
 
 
 ## save figures as pdf and png, if desired
-save.figs("sugar-kelp_soft-sediment.pdf", 
-          "sugar-kelp_soft-sediment.png", 
-          p3, 5, 5)
+save.figs(combined_plot, figs, 
+          "six-pairs.pdf", "six-pairs.png",
+          13, 6.5, 600)
 
 ## END "n" pairwise comparison plot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
