@@ -66,7 +66,7 @@ pairwise.plot <- function(data, x, y, x.lab, y.lab){
   fig <- ggplot(data=data, aes(x, y)) + my.theme + coord_fixed() + 
     geom_point(size=1.0, aes(alpha=0.5)) +
     geom_smooth(method = "loess", se = FALSE, color = "red") +
-    xlab(x.lab) + ylab(y.lab) + xlim(0,100) + ylim(0,100) +
+    xlab(x.lab) + ylab(y.lab) + xlim(0,1) + ylim(0,1) +
     theme(legend.position = "none")
   return(fig)
 }
@@ -106,7 +106,7 @@ mult.pairwise.plot <- function(data, x, y, x.lab, y.lab) {
     mult.theme + coord_fixed() + 
     geom_point(size = 1, alpha = 0.5)+#, aes(color=site)) +
     #geom_smooth(method = "loess", se = FALSE, color = "red") +
-    xlab(x.lab) + ylab(y.lab) + xlim(0, 100) + ylim(0, 100) +
+    xlab(x.lab) + ylab(y.lab) + xlim(0, 1) + ylim(0, 1) +
     theme(legend.position = "none")
 }
 
