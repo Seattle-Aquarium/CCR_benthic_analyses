@@ -80,7 +80,6 @@ save.figs(p2, figs,
 
 
 ## "n" pairwise comparisons ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 # List of columns to visualize
 columns_to_visualize <- c("shell_debris", "hard_substrate", "sugar_kelp", "textured_kelp", "red_algae", "green_algae")
 
@@ -111,25 +110,31 @@ combined_plot
 save.figs(combined_plot, figs, 
           "six-pairs.pdf", "six-pairs.png",
           13, 6.5, 600)
-
 ## END "n" pairwise comparison plot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
-## plot stipes across all transects
-p2 <- ggplot(data=dat, aes(key, stipes, group_by(site))) + my.theme + 
+
+## stipe analyses ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## read in data
+dat2 <- read.csv(file.path(urban_kelp, "2022_avg_T1_T2_T3.csv"))
+
+
+## visualize stipes
+p2 <- ggplot(data=dat2, aes(key, stipes, group_by(site))) + my.theme + 
   geom_point(size=4, pch=21, color="black", aes(fill=site)) + 
   theme(axis.text.x = element_text(angle = 45, vjust = 0, hjust=0)) + 
   xlab("'site_transect' throughout Elliott Bay") + ylab("2022 bull kelp stipes")
 print(p2)
 
 
-#library(patchwork)
+## figure to plot stipes vs categories w/ loess 
+library(patchwork)
 windows(20,10)
 
 plots <- map(6:23, ~ {
-  ggplot(dat, aes_string(x = names(dat)[.x], y = "stipes")) +
+  ggplot(dat2, aes_string(x = names(dat2)[.x], y = "stipes")) +
     geom_point() + my.theme +
     geom_smooth(method = "loess", color = "red", se=FALSE) +
     theme(axis.title.y = element_blank(),  # Remove x-axis labels
