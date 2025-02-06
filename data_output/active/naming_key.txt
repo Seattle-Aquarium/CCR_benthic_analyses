@@ -22,3 +22,15 @@ T3-1_69_labels_totals;
 T3-2_69_labels_totals;
 T3-3_69_labels_totals;
 are all .csvs containing the total annotations per label for all three data sets
+
+likewise for:
+T3-1_19_labels;
+T3-2_19_labels;
+T3-3_19_labels; 
+
+
+and 
+
+T3-1_19_label_totals;
+T3-2_19_label_totals;
+T3-3_19_label_totals; 
