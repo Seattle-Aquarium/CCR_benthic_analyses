@@ -7,30 +7,9 @@ T3 refers to the 2022 Port of Seattle data that contain at-most three ROV transe
 T3-1 refers to a dataset that has been filtered down to remove the few instances of T4 (transect 4) that were present.
 	- yields a dataset with 21 transects of variable nrow, totaling 140,800 percent-cover points
 		
-T3-2 indicates that the data have been randomly sampled down to 50 rows; instances where nrow < 50 are retained at their current level. 
-	- yields a dataset with 21 transects of variable nrow, totaling 101,100 percent-cover points
+T3-2 is a dataset that has been randomly sampled down to 50 rows; instances where nrow < 50 are retained at their current level. 
+	- yields a dataset with 21 transects of variable nrow(), totaling 101,100 percent-cover points
 
 T3-3 indicates that any transects with < 50 rows were dropped entirely; transects with nrow > 50 were randomly sampled down to 50
 	- yields a dataset with 18 transects comprised of 50 rows (50 photos) per transect, precisely 90,000 percent-cover points
 
-T3-1_69_labels;
-T3-2_69_labels;
-T3-3_69_labels; 
-are all .csvs containing the percent-cover data of all 69 original categories
-
-T3-1_69_labels_totals;
-T3-2_69_labels_totals;
-T3-3_69_labels_totals;
-are all .csvs containing the total annotations per label for all three data sets
-
-likewise for:
-T3-1_19_labels;
-T3-2_19_labels;
-T3-3_19_labels; 
-
-
-and 
-
-T3-1_19_label_totals;
-T3-2_19_label_totals;
-T3-3_19_label_totals; 
