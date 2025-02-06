@@ -239,6 +239,25 @@ write.csv(revised, file.path(active, "T3-3_19_labels.csv"), row.names = FALSE)
 
 
 
+## calculate category sums and save as separate files ~~~~~~~~~~~~~~~~~~~~~~~ ##
+T3.1 <- read.csv(file.path(active, "T3-1_19_labels.csv"))
+T3.2 <- read.csv(file.path(active, "T3-2_19_labels.csv"))
+
+
+
+T3.1_totals <- annotation.sum(T3.1, "soft_sediment", "mobile_invert")
+T3.2_totals <- annotation.sum(T3.2, "soft_sediment", "mobile_invert")
+T3.3_totals <- annotation.sum(revised, "soft_sediment", "mobile_invert")
+
+
+## save csvs 
+write.csv(T3.1_totals, file.path(active, "T3-1_19_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.2_totals, file.path(active, "T3-2_19_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.3_totals, file.path(active, "T3-3_19_labels_totals.csv"), row.names=FALSE)
+## END category sums ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+
+
 
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
