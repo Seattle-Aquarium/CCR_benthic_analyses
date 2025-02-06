@@ -196,4 +196,13 @@ bind.stipes <- function(data, stipe.df){
   return(data)
 }
 
+## function to sum all columns and double check we sum properly to 1
+sum.columns <- function(dat, col_1, col_2) {
+  dat$total_sum <- rowSums(dat[, col_1:col_2], na.rm = TRUE)
+  dat <- front.ofthe.line(dat)
+  return(dat)
+}
+
+
+
 ## END function definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
