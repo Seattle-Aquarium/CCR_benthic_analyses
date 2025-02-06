@@ -106,15 +106,22 @@ sample.data <- function(data, nrows, replace.logic){
 }
 
 
-## sample down to 50 rows OR return however many rows are present
+## revised function to sample down to a set number of rows, OR retain the minimum rows present
 sample.down <- function(data, col, row_min) {
   data %>%
-    group_by(!!sym(col)) %>%
-    do(if (nrow(.) > row_min) {
-      sample_n(., row_min)
-    } else {
-      .
-    }) %>%
+    group_by(across(all_of(col))) %>%
+    reframe(slice_sample(pick(everything()), n = min(n(), row_min), replace = FALSE)) %>%
+    ungroup()
+}
+
+
+## additional function that drops any factor with less than 50 rows. For rows with more than 50
+## observation, randomly sample down to 50 rows. 
+sample.down.filtered <- function(data, col, row_min) {
+  data %>%
+    group_by(across(all_of(col))) %>%
+    filter(n() >= row_min) %>%  # Drop groups with fewer than row_min rows
+    reframe(slice_sample(pick(everything()), n = row_min, replace = FALSE)) %>%
     ungroup()
 }
 
@@ -132,10 +139,10 @@ count_rows <- function(data, col) {
 calculate.percent <- function(data, first.col, last.col, decimal.place){
   
   cols <- select(data, {{first.col}}:{{last.col}}) ## specify columns 
-  data$data_pts <- rowSums(cols) ## calculate sum number of data points per image
+  data$original_data_pts <- rowSums(cols) ## calculate sum number of data points per image
   data <- front.ofthe.line(data) ## move sum column to front for easy viewing
   data <- data %>% ## divide cols by sum column to calculate %
-    mutate(across(all_of(names(cols)), ~ . / data_pts))
+    mutate(across(all_of(names(cols)), ~ . / original_data_pts))
   data <- data %>% ## round to 2 decimal places
     mutate(across(all_of(names(cols)), ~ round(., decimal.place)))
 
@@ -155,14 +162,18 @@ photo.list <- function(data){
 ## function to tabulate the total number of annotations
 annotation.sum <- function(data, first.col, last.col){
   df <- data %>%
-    summarise(across(first.col:last.col, sum, na.rm = TRUE))
+    summarise(across(all_of(first.col):all_of(last.col), sum, na.rm = TRUE))
   df$total_annotations <- sum(df[1, ])
   df <- front.ofthe.line(df)
   df <- df[, order(-as.numeric(df[1, ]))]
   df <- as.data.frame(t(df))
-  colnames(df)[1] <- "total_annotations"
+  df <- tibble::rownames_to_column(df, var = "category")
+  colnames(df)[2] <- "total_annotations"
+  df <- df %>%
+    mutate(across(where(is.numeric), ~ . * 100))
   return(df)
 }
+
 
 
 ## function to calculate the average across columns and round to 2 decimal places
