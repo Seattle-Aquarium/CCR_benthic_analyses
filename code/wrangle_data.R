@@ -102,9 +102,9 @@ duplicates <- T3.3 %>% count(SU) %>% filter(n > 1)
 
 
 ## save relevant files ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#write.csv(T3, file.path(active, "2022_all_three_transects_and_rows.csv"), row.names=FALSE)
-#write.csv(T3.2, file.path(active, "2022_sampled_down_to_50.csv"), row.names=FALSE)
-#write.csv(T3.3, file.path(active, "2022_50_minimum_or_drop.csv"), row.names=FALSE)
+#write.csv(T3.1, file.path(active, "T3-1_69_labels.csv"), row.names=FALSE)
+#write.csv(T3.2, file.path(active, "T3-2_69_labels.csv"), row.names=FALSE)
+#write.csv(T3.3, file.path(active, "T3-3_69_labels.csv"), row.names=FALSE)
 ## END row sampling and file save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -117,9 +117,9 @@ T3.3_totals <- annotation.sum(T3.3, "cup_SI", "surf_SG")
 
 
 ## save csvs 
-write.csv(T3.1_totals, file.path(active, "T3-1_69_labels_totals.csv"), row.names=FALSE)
-write.csv(T3.2_totals, file.path(active, "T3-2_69_labels_totals.csv"), row.names=FALSE)
-write.csv(T3.3_totals, file.path(active, "T3-3_69_labels_totals.csv"), row.names=FALSE)
+#write.csv(T3.1_totals, file.path(active, "T3-1_69_labels_totals.csv"), row.names=FALSE)
+#write.csv(T3.2_totals, file.path(active, "T3-2_69_labels_totals.csv"), row.names=FALSE)
+#write.csv(T3.3_totals, file.path(active, "T3-3_69_labels_totals.csv"), row.names=FALSE)
 ## END category sums ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
 
 
