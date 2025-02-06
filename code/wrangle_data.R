@@ -33,7 +33,9 @@ urban_kelp <- "data_output/urban_kelp"
 source(file.path(code, "revise_categories_functions.R"))
 
 
-dat <- read.csv(file.path(urban_kelp, "2022_revised_categories.csv"))
+dat <- read.csv(file.path(data_input, "2022_multiple_transects.csv"))
+dat <- create.SU(dat)
+#dat <- read.csv(file.path(urban_kelp, "2022_revised_categories.csv"))
 #dat <- read.csv(file.path(urban_kelp, "2022_all_current_photos.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -41,12 +43,39 @@ dat <- read.csv(file.path(urban_kelp, "2022_revised_categories.csv"))
 
 
 
+## clean up metadata ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## split off metadata and save, if desired
+#metadata <- split_dataframe(dat, 27)
+
+
+## Columns to preserve
+cols_to_preserve <- c("SU", "key", "site", "transect", "img_name") # Columns to preserve
+
+
+## Invoke the function to delete columns between "SU" and "Points", but preserve certain columns
+dat <- delete_columns(dat, "SU", "Points", cols_to_preserve)
+
+
+## specific columns to remove, if present
+cols_to_remove <- c("alt_smooth", "SimDIS")
+dat <- dat[, !names(dat) %in% cols_to_remove]
+## END metadata cleanup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
 ## invoke function to calculate percent-cover ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dat <- calculate.percent(dat, soft_sediment, mobile_invert, 2)
+dat$pt_sum <- rowSums(select(dat, cup_SI:surf_SG))
+dat <- front.ofthe.line(dat)
+
+
+#dat <- calculate.percent(dat, soft_sediment, mobile_invert, 2)
+dat <- calculate.percent(dat, cup_SI, surf_SG, 2)
 
 
 ## add total percent column at front of data.frame - check that sums to 1 
-dat$sum <- rowSums(select(dat, soft_sediment:mobile_invert))
+dat$sum <- rowSums(select(dat, cup_SI:surf_SG))
 dat <- front.ofthe.line(dat)
 
 
