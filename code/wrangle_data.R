@@ -33,10 +33,10 @@ active <- "data_output/active"
 
 
 ## source functions 
-source(file.path(code, "revise_categories_functions.R"))
+source(file.path(code, "wrangle_and_revise_functions.R"))
 
 
-dat <- read.csv(file.path(data_input, "2022_multiple_transects.csv"))
+dat <- read.csv(file.path(data_input, "original_CoralNet_2022_dataset.csv"))
 dat <- create.SU(dat)
 #dat <- read.csv(file.path(urban_kelp, "2022_revised_categories.csv"))
 #dat <- read.csv(file.path(urban_kelp, "2022_all_current_photos.csv"))
