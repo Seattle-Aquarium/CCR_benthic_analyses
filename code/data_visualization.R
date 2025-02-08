@@ -29,7 +29,7 @@ figs <- "figs"
 urban_kelp <- "data_output/urban_kelp"
 
 ## graphing functions 
-source(file.path(code, "data_visualization_functions.R"))
+source(file.path(code, "data_analysis_functions.R"))
 
 
 ## invoke relative file path 

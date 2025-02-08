@@ -33,7 +33,7 @@ active <- "data_output/active"
 
 
 ## source functions 
-source(file.path(code, "revise_categories_functions.R"))
+source(file.path(code, "wrangle_and_revise_functions.R"))
 
 
 ## read in .csv 
