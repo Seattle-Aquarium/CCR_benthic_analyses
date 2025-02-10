@@ -14,6 +14,27 @@ log.transform <- function(data){
 }
 
 
+## function to extract NMDS coordinates, bind, and save w/ metadata and comm ~~~
+save.points <- function(metadata, points, comm){
+  t1 <- as.data.frame(ord$points)
+  t2 <- cbind(metadata, t1, comm)
+  return(t2)
+}
+
+
+## function to extract spp scores 
+save.spp <- function(ord) {
+  species_scores <- scores(ord, display = "species") %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column(var = "species")
+  
+  return(species_scores)
+}
+
+
+
+
+## REVISE or DELETE parallel processing code: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## run NMDS analyses with parallel cores 
 nmds_parallel <- function(comm_matrix, 
                           distance = "bray", 
@@ -45,6 +66,29 @@ stopCluster(cl)
 
 
 
+## set up parallel processing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+num_cores <- detectCores() - 1
+cl <- makeCluster(num_cores)
+registerDoParallel(cl)
+## END parallel processing set up~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## perform NMDS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Example Invocation (Specify Only the Parameters You Want)
+nmds_results <- nmds_parallel(log_comm, min = 1000, trymax = 5000)
+
+# Stop parallel cluster
+stopCluster(cl)
+
+# Select the best NMDS solution (lowest stress)
+best_nmds <- nmds_results[[which.min(sapply(nmds_results, function(x) x$stress))]]
+
+# Plot the best NMDS result
+plot(best_nmds, type = "t", main = "Optimized NMDS Ordination")
+## END NMDS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
