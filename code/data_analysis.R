@@ -14,9 +14,9 @@ rm(list=ls())
 ## add libraries
 library(tidyverse)
 library(vegan)
-library(parallel)
-library(doParallel)
-library(foreach)
+#library(parallel)
+#library(doParallel)
+#library(foreach)
 #library(patchwork)
 
 
@@ -40,7 +40,7 @@ source(file.path(code, "data_analysis_functions.R"))
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_19, "T3-1_19_labels.csv"))
+dat <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
 
 
 ## classify as factor for color plotting
@@ -64,46 +64,60 @@ natural_scale_comm <- community * 100
 
 
 ## perform transformation if desired/required
-log_comm <- log.transform(nat_scale_comm) 
+log_comm <- log.transform(natural_scale_comm) 
 ## END NMDS prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 
-## set up parallel processing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-num_cores <- detectCores() - 1
-cl <- makeCluster(num_cores)
-registerDoParallel(cl)
-## END parallel processing set up~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-
-## perform NMDS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Example Invocation (Specify Only the Parameters You Want)
-nmds_results <- nmds_parallel(log_comm, min = 1000, trymax = 5000)
-
-# Stop parallel cluster
-stopCluster(cl)
-
-# Select the best NMDS solution (lowest stress)
-best_nmds <- nmds_results[[which.min(sapply(nmds_results, function(x) x$stress))]]
-
-# Plot the best NMDS result
-plot(best_nmds, type = "t", main = "Optimized NMDS Ordination")
-## END NMDS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
+## perform NMDS and save output ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ord <- metaMDS(comm = log_comm, 
                distance="bray", 
                k=2, 
                min = 1000, 
-               trymax=5000, 
+               trymax=2500, 
                autotransform = F, 
                wascores = TRUE)
+
+
+## save the ordination 
+setwd(label_19)
+save(ord, file="ord_T3-2_19.rda")
+load(file.path(label_19, "ord_T3-2_19.rda"))
+
+
+## visualize stress, check ordination, xy coordinates 
+## open graphics window
+graphics.off()
+windows(6,6,record=T)
+
+
+## plot
+plot(ord)
+stressplot(ord)
+## END ordination ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## NMDS ordination coordinates and spp scores saved as data frame ~~~~~~~~~~~~~~
+## save ord point into data frame for plotting, additional analyses
+dat <- save.points(metadata, ord$points, log_comm)
+
+
+## save species correlation coefficients as separate data.frame and csv 
+spp_scores <- save.spp(ord)
+
+
+## save csv files
+write.csv(dat, file.path(label_19, "ord_pts_T3-2_19.csv"), row.names=FALSE)
+write.csv(spp_scores, file.path(label_19, "spp_scores_T3-2_19.csv"), row.names=FALSE)
+## END extract and save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
 
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
