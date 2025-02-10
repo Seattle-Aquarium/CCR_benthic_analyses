@@ -32,6 +32,81 @@ save.spp <- function(ord) {
 }
 
 
+## function to open and record plots 
+my.windows <- function(x, y){
+  windows(x, y, record = TRUE)
+}
+
+
+
+
+
+## plotting params ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+my.theme = theme(panel.grid.major = element_blank(),
+                 panel.grid.minor = element_blank(),
+                 panel.background = element_blank(), 
+                 axis.line = element_line(colour = "black"),
+                 axis.title=element_text(size=16),
+                 axis.text=element_blank(),
+                 plot.title = element_text(size=16))
+
+
+
+
+## specify hex codes for custom colors
+site.cols <- c(
+  "#6497b1",  #gray; site 1
+  "#008080",  #teal; site 2
+  "#03396c",  #dark blue; site 5
+  "#7BBF6A",  #light green; site 3
+  "#3D8B37",  #dark green; site 4
+  "#CC6677",  #light maroon; site 6 
+  "#882255",  #maroon; site 7
+  "#000000"   #black 
+)
+
+
+## plot NMDS 
+plot.NMDS <- function(data){
+  p1 <- ggplot(data=dat, aes(x=MDS1, y=MDS2)) +
+    geom_point(size=2, aes(x=MDS1, y=MDS2, color=site)) + my.theme + 
+    scale_color_manual(values=site.cols)
+  return(p1)
+}
+
+
+## plot NMDS ellipses
+plot.NMDS.ellipses <- function(data){
+  p1 <- ggplot(data=dat, aes(x=MDS1, y=MDS2)) +
+    geom_point(size=2, alpha=0.35, aes(x=MDS1, y=MDS2, color=site)) + my.theme + 
+    stat_ellipse(linewidth=1, aes(group=site, color=site), level=0.95) +
+    scale_color_manual(values=site.cols)
+  return(p1)
+}
+
+
+## plot NMDS with species correlation coefficients 
+plot.NMDS.spp_scores <- function(data){
+  
+  p1 <- ggplot(data=dat, aes(x=MDS1, y=MDS2)) +
+    geom_point(size=2, alpha=0.35, aes(x=MDS1, y=MDS2, color=site)) + my.theme + 
+    scale_color_manual(values=site.cols) + 
+    
+    geom_segment(data=spp_scores, linewidth=1.25,
+                 aes(x=0, y=0, xend=NMDS1, yend=NMDS2), 
+                 arrow=arrow(length=unit(0.2, "cm")), color="black") +
+    
+    geom_text(data=spp_scores, 
+              aes(x=NMDS1, y=NMDS2, label=species, 
+                  vjust=ifelse(NMDS2 >= 0, -0.5, 1.5)),  
+              hjust=0.5, 
+              size=4, color="black", fontface="bold")
+  
+  return(p1)
+}
+
+
+
 
 
 ## REVISE or DELETE parallel processing code: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

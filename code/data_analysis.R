@@ -41,7 +41,7 @@ source(file.path(code, "data_analysis_functions.R"))
 
 ## invoke relative file path 
 dat <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
-
+spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19.csv"))
 
 ## classify as factor for color plotting
 dat$transect <- as.factor(dat$transect)
@@ -112,10 +112,44 @@ spp_scores <- save.spp(ord)
 
 
 ## save csv files
-write.csv(dat, file.path(label_19, "ord_pts_T3-2_19.csv"), row.names=FALSE)
-write.csv(spp_scores, file.path(label_19, "spp_scores_T3-2_19.csv"), row.names=FALSE)
+#write.csv(dat, file.path(label_19, "ord_pts_T3-2_19.csv"), row.names=FALSE)
+#write.csv(spp_scores, file.path(label_19, "spp_scores_T3-2_19.csv"), row.names=FALSE)
 ## END extract and save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
+
+
+
+## plot NMDS ordinations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## open a window 
+my.windows(11,11)
+
+
+## plot NMDS 
+p1 <- plot.NMDS(dat)
+print(p1)
+
+
+## plot NMDS and overlay ellipses 
+p2 <- plot.NMDS.ellipses(dat)
+print(p2)
+
+
+## plot NMDS and overlay species scores 
+p3 <- plot.NMDS.spp_scores(dat)
+print(p3)
+
+
+## save ordination figures as pdf
+setwd(figs)
+ggplot2::ggsave(filename = "NMDS_spp_scores.pdf", 
+                plot = p3, 
+                dpi = 1200, 
+                width = 11,
+                height = 11, 
+                units = "in")
+
+## END ordination plotting ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
