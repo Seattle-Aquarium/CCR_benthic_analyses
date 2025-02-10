@@ -1,0 +1,4 @@
+- re-run NMDS at 5pm w/ non-log transformed data (0-100 scale)
+- change colors Mag, Coast guard standalone; CP and EBM grouping 
+- add x and ylab(Axis-1) 
+- increase the size of legend labels
