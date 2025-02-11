@@ -42,8 +42,8 @@ source(file.path(code, "data_analysis_functions.R"))
 
 
 ## invoke relative file path 
-#dat <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
-dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19.csv"))
+dat <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
+#dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19.csv"))
 #spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19.csv"))
 
 ## classify as factor for color plotting
@@ -70,6 +70,9 @@ natural_scale_comm <- community * 100
 log_comm <- log.transform(natural_scale_comm) 
 
 
+log <- log.transform(dat, 9, 27)
+
+
 ## exponentiate back to the natural scale following log transform
 dat <- inverse.log.transform(dat, 9, 27)
 ## END NMDS prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,7 +82,7 @@ dat <- inverse.log.transform(dat, 9, 27)
 
 
 ## perform NMDS and save output ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ord <- metaMDS(comm = log_comm, 
+ord <- metaMDS(comm = natural_scale_comm, 
                distance="bray", 
                k=2, 
                min = 1000, 
@@ -90,7 +93,7 @@ ord <- metaMDS(comm = log_comm,
 
 ## save the ordination 
 setwd(label_19)
-save(ord, file="ord_T3-2_19.rda")
+save(ord, file="ord_T3-2_19_natural_scale.rda")
 load(file.path(label_19, "ord_T3-2_19.rda"))
 
 
@@ -111,7 +114,7 @@ stressplot(ord)
 
 ## NMDS ordination coordinates and spp scores saved as data frame ~~~~~~~~~~~~~~
 ## save ord point into data frame for plotting, additional analyses
-dat <- save.points(metadata, ord$points, log_comm)
+dat <- save.points(metadata, ord$points, natural_scale_comm)
 
 
 ## save species correlation coefficients as separate data.frame and csv 
@@ -134,7 +137,7 @@ dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19.csv"))
 
 
 ## open a window 
-my.windows(11,11)
+my.window(11,11)
 
 
 ## plot NMDS 
@@ -175,7 +178,37 @@ print(plot_site_density(dat, textured_kelp, site_number=6))
 
 ## invoke a single label at all x8 sites, for all transects: 
 my.window(12, 8)
-print(plot_all_sites_density(dat, green_algae))  
+print(plot_all_sites_density(dat, sugar_kelp))  
+
+
+## select select figs 
+setwd(figs)
+ggplot2::ggsave(filename = "sugar_kelp_8-sites.pdf", 
+                plot = p3, 
+                dpi = 1200, 
+                width = 12,
+                height = 8, 
+                units = "in")
+
+
+
+dat <- dat %>% select(-kelp_holdfast)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
