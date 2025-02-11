@@ -35,13 +35,16 @@ label_19 <- "data_output/active/19_labels"
 label_69 <- "data_output/active/69_labels"
 
 
+
+
 ## graphing functions 
 source(file.path(code, "data_analysis_functions.R"))
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
-spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19.csv"))
+#dat <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
+dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19.csv"))
+#spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19.csv"))
 
 ## classify as factor for color plotting
 dat$transect <- as.factor(dat$transect)
@@ -65,6 +68,10 @@ natural_scale_comm <- community * 100
 
 ## perform transformation if desired/required
 log_comm <- log.transform(natural_scale_comm) 
+
+
+## exponentiate back to the natural scale following log transform
+dat <- inverse.log.transform(dat, 9, 27)
 ## END NMDS prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -121,6 +128,11 @@ spp_scores <- save.spp(ord)
 
 
 ## plot NMDS ordinations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+setwd(label_19)
+dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19.csv"))
+
+
+
 ## open a window 
 my.windows(11,11)
 
@@ -150,6 +162,20 @@ ggplot2::ggsave(filename = "NMDS_spp_scores.pdf",
                 units = "in")
 
 ## END ordination plotting ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## kernel density plots ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## invoke a single label, at a single site, for all transects:
+my.window(8,8)
+print(plot_site_density(dat, textured_kelp, site_number=6))  
+
+
+## invoke a single label at all x8 sites, for all transects: 
+my.window(12, 8)
+print(plot_all_sites_density(dat, green_algae))  
 
 
 

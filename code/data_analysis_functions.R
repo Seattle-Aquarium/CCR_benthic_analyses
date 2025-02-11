@@ -14,6 +14,22 @@ log.transform <- function(data){
 }
 
 
+# Function to reverse the log10 transformation
+inverse.log.transform.all <- function(data){
+  num.col <- ncol(data)
+  out <- (10^data[,1:num.col]) - 1
+  return(out)
+}
+
+
+## inverse log transformation across specific cols 
+inverse.log.transform <- function(data, start_col, end_col){
+  data[, start_col:end_col] <- (10^data[, start_col:end_col]) - 1  # Apply transformation only to specified columns
+  return(data)
+}
+
+
+
 ## function to extract NMDS coordinates, bind, and save w/ metadata and comm ~~~
 save.points <- function(metadata, points, comm){
   t1 <- as.data.frame(ord$points)
@@ -33,7 +49,7 @@ save.spp <- function(ord) {
 
 
 ## function to open and record plots 
-my.windows <- function(x, y){
+my.window <- function(x, y){
   windows(x, y, record = TRUE)
 }
 
@@ -47,7 +63,7 @@ my.theme = theme(panel.grid.major = element_blank(),
                  panel.background = element_blank(), 
                  axis.line = element_line(colour = "black"),
                  axis.title=element_text(size=16),
-                 axis.text=element_blank(),
+                 axis.text=element_text(size=14),
                  plot.title = element_text(size=16))
 
 
@@ -65,6 +81,18 @@ site.cols <- c(
   "#000000"   #black 
 )
 
+
+## site labels
+site.labs <- c(
+  "1" = "Magnolia",
+  "2" = "EBM Breakwater West",
+  "3" = "EBM Breakwater Center",
+  "4" = "EBM Breakwater East",
+  "5" = "Grain Elevator",
+  "6" = "Sirens of Spring",
+  "7" = "Pocket Beach",
+  "8" = "Coast Guard Station"
+)
 
 ## plot NMDS 
 plot.NMDS <- function(data){
@@ -104,6 +132,70 @@ plot.NMDS.spp_scores <- function(data){
   
   return(p1)
 }
+
+
+
+# Function to plot density for a single site, dynamically choosing the column to visualize
+plot_site_density <- function(data, column, site_number) {
+  filtered_data <- data %>% filter(site == site_number)  # Filter for selected site
+  
+  p4 <- ggplot(filtered_data, aes(x={{column}}, fill=transect, group=transect)) +  # Use {{}} for dynamic columns
+    geom_density(alpha=0.7, position="stack") +  # Stacked density plot
+    scale_fill_viridis_d() +  # Automatically assigns colors to transects
+    scale_x_continuous(name=paste(as_label(enquo(column)), "seafloor percent coverage"), 
+                       breaks=seq(0, 100, by=20)) +  # X-axis label and tick marks every 10
+    labs(y="kernel density", fill="Transect") +  # Y-axis label
+    my.theme  # Apply custom theme
+  
+  return(p4)
+}
+
+
+## plot one label for all 8 sites 
+plot_all_sites_density <- function(data, column) {
+  # Define site labels inside the function
+  site.labs <- c(
+    "1" = "Magnolia",
+    "2" = "EBM Breakwater West",
+    "3" = "EBM Breakwater Center",
+    "4" = "EBM Breakwater East",
+    "5" = "Grain Elevator",
+    "6" = "Sirens of Spring",
+    "7" = "Pocket Beach",
+    "8" = "Coast Guard Station"
+  )
+  
+  data <- data %>%
+    mutate(site = factor(site, levels = names(site.labs), labels = site.labs))  # Ensure correct site mapping
+  
+  p <- ggplot(data, aes(x={{column}}, fill=transect, group=transect)) +  
+    geom_density(alpha=0.7, position="stack") +  
+    scale_fill_viridis_d() +  
+    scale_x_continuous(name=paste(as_label(enquo(column)), "seafloor percent coverage"), 
+                       breaks=seq(0, 100, by=20)) +  
+    labs(y="Kernel Density", fill="Transect") +  
+    my.theme +  
+    facet_wrap(~ site, nrow=2, ncol=4, scales="free_y") +  # Ensure correct facet labeling
+    theme(
+      strip.text = element_text(size = 16),#, face = "bold"),  # Facet label text size
+      axis.text.y = element_blank(),  # Remove numeric labels on y-axis
+      axis.ticks.y = element_blank(), # Remove y-axis ticks
+      legend.text = element_text(size = 16),  # Legend text size
+      legend.title = element_text(size = 16)  # Legend title size
+    )
+  
+  return(p)
+}
+
+# Example usage:
+print(plot_all_sites_density(dat, sugar_kelp))
+
+
+
+
+
+
+
 
 
 
