@@ -14,10 +14,6 @@ rm(list=ls())
 ## add libraries
 library(tidyverse)
 library(vegan)
-#library(parallel)
-#library(doParallel)
-#library(foreach)
-#library(patchwork)
 
 
 ## set working directory to home folder
@@ -27,12 +23,9 @@ getwd()
 
 ## relative file paths
 code <- "code"
-data_input <- "data_input"
-data_output <- "data_output"
 figs <- "figs"
-active <- "data_output/active"
 label_19 <- "data_output/active/19_labels"
-label_69 <- "data_output/active/69_labels"
+#label_69 <- "data_output/active/69_labels"
 
 
 
