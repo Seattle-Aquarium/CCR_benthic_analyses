@@ -1,24 +1,11 @@
-
-NMDS ordination
-- select x8 site colors
-- Magnolia black, Centennial Park reds, Elliott Bay blues, Coast Guard ____
-- add x and ylab(Axis-1) 
-- increase the size of legend labels
-- change numbers to site names
-- increase alpha on Ellipse and correlation coefficients 
-- add a box with black outline to further gray out behind spp labels
-- decrease line.width for the arrows
-- add title w/ desciptions for the x3 NMDS figs
-- ....
-
+NMDS_ordinations 
+- make warm-up code for NMDS orientation
+- resave w/ png 
+- finalize code, functions
 
 Kernel densities
 - make warm-up figs runiform(), rnormal(), etc., for PPT
-- plot category type by column for a single site
-- pick colors for all 18 categories
-- select lighter shades for diff transects within site
-- have annotation totals above each category
-- automap the plotting and saving of all 8 figs.
-- log_transform and repeat
+- resave w/ png
+- finalize code, functions
 
 
