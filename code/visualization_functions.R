@@ -31,6 +31,33 @@ divide.100 <- function(data, start_col, end_col) {
 }
 
 
+
+save_plot <- function(plot, filename, width, height) {
+  # Save as PDF
+  ggsave(filename = paste0(filename, ".pdf"), 
+         plot = plot, 
+         dpi = 1200, 
+         width = width, 
+         height = height, 
+         units = "in")
+  
+  # Save as PNG
+  ggsave(filename = paste0(filename, ".png"), 
+         plot = plot, 
+         dpi = 1200, 
+         width = width, 
+         height = height, 
+         units = "in")
+  
+  message("Saved: ", filename, ".pdf and ", filename, ".png")
+}
+
+
+
+
+
+
+
 ## plotting params ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 my.theme = theme(panel.grid.major = element_blank(),
                  panel.grid.minor = element_blank(),
@@ -43,49 +70,143 @@ my.theme = theme(panel.grid.major = element_blank(),
 
 ## specify hex codes for custom colors
 site.cols <- c(
-  "#6497b1",  #gray; site 1
+  "#000000",  #gray; site 1
   "#008080",  #teal; site 2
   "#03396c",  #dark blue; site 5
   "#7BBF6A",  #light green; site 3
-  "#3D8B37",  #dark green; site 4
+  "#FF9955",  #dark green; site 4
   "#CC6677",  #light maroon; site 6 
   "#882255",  #maroon; site 7
-  "#000000"   #black 
+  "#7A378B"   #black 
 )
 
 
 ## plot NMDS 
+## plot NMDS ordination with site labels & updated styling
 plot.NMDS <- function(data){
-  p1 <- ggplot(data=dat, aes(x=MDS1, y=MDS2)) +
-    geom_point(size=2, aes(x=MDS1, y=MDS2, color=site)) + my.theme + 
-    scale_color_manual(values=site.cols)
+  # Define site labels
+  site.labs <- c(
+    "1" = "Magnolia",
+    "2" = "EBM West",
+    "3" = "EBM Center",
+    "4" = "EBM East",
+    "5" = "Grain Elevator",
+    "6" = "Sirens Spring",
+    "7" = "Pocket Beach",
+    "8" = "Coast Guard"
+  )
+  
+  # Convert site column from numbers to factor with site names
+  data <- data %>%
+    mutate(site = factor(site, levels = names(site.labs), labels = site.labs))
+  
+  # Generate the NMDS plot
+  p1 <- ggplot(data=data, aes(x=MDS1, y=MDS2)) +
+    geom_point(size=2, aes(color=site), alpha=0.75) + my.theme +  
+    scale_color_manual(values=site.cols, name = "Urban Kelp\nsurvey site") + 
+    xlab("Axis 1") + ylab("Axis 2") + 
+    ggtitle("2D NMDS ordination of 19 percent-cover categories\nacross 1011 ROV survey images, totaling 96,365 data pts") +
+    coord_fixed() +  # Fixes aspect ratio
+    theme(
+      plot.title = element_text(size = 16, hjust = 0.5),
+      legend.position = "right",  # Keeps legend on the right
+      legend.text = element_text(size = 14),
+      legend.title = element_text(size = 16),
+      legend.key.size = unit(1, "cm"),
+      axis.title = element_text(size = 16),
+      axis.text = element_text(size = 14)
+    )
+  
   return(p1)
 }
 
 
 ## plot NMDS ellipses
 plot.NMDS.ellipses <- function(data){
-  p1 <- ggplot(data=dat, aes(x=MDS1, y=MDS2)) +
-    geom_point(size=2, alpha=0.35, aes(x=MDS1, y=MDS2, color=site)) + my.theme + 
-    stat_ellipse(linewidth=1, aes(group=site, color=site), level=0.95) +
-    scale_color_manual(values=site.cols)
+  # Define site labels
+  site.labs <- c(
+    "1" = "Magnolia",
+    "2" = "EBM West",
+    "3" = "EBM Center",
+    "4" = "EBM East",
+    "5" = "Grain Elevator",
+    "6" = "Sirens of Spring",
+    "7" = "Pocket Beach",
+    "8" = "Coast Guard Stn"
+  )
+  
+  # Convert site column from numbers to factor with site names
+  data <- data %>%
+    mutate(site = factor(site, levels = names(site.labs), labels = site.labs))
+  
+  # Generate the NMDS plot
+  p1 <- ggplot(data=data, aes(x=MDS1, y=MDS2)) +
+    geom_point(size=2, alpha=0.15, aes(color=site)) + my.theme + 
+    stat_ellipse(linewidth=1.2, aes(group=site, color=site), level=0.95) +
+    scale_color_manual(values=site.cols, name = "Urban Kelp\nsurvey site") + 
+    xlab("Axis 1") + ylab("Axis 2") + coord_fixed() + 
+    ggtitle("2D NMDS ordination of 19 percent-cover categories across\n 1011 ROV survey images, totaling 96,365 data pts") +
+    theme(
+      legend.text = element_text(size = 14),  # Increases legend text size
+      legend.title = element_text(size = 16),  # Increases & bolds legend title
+      legend.key.size = unit(1, "cm"),  # Increases legend key size
+      axis.title = element_text(size = 16),  # Increases x/y-axis title size
+      axis.text = element_text(size = 14)  # Increases tick label size
+    )
+  
   return(p1)
 }
 
 
-## plot NMDS with species correlation coefficients 
+
+## plot NMDS ordination with species correlation coefficients and outlined labels
+## plot NMDS ordination with species correlation coefficients and outlined labels
 plot.NMDS.spp_scores <- function(data){
-  p1 <- ggplot(data=dat, aes(x=MDS1, y=MDS2)) +
-    geom_point(size=2, alpha=0.35, aes(x=MDS1, y=MDS2, color=site)) + my.theme + 
-    scale_color_manual(values=site.cols) + 
-    geom_segment(data=spp_scores, linewidth=1.25,
+  # Define site labels
+  site.labs <- c(
+    "1" = "Magnolia",
+    "2" = "EBM West",
+    "3" = "EBM Center",
+    "4" = "EBM East",
+    "5" = "Grain Elevator",
+    "6" = "Sirens Spring",
+    "7" = "Pocket Beach",
+    "8" = "Coast Guard"
+  )
+  
+  # Convert site column from numbers to factor with site names
+  data <- data %>%
+    mutate(site = factor(site, levels = names(site.labs), labels = site.labs))
+  
+  # Generate the NMDS plot
+  p1 <- ggplot(data=data, aes(x=MDS1, y=MDS2)) +
+    geom_point(size=2, alpha=0.15, aes(color=site)) + my.theme + 
+    scale_color_manual(values=site.cols, name = "Urban Kelp\nsurvey site") + 
+    geom_segment(data=spp_scores, linewidth=1.0,
                  aes(x=0, y=0, xend=NMDS1, yend=NMDS2), 
                  arrow=arrow(length=unit(0.2, "cm")), color="black") +
-    geom_text(data=spp_scores, 
-              aes(x=NMDS1, y=NMDS2, label=species, 
-                  vjust=ifelse(NMDS2 >= 0, -0.5, 1.5)),  
-              hjust=0.5, 
-              size=4, color="black", fontface="bold")
+    
+    # Updated: Use geom_label() with black outline
+    geom_label(data=spp_scores, 
+               aes(x=NMDS1, y=NMDS2, label=species, 
+                   vjust=ifelse(NMDS2 >= 0, -0.5, 1.5)),  
+               hjust=0.5, 
+               size=5, color="black", fontface="bold", 
+               fill="white", label.size=0.5, label.r=unit(0.1, "lines")) + 
+    
+    xlab("Axis 1") + ylab("Axis 2") + 
+    ggtitle("NMDS ordination with species correlation coefficients") +
+    coord_fixed() +  # Fixes aspect ratio
+    theme(
+      plot.title = element_text(size = 16, hjust = 0.5),
+      legend.position = "right",  # Keeps legend on the right
+      legend.text = element_text(size = 14),
+      legend.title = element_text(size = 16),
+      legend.key.size = unit(1, "cm"),
+      axis.title = element_text(size = 16),
+      axis.text = element_text(size = 14)
+    )
+  
   return(p1)
 }
 

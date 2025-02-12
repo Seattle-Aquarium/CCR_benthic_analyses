@@ -29,7 +29,7 @@ label_19 <- "data_output/active/19_labels"
 
 ## invoke relative file path 
 dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19_natural_scale.csv"))
-
+spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"))
 
 ## classify as factor for color plotting
 dat$transect <- as.factor(dat$transect)
@@ -73,7 +73,7 @@ dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19.csv"))
 
 
 ## open a window 
-my.window(11,11)
+my.window(13,11)
 
 
 ## plot NMDS 
@@ -93,11 +93,15 @@ print(p3)
 
 ## save ordination figures as pdf
 setwd(figs)
-ggplot2::ggsave(filename = "NMDS_spp_scores.pdf", 
-                plot = p3, 
+save_plot(p1, "NMDS_ordination", width = 11, height = 8)
+
+
+
+ggplot2::ggsave(filename = "NMDS_ordination.pdf", 
+                plot = p1, 
                 dpi = 1200, 
                 width = 11,
-                height = 11, 
+                height = 8, 
                 units = "in")
 
 ## END ordination plotting ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
