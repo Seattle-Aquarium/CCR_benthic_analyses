@@ -3,6 +3,12 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
+## function to open and record plots 
+my.window <- function(x, y){
+  windows(x, y, record = TRUE)
+}
+
+
 ## function to perform a log10transform across a range of columns
 log.transform <- function(data, start_col, end_col) {
   data[, start_col:end_col] <- log10(data[, start_col:end_col] + 1)
@@ -32,7 +38,7 @@ divide.100 <- function(data, start_col, end_col) {
 
 
 
-save_plot <- function(plot, filename, width, height) {
+save.plot <- function(plot, filename, width, height) {
   # Save as PDF
   ggsave(filename = paste0(filename, ".pdf"), 
          plot = plot, 
@@ -79,9 +85,13 @@ site.cols <- c(
   "#882255",  #maroon; site 7
   "#7A378B"   #black 
 )
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-## plot NMDS 
+
+
+
+## plot NMDS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## plot NMDS ordination with site labels & updated styling
 plot.NMDS <- function(data){
   # Define site labels
@@ -158,10 +168,8 @@ plot.NMDS.ellipses <- function(data){
 }
 
 
-
 ## plot NMDS ordination with species correlation coefficients and outlined labels
-## plot NMDS ordination with species correlation coefficients and outlined labels
-plot.NMDS.spp_scores <- function(data){
+plot.NMDS.spp.scores <- function(data){
   # Define site labels
   site.labs <- c(
     "1" = "Magnolia",
@@ -209,14 +217,15 @@ plot.NMDS.spp_scores <- function(data){
   
   return(p1)
 }
+## END NMDS plots ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 
-## Kernel densities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Kernel densities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Function to plot density for a single site, dynamically choosing the column to visualize
-single.kernel <- function(data, column, site_number) {
+single.category.1.site <- function(data, column, site_number) {
   filtered_data <- data %>% filter(site == site_number)  # Filter for selected site
   p4 <- ggplot(filtered_data, aes(x={{column}}, fill=transect, group=transect)) +  # Use {{}} for dynamic columns
     geom_density(alpha=0.7, position="stack") +  # Stacked density plot
@@ -230,9 +239,9 @@ single.kernel <- function(data, column, site_number) {
 
 
 ## plot one label for all 8 sites 
-all.sites.kernel <- function(data, column) {
-  # Define site labels inside the function
-  site.labs <- c(
+single.category.8.sites <- function(data, column) {
+
+    site.labs <- c(
     "1" = "Magnolia",
     "2" = "EBM Breakwater West",
     "3" = "EBM Breakwater Center",
@@ -249,15 +258,13 @@ all.sites.kernel <- function(data, column) {
   p <- ggplot(data, aes(x={{column}}, fill=transect, group=transect)) +  
     geom_density(alpha=0.7, position="stack") +  
     scale_fill_viridis_d() +  
-    scale_x_continuous(name=paste(as_label(enquo(column)), "seafloor log10 percent coverage"), 
-                       breaks=seq(0, 2, by=0.50)) +  
+    scale_x_continuous(name=paste(as_label(enquo(column)), "seafloor percent coverage"), breaks=seq(0, 100, by=25)) +  
     labs(y="Kernel Density", fill="Transect") +  
     my.theme +  
     facet_wrap(~ site, nrow=2, ncol=4, scales="free_y") +  # Ensure correct facet labeling
     theme(
       strip.text = element_text(size = 16),#, face = "bold"),  # Facet label text size
       axis.text.y = element_blank(),
-      #axis.text.y = element_text(size=16),
       axis.ticks.y = element_blank(), # Remove y-axis ticks
       legend.text = element_text(size = 16),  # Legend text size
       legend.title = element_text(size = 16)  # Legend title size
@@ -267,10 +274,9 @@ all.sites.kernel <- function(data, column) {
 }
 
 
+## single category for all 8 sites, looped through cateogory
+all.sites <- function(data, labels, save_path = "figs", width = 10, height = 7) {
 
-
-save_all_sites_kernel <- function(data, column, width = 10, height = 7) {
-  # Define site labels inside the function
   site.labs <- c(
     "1" = "Magnolia",
     "2" = "EBM Breakwater West",
@@ -281,73 +287,16 @@ save_all_sites_kernel <- function(data, column, width = 10, height = 7) {
     "7" = "Pocket Beach",
     "8" = "Coast Guard Station"
   )
-  
-  # Ensure correct site mapping
-  data <- data %>%
+
+    data <- data %>%
     mutate(site = factor(site, levels = names(site.labs), labels = site.labs))  
   
-  # Extract the column name dynamically for filename
-  column_name <- as_label(enquo(column))
-  file_name <- paste0("8_sites_kernel_", column_name, ".pdf")
-  
-  # Generate the kernel density plot
-  p <- ggplot(data, aes(x={{column}}, fill=transect, group=transect)) +  
-    geom_density(alpha=0.7, position="stack") +  
-    scale_fill_viridis_d() +  
-    scale_x_continuous(name=paste(column_name, "seafloor percent coverage"), 
-                       breaks=seq(0, 100, by=25)) +  
-    labs(y="Kernel Density", fill="Transect") +  
-    my.theme +  
-    facet_wrap(~ site, nrow=2, ncol=4, scales="free_y") +  # Ensure correct facet labeling
-    theme(
-      strip.text = element_text(size = 16),  # Facet label text size
-      axis.text.y = element_blank(),
-      axis.ticks.y = element_blank(), # Remove y-axis ticks
-      legend.text = element_text(size = 16),  # Legend text size
-      legend.title = element_text(size = 16)  # Legend title size
-    )
-  
-  # Save the plot as a PDF with the correct filename and dynamic sizing
-  ggsave(filename = file_name, plot = p, width = width, height = height, units = "in")
-  
-  return(p)  # Return the plot in case user wants to display it
-}
-
-# Example usage: Generate and save for "sugar_kelp"
-print(save_all_sites_kernel(dat, sugar_kelp, width = 12, height = 8))
-
-
-
-
-
-
-
-save_all_categories_kernel <- function(data, labels, width = 10, height = 7) {
-  # Define site labels inside the function
-  site.labs <- c(
-    "1" = "Magnolia",
-    "2" = "EBM Breakwater West",
-    "3" = "EBM Breakwater Center",
-    "4" = "EBM Breakwater East",
-    "5" = "Grain Elevator",
-    "6" = "Sirens of Spring",
-    "7" = "Pocket Beach",
-    "8" = "Coast Guard Station"
-  )
-  
-  # Ensure correct site mapping
-  data <- data %>%
-    mutate(site = factor(site, levels = names(site.labs), labels = site.labs))  
-  
-  # Loop through each category in the list
   for (col_name in labels) {
-    # Dynamically select the column using sym()
     column_sym <- sym(col_name)
     
-    # Define filename dynamically
-    file_name <- paste0("8_sites_kernel_", col_name, ".pdf")
+    pdf_file <- file.path(save_path, paste0("8_sites_kernel_", col_name, ".pdf"))
+    png_file <- file.path(save_path, paste0("8_sites_kernel_", col_name, ".png"))
     
-    # Generate the kernel density plot
     p <- ggplot(data, aes(x = !!column_sym, fill = transect, group = transect)) +  
       geom_density(alpha = 0.7, position = "stack") +  
       scale_fill_viridis_d() +  
@@ -364,36 +313,23 @@ save_all_categories_kernel <- function(data, labels, width = 10, height = 7) {
         legend.title = element_text(size = 16)
       )
     
-    # Save each plot as a PDF
-    ggsave(filename = file_name, plot = p, width = width, height = height, units = "in")
-    
-    # Print progress message
-    message("Saved: ", file_name)
+    ggsave(filename = pdf_file, plot = p, width = width, height = height, units = "in", dpi = 1200)
+    ggsave(filename = png_file, plot = p, width = width, height = height, units = "in", dpi = 1200)
+    message("Saved: ", pdf_file, " and ", png_file)
   }
 }
 
-# Define category list
-labels <- c(
-  "sugar_kelp", "textured_kelp", "unknown",
-  "filamentous_brown", "sargassum", "other_brown_kelp",
-  "red_algae", "green_algae", "coralline_algae",
-  "kelp_bryozoan", "mobile_invert", "sessile_invert",
-  "shell_debris", "pebble", "soft_sediment",
-  "hard_substrate", "cobble", "anthro_substrate"
-)
-
 # Run the function to generate PDFs for all categories
-save_all_categories_kernel(log, labels, width = 12, height = 8)
+# save.all.categories.kernel(log, labels, width = 12, height = 8)
 
 
 
 
 
 ## plot all categories for a single site
-plot_site_density <- function(data, site_number) {
-  # Manually reorder categories to fill column-wise
-  reordered_labels <- c(
-    # Column 1
+all.categories.1.site <- function(data, site_number) {
+
+    reordered_labels <- c(
     "sugar_kelp", "red_algae", "shell_debris",
     "textured_kelp", "green_algae", "pebble",
     "unknown", "coralline_algae", "soft_sediment",
@@ -402,25 +338,20 @@ plot_site_density <- function(data, site_number) {
     "other_brown_kelp", "sessile_invert", "anthro_substrate"
   )
   
-  # Create explicit ordering to enforce column-wise filling
   category_order <- tibble(
     category = reordered_labels,
     order = 1:length(reordered_labels)  # Assign numeric order for verification
   )
   
-  # Filter data for the selected site
   filtered_data <- data %>% filter(site == site_number)
   
-  # Convert data to long format for ggplot
   long_data <- filtered_data %>%
     select(site, transect, all_of(reordered_labels)) %>%
     pivot_longer(cols = all_of(reordered_labels), names_to = "category", values_to = "value") %>%
     left_join(category_order, by = "category")  # Merge explicit ordering
   
-  # Convert category to a factor with correct order
   long_data$category <- factor(long_data$category, levels = reordered_labels)
   
-  # Plot using facet_wrap(), ensuring order fills by column
   p <- ggplot(long_data, aes(x=value, fill=transect, group=transect)) +  
     geom_density(alpha=0.7, position="stack") +  
     scale_fill_viridis_d() +  
@@ -429,7 +360,7 @@ plot_site_density <- function(data, site_number) {
     my.theme +  
     facet_wrap(~ category, nrow=6, ncol=3, scales="free_y") +  # Uses correct category order
     theme(
-      strip.text = element_text(size = 16),  # Facet label text size
+      strip.text = element_text(size = 13),  # Facet label text size
       axis.text.y = element_blank(),  # Remove y-axis numbers
       axis.ticks.y = element_blank(), # Remove y-axis ticks
       legend.text = element_text(size = 16),  # Legend text size
@@ -440,12 +371,10 @@ plot_site_density <- function(data, site_number) {
 }
 
 
+## all categories for a single site looped through all sites, pdf and pngs saved
+all.categories <- function(data, save_path = "figs", width = 10, height = 7) {
 
-
-save_all_sites_density <- function(data, width = 10, height = 7) {
-  # Manually reorder categories to fill column-wise
-  reordered_labels <- c(
-    # Column 1
+    reordered_labels <- c(
     "sugar_kelp", "red_algae", "shell_debris",
     "textured_kelp", "green_algae", "pebble",
     "unknown", "coralline_algae", "soft_sediment",
@@ -454,7 +383,6 @@ save_all_sites_density <- function(data, width = 10, height = 7) {
     "other_brown_kelp", "sessile_invert", "anthro_substrate"
   )
   
-  # Define site labels
   site.labs <- c(
     "1" = "Magnolia",
     "2" = "EBM Breakwater West",
@@ -466,23 +394,20 @@ save_all_sites_density <- function(data, width = 10, height = 7) {
     "8" = "Coast Guard Station"
   )
   
-  # Loop through all 8 sites
   for (site_number in 1:8) {
-    # Filter data for the selected site
     filtered_data <- data %>% filter(site == site_number)
     
-    # Convert data to long format for ggplot
     long_data <- filtered_data %>%
       select(site, transect, all_of(reordered_labels)) %>%
       pivot_longer(cols = all_of(reordered_labels), names_to = "category", values_to = "value") %>%
       mutate(category = factor(category, levels = reordered_labels))
     
-    # Generate the kernel density plot
     p <- ggplot(long_data, aes(x=value, fill=transect, group=transect)) +  
       geom_density(alpha=0.7, position="stack") +  
       scale_fill_viridis_d() +  
-      scale_x_continuous(name="seafloor log10(x+1) percent coverage", breaks=seq(0, 2, by=0.5)) +  
-      labs(y="Kernel Density", fill="Transect") +  
+      scale_x_continuous(name="seafloor log10(x+1) percent coverage", breaks=seq(0, 2, by=0.50)) +  
+      #scale_x_continuous(name="seafloor percent coverage", breaks=seq(0, 100, by=25)) +  
+      labs(y="kernel density", fill="transect") +  
       my.theme +  
       facet_wrap(~ category, nrow=6, ncol=3, scales="free_y") +  
       theme(
@@ -493,17 +418,19 @@ save_all_sites_density <- function(data, width = 10, height = 7) {
         legend.title = element_text(size = 16)
       )
     
-    # Define filename dynamically
-    file_name <- paste0("site_", site_number, "_kernel_log.pdf")
-    
-    # Save each plot as a PDF
-    ggsave(filename = file_name, plot = p, width = width, height = height, units = "in")
-    
-    # Print progress message
-    message("Saved: ", file_name)
+    pdf_file <- file.path(save_path, paste0("site_", site_number, "_all_categories_kernel_log.pdf"))
+    png_file <- file.path(save_path, paste0("site_", site_number, "_all_categories_kernel_log.png"))
+    ggsave(filename = pdf_file, plot = p, width = width, height = height, units = "in", dpi = 1200)
+    ggsave(filename = png_file, plot = p, width = width, height = height, units = "in", dpi = 1200)
+    message("Saved: ", pdf_file, " and ", png_file)
   }
 }
+## END of plotting kernel densities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END of functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

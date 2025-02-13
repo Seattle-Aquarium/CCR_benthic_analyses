@@ -23,13 +23,14 @@ getwd()
 ## relative file paths
 code <- "code"
 figs <- "figs"
-label_19 <- "data_output/active/19_labels"
+label_19 <- "data_output/19_labels"
 #label_69 <- "data_output/active/69_labels"
 
 
 ## invoke relative file path 
 dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19_natural_scale.csv"))
 spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"))
+dat <- dat %>% select(-kelp_holdfast)
 
 ## classify as factor for color plotting
 dat$transect <- as.factor(dat$transect)
@@ -39,7 +40,7 @@ dat$key <- as.factor(dat$key)
 
 ## graphing functions 
 source(file.path(code, "visualization_functions.R"))
-source(file.path(code, "NMDS_functions.R"))
+#source(file.path(code, "NMDS_functions.R"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -56,7 +57,7 @@ divide <- divide.100(dat, 9, 27)
 
 
 ## select log transform on a range of columns
-log <- log.transform(dat, 9, 27)
+log <- log.transform(dat, 9, 26)
 
 
 ## exponentiate back to the natural scale following log transform
@@ -67,11 +68,6 @@ test <- inverse.log.transform(log, 9, 27)
 
 
 ## plot NMDS ordinations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-setwd(label_19)
-dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19.csv"))
-
-
-
 ## open a window 
 my.window(13,11)
 
@@ -87,23 +83,13 @@ print(p2)
 
 
 ## plot NMDS and overlay species scores 
-p3 <- plot.NMDS.spp_scores(dat)
+p3 <- plot.NMDS.spp.scores(dat)
 print(p3)
 
 
 ## save ordination figures as pdf
 setwd(figs)
-save_plot(p1, "NMDS_ordination", width = 11, height = 8)
-
-
-
-ggplot2::ggsave(filename = "NMDS_ordination.pdf", 
-                plot = p1, 
-                dpi = 1200, 
-                width = 11,
-                height = 8, 
-                units = "in")
-
+save.plot(p1, "NMDS_ordination", width = 11, height = 8)
 ## END ordination plotting ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -111,36 +97,38 @@ ggplot2::ggsave(filename = "NMDS_ordination.pdf",
 
 
 ## kernel density plots ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## create a window to plot
+my.window(12,8)
+
+
 ## invoke a single label, at a single site, for all transects:
-my.window(8,8)
-print(single.kernel(log, textured_kelp, site_number=6))  
+print(single.category.1.site(dat, textured_kelp, site_number=6))  
 
 
 ## invoke a single label at all x8 sites, for all transects: 
-my.window(12, 8)
-print(all.sites.kernel(dat, textured_kelp))  
+print(single.category.8.sites(dat, textured_kelp))  
 
 
 ## print a single label at all x8 sites, for all labels, and save the pdfs
-save_all_categories_kernel(log, labels, width = 12, height = 8)
+getwd()
+setwd("../")
+all.sites(dat, labels, save_path = "figs", width = 12, height = 8)
 
 
 
 
 ## prep to print all labels for a single site 
-my.window(15, 20)
-dat <- dat %>% select(-kelp_holdfast)
+my.window(12, 16)
 
 
 ## print all labels for x1 site
-print(plot_site_density(dat, site_number=2))
+print(all.categories.1.site(dat, site_number=4))
 
 
-## print all labels for x1 site, for all sites, and save all pdfs
-save_all_sites_density(log, width = 15, height = 20)
-
-
-
+## save pdf, png for all categories across each site 
+getwd()
+setwd("../")
+all.categories(log, save_path = "figs", width = 9, height = 13)
 
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
