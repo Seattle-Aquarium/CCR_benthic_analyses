@@ -28,18 +28,14 @@ code <- "code"
 data_input <- "data_input"
 data_output <- "data_output"
 figs <- "figs"
-#urban_kelp <- "data_output/urban_kelp"
-active <- "data_output/active"
 
 
 ## source functions 
-source(file.path(code, "wrangle_and_revise_functions.R"))
+source(file.path(code, "wrangle_data_functions.R"))
 
 
 dat <- read.csv(file.path(data_input, "original_CoralNet_2022_dataset.csv"))
 dat <- create.SU(dat)
-#dat <- read.csv(file.path(urban_kelp, "2022_revised_categories.csv"))
-#dat <- read.csv(file.path(urban_kelp, "2022_all_current_photos.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -57,7 +53,7 @@ cols_to_remove <- c("alt_smooth", "SimDIS")
 
 
 ## Invoke the function to delete columns between "SU" and "Points", but preserve certain columns
-dat <- delete_columns(dat, "SU", "Points", cols_to_preserve)
+dat <- delete.columns(dat, "SU", "Points", cols_to_preserve)
 
 
 ## specific columns to remove, if present
@@ -102,9 +98,9 @@ duplicates <- T3.3 %>% count(SU) %>% filter(n > 1)
 
 
 ## save relevant files ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#write.csv(T3.1, file.path(active, "T3-1_69_labels.csv"), row.names=FALSE)
-#write.csv(T3.2, file.path(active, "T3-2_69_labels.csv"), row.names=FALSE)
-#write.csv(T3.3, file.path(active, "T3-3_69_labels.csv"), row.names=FALSE)
+write.csv(T3.1, file.path(active, "T3-1_69_labels.csv"), row.names=FALSE)
+write.csv(T3.2, file.path(active, "T3-2_69_labels.csv"), row.names=FALSE)
+write.csv(T3.3, file.path(active, "T3-3_69_labels.csv"), row.names=FALSE)
 ## END row sampling and file save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -117,9 +113,9 @@ T3.3_totals <- annotation.sum(T3.3, "cup_SI", "surf_SG")
 
 
 ## save csvs 
-#write.csv(T3.1_totals, file.path(active, "T3-1_69_labels_totals.csv"), row.names=FALSE)
-#write.csv(T3.2_totals, file.path(active, "T3-2_69_labels_totals.csv"), row.names=FALSE)
-#write.csv(T3.3_totals, file.path(active, "T3-3_69_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.1_totals, file.path(active, "T3-1_69_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.2_totals, file.path(active, "T3-2_69_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.3_totals, file.path(active, "T3-3_69_labels_totals.csv"), row.names=FALSE)
 ## END category sums ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
 
 
