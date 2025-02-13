@@ -27,9 +27,6 @@ code <- "code"
 data_input <- "data_input"
 data_output <- "data_output"
 figs <- "figs"
-urban_kelp <- "data_output/Port_of_Seattle"
-annotation_sum <- "data_output/annotation_summary"
-active <- "data_output/active"
 
 
 ## source functions 
@@ -43,41 +40,26 @@ dat <- read.csv(file.path(active, "T3-3_69_labels.csv"))
 
 
 
-## invoke functions - data cleaning / processing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## split off metadata and save, if desired
-#metadata <- split_dataframe(dat, 27)
-
-
-## Columns to preserve
-#cols_to_preserve <- c("SU", "key", "site", "transect", "img_name") # Columns to preserve
-
-
-## Invoke the function to delete columns between "SU" and "Points", but preserve certain columns
-#dat <- delete_columns(dat, "SU", "Points", cols_to_preserve)
-## END data processing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
 
 ## revise CoralNet categories ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## preserve original dataframe
 revised <- dat
 
 ## smooth brown algae categories
-revised <- revise_categories(revised, c("coland_KE", 
+revised <- revise.categories(revised, c("coland_KE", 
                                         "X5rib_KE", 
                                         "cabb_KE"), 
-                             "textured_kelp")
+                              "textured_kelp")
 
 ## smooth brown algae categories
-revised <- revise_categories(revised, c("X3rib_KE", 
+revised <- revise.categories(revised, c("X3rib_KE", 
                                         "broad_KE", 
                                         "split_KE", 
                                         "strap_KE"), 
                              "smooth_kelp")
 
 ## other brown kelp categories
-revised <- revise_categories(revised, c("cord_KE", 
+revised <- revise.categories(revised, c("cord_KE", 
                                         "DiRet_KE", 
                                         "feath_KE", 
                                         "LaEph_KE", 
@@ -88,7 +70,7 @@ revised <- revise_categories(revised, c("cord_KE",
                              "other_brown_kelp")
 
 ## revise red algae categories
-revised <- revise_categories(revised, c("filam_RE", 
+revised <- revise.categories(revised, c("filam_RE", 
                                         "bushy_RE", 
                                         "branch_RE", 
                                         "leaf_RE", 
@@ -96,18 +78,18 @@ revised <- revise_categories(revised, c("filam_RE",
                              "red_algae")
 
 ## revise shell categories
-revised <- revise_categories(revised, c("shell_SU", 
+revised <- revise.categories(revised, c("shell_SU", 
                                         "lgshell_SU"), 
                              "shell")
 
 ## revise hard substrate categories
-revised <- revise_categories(revised, c("reef_SU", 
+revised <- revise.categories(revised, c("reef_SU", 
                                         "bould_SU", 
                                         "concr_SU"), 
                              "hard_substrate")
 
 ## revise hard substrate categories
-revised <- revise_categories(revised, c("glass_SU", 
+revised <- revise.categories(revised, c("glass_SU", 
                                         "metal_SU", 
                                         "poly_SU", 
                                         "wood_SU", 
@@ -115,12 +97,12 @@ revised <- revise_categories(revised, c("glass_SU",
                              "anthro_substrate")
 
 ## revise eelgrass, surfgrass categories
-revised <- revise_categories(revised, c("eel_SG", 
+revised <- revise.categories(revised, c("eel_SG", 
                                         "surf_SG"),
                              "seagrass")
 
 ## revise sessile invert categories
-revised <- revise_categories(revised, c("HydBry_SI", 
+revised <- revise.categories(revised, c("HydBry_SI", 
                                         "cup_SI", 
                                         "CucEmb_SI", 
                                         #"mussel_SI", 
@@ -134,7 +116,7 @@ revised <- revise_categories(revised, c("HydBry_SI",
 
 
 ## revise mobile invert categories
-revised <- revise_categories(revised, c("CaCuc_MS", 
+revised <- revise.categories(revised, c("CaCuc_MS", 
                                         "crab_MS", 
                                         "gastro_MS", 
                                         "fish_MS", 
@@ -143,7 +125,7 @@ revised <- revise_categories(revised, c("CaCuc_MS",
                              "mobile_invert")
 
 ## revise encrusting algae categories
-revised <- revise_categories(revised, c("art_CA",
+revised <- revise.categories(revised, c("art_CA",
                                         "crust_CA"), 
                              "coralline_algae")
 ## END category revision ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -157,19 +139,19 @@ revised <- revise_categories(revised, c("art_CA",
 
 
 ## rename cols
-revised <- rename_columns(revised, "SS_SU", "soft_sediment")
-revised <- rename_columns(revised, "cob_SU", "cobble")
-revised <- rename_columns(revised, "peb_SU", "pebble")
-revised <- rename_columns(revised, "KelpBry_SI", "kelp_bryozoan")
-revised <- rename_columns(revised, "UNIdent", "unknown")
-revised <- rename_columns(revised, "filam_BR", "filamentous_brown")
-revised <- rename_columns(revised, "FlatAci_BR", "acid_weed")
-revised <- rename_columns(revised, "fucus_BR", "rock_weed")
-revised <- rename_columns(revised, "holdfas_BR", "kelp_holdfast")
-revised <- rename_columns(revised, "sargass_BR", "sargassum")
-revised <- rename_columns(revised, "sugar_KE", "sugar_kelp")
-revised <- rename_columns(revised, "shell", "shell_debris")
-revised <- rename_columns(revised, "ulva_GR", "green_algae")
+revised <- rename.columns(revised, "SS_SU", "soft_sediment")
+revised <- rename.columns(revised, "cob_SU", "cobble")
+revised <- rename.columns(revised, "peb_SU", "pebble")
+revised <- rename.columns(revised, "KelpBry_SI", "kelp_bryozoan")
+revised <- rename.columns(revised, "UNIdent", "unknown")
+revised <- rename.columns(revised, "filam_BR", "filamentous_brown")
+revised <- rename.columns(revised, "FlatAci_BR", "acid_weed")
+revised <- rename.columns(revised, "fucus_BR", "rock_weed")
+revised <- rename.columns(revised, "holdfas_BR", "kelp_holdfast")
+revised <- rename.columns(revised, "sargass_BR", "sargassum")
+revised <- rename.columns(revised, "sugar_KE", "sugar_kelp")
+revised <- rename.columns(revised, "shell", "shell_debris")
+revised <- rename.columns(revised, "ulva_GR", "green_algae")
 
 
 ## print revised names
@@ -179,7 +161,7 @@ revised <- rename_columns(revised, "ulva_GR", "green_algae")
 
 
 ## delete extraneous columns
-revised <- remove_columns(revised, c("StriAci_BR", 
+revised <- remove.columns(revised, c("StriAci_BR", 
                                      "undaria_BR", 
                                      "unk_BR", 
                                      "giant_KE", 
@@ -190,14 +172,14 @@ revised <- remove_columns(revised, c("StriAci_BR",
 
 
 ## remove columns with very few observations
-revised <- remove_columns(revised, c("rock_weed", 
+revised <- remove.columns(revised, c("rock_weed", 
                                      "acid_weed", 
                                      "smooth_kelp", 
                                      "seagrass"))
 
 
 ## delete any final extraneous columns 
-revised <- remove_columns(revised, c("bivalve_SI"))
+revised <- remove.columns(revised, c("bivalve_SI"))
 
 
 ## new ordering of columns
