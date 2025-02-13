@@ -24,25 +24,15 @@ getwd()
 ## relative file paths
 code <- "code"
 figs <- "figs"
-label_19 <- "data_output/active/19_labels"
-#label_69 <- "data_output/active/69_labels"
-
-
+label_19 <- "data_output/19_labels"
 
 
 ## graphing functions 
-source(file.path(code, "data_analysis_functions.R"))
+source(file.path(code, "NMDS_functions.R"))
 
 
 ## invoke relative file path 
 dat <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
-#dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19_natural_scale.csv"))
-#spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19.csv"))
-
-## classify as factor for color plotting
-dat$transect <- as.factor(dat$transect)
-dat$site <- as.factor(dat$site)
-dat$key <- as.factor(dat$key)
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
