@@ -24,13 +24,15 @@ getwd()
 code <- "code"
 figs <- "figs"
 label_19 <- "data_output/19_labels"
-#label_69 <- "data_output/active/69_labels"
+label_69 <- "data_output/69_labels"
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19_natural_scale.csv"))
-spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"))
+dat <- read.csv(file.path(label_19, "diversity_T3-2_19_natural_scale.csv"))
+dat <- read.csv(file.path(label_69, "diversity_T3-2_69_natural_scale.csv"))
 dat <- dat %>% select(-kelp_holdfast)
+spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"))
+
 
 ## classify as factor for color plotting
 dat$transect <- as.factor(dat$transect)
@@ -115,8 +117,6 @@ setwd("../")
 all.sites(dat, labels, save_path = "figs", width = 12, height = 8)
 
 
-
-
 ## prep to print all labels for a single site 
 my.window(12, 16)
 
@@ -129,6 +129,24 @@ print(all.categories.1.site(dat, site_number=4))
 getwd()
 setwd("../")
 all.categories(log, save_path = "figs", width = 9, height = 13)
+## END kernel density plots of categories ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+## kernel density plots of spp diversity metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## create a window to plot
+my.window(12,8)
+
+
+## print spp diversity 
+print(diversity.8.sites(dat, Shannon))
+
+
+## END kernel density plots of spp diversity ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
 
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

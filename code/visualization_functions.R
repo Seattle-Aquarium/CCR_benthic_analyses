@@ -430,6 +430,53 @@ all.categories <- function(data, save_path = "figs", width = 10, height = 7) {
 
 
 
+## plot one label for all 8 sites 
+diversity.8.sites <- function(data, column) {
+  
+  site.labs <- c(
+    "1" = "Magnolia",
+    "2" = "EBM Breakwater West",
+    "3" = "EBM Breakwater Center",
+    "4" = "EBM Breakwater East",
+    "5" = "Grain Elevator",
+    "6" = "Sirens of Spring",
+    "7" = "Pocket Beach",
+    "8" = "Coast Guard Station"
+  )
+  
+  # Ensure correct site mapping
+  data <- data %>%
+    mutate(site = factor(site, levels = names(site.labs), labels = site.labs))
+  
+  # Calculate median x-values for each transect within each site
+  median_values <- data %>%
+    group_by(site, transect) %>%
+    summarize(median_x = median({{column}}, na.rm = TRUE), .groups = "drop")
+  
+  # Plot
+  p <- ggplot(data, aes(x={{column}}, fill=transect, group=transect)) +  
+    geom_density(alpha=0.7, position="stack") +  
+    geom_vline(data=median_values, aes(xintercept=median_x, color=transect), linetype="solid", size=1.1) +  # Add vertical lines
+    scale_fill_viridis_d() +  
+    scale_color_viridis_d(guide="none") +  # Ensure vertical lines match transect colors
+    scale_x_continuous(name=paste(as_label(enquo(column)), "seafloor percent coverage"), breaks=seq(0, 2, by=1)) +  
+    labs(y="Kernel Density", fill="Transect") +  
+    my.theme +  
+    facet_wrap(~ site, nrow=2, ncol=4, scales="free_y") +  
+    theme(
+      strip.text = element_text(size = 16),
+      axis.text.y = element_blank(),
+      axis.ticks.y = element_blank(),
+      legend.text = element_text(size = 16),
+      legend.title = element_text(size = 16)
+    )
+  
+  return(p)
+}
+
+
+
+
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## END of functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
