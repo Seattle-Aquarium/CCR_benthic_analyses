@@ -29,7 +29,7 @@ label_69 <- "data_output/69_labels"
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_69, "ord_pts_T3-2_19_natural_scale.csv"))
+dat <- read.csv(file.path(label_19, "ord_pts_T3-2_19_natural_scale.csv"))
 dat <- read.csv(file.path(label_69, "T3-2_69_labels.csv"))
 dat <- dat %>% select(-kelp_holdfast)
 #spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"))
@@ -52,11 +52,12 @@ source(file.path(code, "diversity_metrics_functions.R"))
 ## diversity metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## partition data for diversity metrics
 metadata <- dat[, c(1:7)]
-community <- dat[, c(8:76)]
+community <- dat[, c(9:26)]
 
 
 ## return 0-1% to natural scale, if necessary  
-community <- community * 100
+#community <- community * 100
+#dat <- multiply.100(dat, 9, 77)
 
 
 ## calculate species diversity metrics
@@ -64,7 +65,7 @@ diversity <- calculate.diversity(community)
 
 
 ## combine diversity and dat to create new dat
-dat <- insert.df(diversity, dat, 7)
+dat <- insert.df(diversity, dat, 9)
 
 
 ## list of cols to remove
@@ -79,7 +80,8 @@ dat <- delete.cols(dat, cols_to_remove)
 cols_to_rename <- c(
   "Species_Richness" = "richness",
   "Shannon_Index" = "Shannon",
-  "Simpson_Index" = "Simpson"
+  "Simpson_Index" = "Simpson",
+  "Pielou_Evenness" = "Pielou"
 )
 
 
@@ -88,7 +90,7 @@ dat <- rename.cols(dat, cols_to_rename)
 
 
 ## save csv files
-write.csv(dat, file.path(label_69, "diversity_T3-2_19_natural_scale.csv"), row.names=FALSE)
+write.csv(dat, file.path(label_19, "diversity_T3-2_19_natural_scale.csv"), row.names=FALSE)
 ## END diversity metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

@@ -6,18 +6,21 @@
 
 
 
-## calculate diversity metrics
+
+## Calculate diversity metrics
 calculate.diversity <- function(species_data) {
   
-  species_richness <- rowSums(species_data > 0)  # Count number of nonzero species
+  species_richness <- rowSums(species_data > 0)  # Count nonzero species
   shannon_index <- diversity(species_data, index = "shannon")
   simpson_index <- diversity(species_data, index = "simpson")
+  pielou_evenness <- ifelse(species_richness > 1, shannon_index / log(species_richness), NA)
   
   diversity_df <- data.frame(
     Site = rownames(species_data),
     Species_Richness = species_richness,
     Shannon_Index = shannon_index,
-    Simpson_Index = simpson_index
+    Simpson_Index = simpson_index,
+    Pielou_Evenness = pielou_evenness  # New column for Pielou’s J
   )
   
   return(diversity_df)
@@ -46,6 +49,12 @@ rename.cols <- function(df, rename_list) {
   return(df)
 }
 
+
+## Function to multiple by 100
+multiply.100 <- function(data, start_col, end_col) {
+  data[, start_col:end_col] <- data[, start_col:end_col] * 100
+  return(data)
+}
 
 
 
