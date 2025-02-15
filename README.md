@@ -28,12 +28,12 @@ This repo contains code and data to perform analyses and visualizations of perce
 - output folder for various figures 
 
 <p float="center">
-  <img src="figs/photos/NMDS_ellipses.PNG" width="500" height="400" />
-  <img src="figs/photos/NMDS_spp_corr.PNG" width="500" height="400" />
+  <img src="figs/photos/NMDS_ellipses.PNG" width="400" height="300" />
+  <img src="figs/photos/NMDS_spp_corr.PNG" width="400" height="300" />
  </p>
 
  <p float="center">
-  <img src="figs/photos/sargassum.PNG" width="700" height="400" />
+  <img src="figs/photos/sargassum.PNG" width="550" height="300" />
  </p>
 
  
