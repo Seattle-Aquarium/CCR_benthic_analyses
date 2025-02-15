@@ -27,4 +27,7 @@ This repo contains code and data to perform analyses and visualizations of perce
 ### figs
 - output folder for various figures 
 
-
+<p float="center">
+  <img src="figs/photos/NMDS_ellipses.png" width="400" height="300" />
+  <img src="figs/photos/NMDS_spp_corr.png" width="400" height="300" />
+ </p>
