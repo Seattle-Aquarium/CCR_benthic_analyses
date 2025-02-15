@@ -14,11 +14,17 @@ This repo contains code and data to perform analyses and visualizations of perce
 - `wrangle_data_functions.R`: function to wrangle data. 
 
 ### data_input
-- `2022_multiple_transects.csv` contains the raw output from CoralNet merged with our ROV telemetry file, containing 1479 images and 118,000 annotations in CoralNet.
 - `bull_kelp_stipes.csv` contains bull kelp stipe and bundle counts from the forward-facing video.
+- `CoralNet_2022_annotations.csv` raw CoralNet annotation output. 
+- `original_CoralNet_2022_dataset.csv` contains output from CoralNet annotations merged with our ROV telemetry file, containing 1479 images and 118,000 annotations in CoralNet.
+
  
 ### data_output
-- ...
-- ...
+- `19_labels`: output folder with processed .csv files, ordinations, and other output files for our revised 19 CoralNet categories. 
+- `69_labels`: output folder with processed .csv files, ordinations, and other output files for our original 69 CoralNet categories. 
+- `naming_key.txt`: txt file with naming conventions.
+
+### figs
+- output folder for various figures 
 
 
