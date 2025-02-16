@@ -23,7 +23,7 @@ getwd()
 ## relative file paths
 code <- "code"
 figs <- "figs"
-label_18 <- "data_output/19_labels"
+label_19 <- "data_output/19_labels"
 label_69 <- "data_output/69_labels"
 
 
