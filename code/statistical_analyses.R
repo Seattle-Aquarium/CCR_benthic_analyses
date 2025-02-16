@@ -24,7 +24,7 @@ getwd()
 code <- "code"
 figs <- "figs"
 label_19 <- "data_output/19_labels"
-label_69 <- "data_output/69_labels"
+laORL things!!bel_69 <- "data_output/69_labels"
 
 
 ## invoke relative file path 
@@ -54,4 +54,4 @@ source(file.path(code, "NMDS_functions.R"))
 
 
 
-## statty GORL things!! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## statty things ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
