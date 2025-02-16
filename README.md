@@ -1,4 +1,4 @@
-# CCR benthic taxa analyses
+# CCR benthic analyses
 This repo contains code and data to perform analyses and visualizations of percent-cover data exported from CoralNet. 
 
 ### code
