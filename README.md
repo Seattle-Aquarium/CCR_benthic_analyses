@@ -1,4 +1,4 @@
-# CCR benthic taxa analyses
+# CCR benthic analyses
 This repo contains code and data to perform analyses and visualizations of percent-cover data exported from CoralNet. 
 
 ### code
@@ -28,6 +28,12 @@ This repo contains code and data to perform analyses and visualizations of perce
 - output folder for various figures 
 
 <p float="center">
-  <img src="figs/photos/NMDS_ellipses.png" width="400" height="300" />
-  <img src="figs/photos/NMDS_spp_corr.png" width="400" height="300" />
+  <img src="figs/photos/NMDS_ellipses.PNG" width="400" height="300" />
+  <img src="figs/photos/NMDS_spp_corr.PNG" width="400" height="300" />
  </p>
+
+ <p float="center">
+  <img src="figs/photos/sargassum.PNG" width="550" height="300" />
+ </p>
+
+ 
