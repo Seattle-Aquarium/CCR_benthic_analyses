@@ -3,11 +3,33 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-## startup
+
+
+
+## startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(magick)
 
 
-# List of category folders
+## source functions
+source("patch_aggregation_functions.R")
+
+
+## set working directory to home folder
+setwd("../")
+getwd()
+
+
+## relative path to image patches 
+patches <- "data_output/patches/labels"
+output <- "data_output/patches/figs"
+## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## invoke functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## use the following names to create individual plots with the first function
 category_list <- c(
   "BR_sarg",
   "KE_5rib",
@@ -26,71 +48,22 @@ category_list <- c(
   "RE_CCA",
   "RE_branch",
   "RE_bush",
+  "RE_leaf",
   "GR_ulva",
   "RE_fil",
   "SI_kelpBry"
 )
 
 
-## Function to create and save an image grid for a single category
-single.category.image.grid <- function(image_folder, n = 36, grid_dims = c(6, 6)) {
-  
-  folder_name <- basename(image_folder)  
-  image_files <- list.files(image_folder, full.names = TRUE, pattern = "\\.(jpg|png|jpeg)$", ignore.case = TRUE)
-  selected_images <- sample(image_files, n)
-  images <- lapply(selected_images, image_read)
-  
-  final_image <- image_montage(image_join(images), 
-                               tile = paste(grid_dims[2], "x", grid_dims[1], sep = ""), 
-                               geometry = "224x224+2+2")
-  
-  png_file <- paste0(folder_name, ".png")
-  pdf_file <- paste0(folder_name, ".pdf")
-  image_write(final_image, path = png_file, format = "png")
-  pdf(pdf_file, width = grid_dims[2] * 2, height = grid_dims[1] * 2)  
-  plot(final_image)  
-  dev.off()
-  
-  print(paste("Image grid saved as:", png_file, "and", pdf_file))
-}
+## create a single grid image
+single.category.image.grid(category = "SU_cob", n = 36, grid_dims = c(6, 6))
 
 
-## invoke function
-single.category.image.grid(image_folder = "KE_stipe", n = 100, grid_dims = c(8, 12))
-
-
-
-
-
-## function to create and save an image grid for multiple categories
-create.image.grid <- function(image_folder, n = 36, grid_dims = c(6, 6)) {
-  
-  folder_name <- basename(image_folder)  
-  image_files <- list.files(image_folder, full.names = TRUE, pattern = "\\.(jpg|png|jpeg)$", ignore.case = TRUE)
-  selected_images <- sample(image_files, n)
-  images <- lapply(selected_images, image_read)
-  
-  final_image <- image_montage(image_join(images), 
-                               tile = paste(grid_dims[2], "x", grid_dims[1], sep = ""), 
-                               geometry = "224x224+2+2")
-  
-  png_file <- paste0(folder_name, ".png")
-  pdf_file <- paste0(folder_name, ".pdf")
-  image_write(final_image, path = png_file, format = "png")
-  pdf(pdf_file, width = grid_dims[2] * 2, height = grid_dims[1] * 2)  
-  plot(final_image)  
-  dev.off()
-  
-  print(paste("Image grid saved as:", png_file, "and", pdf_file))
-}
-
-
-# Loop through each category in category_list and apply the function
+## Loop through each category in category_list and create all grid images
 for (category in category_list) {
-  create.image.grid(image_folder = category, n = 36, grid_dims = c(6, 6))
+  create.image.grid(category = category, n = 36, grid_dims = c(6, 6))
 }
-
-
+## END function invocation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
