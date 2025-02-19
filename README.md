@@ -11,8 +11,6 @@ Most R scripts that involve longer workflows include a separate script that we `
  <img src="data_output/patches/figs/RE_branch.png" width="250" height="250" />
 </p>
 
-
-
 ### code
 - `wrangle_data.R`: modify the raw CoralNet annotation output, merge with ROV telemetry metadata, and save it prior to further processing. 
 - `revise_categories.R`: modify the percent-cover categories within an exported CoralNet dataset.  
@@ -37,7 +35,7 @@ Most R scripts that involve longer workflows include a separate script that we `
 
 <p float="center">
   <img src="figs/photos/NMDS_ellipses.PNG" width="400" height="300" />
-  <img src="figs/photos/NMDS_spp_corr.PNG" width="400" height="300" />
+  <img src="figs/photos/NMDS_spp_scores.png" width="400" height="300" />
  </p>
 
  <p float="center">
