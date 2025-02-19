@@ -28,10 +28,9 @@ label_69 <- "data_output/69_labels"
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_19, "diversity_T3-2_19_natural_scale.csv"))
-dat <- read.csv(file.path(label_69, "diversity_T3-2_69_natural_scale.csv"))
-dat <- dat %>% select(-kelp_holdfast)
-spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"))
+dat <- read.csv(file.path(label_19, "diversity_ordination_19_labels.csv"))
+#dat <- read.csv(file.path(label_69, "diversity_T3-2_69_natural_scale.csv"))
+spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_labels.csv"))
 
 
 ## classify as factor for color plotting
@@ -91,7 +90,7 @@ print(p3)
 
 ## save ordination figures as pdf
 setwd(figs)
-save.plot(p1, "NMDS_ordination", width = 11, height = 8)
+save.plot(p3, "NMDS_spp_scores", width = 11, height = 8)
 ## END ordination plotting ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

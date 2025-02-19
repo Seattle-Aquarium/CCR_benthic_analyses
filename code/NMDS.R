@@ -66,7 +66,7 @@ dat <- inverse.log.transform(dat, 9, 27)
 
 
 ## perform NMDS and save output ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ord <- metaMDS(comm = natural_scale_comm, 
+ord <- metaMDS(comm = community, 
                distance="bray", 
                k=2, 
                min = 1000, 
@@ -77,7 +77,7 @@ ord <- metaMDS(comm = natural_scale_comm,
 
 ## save the ordination 
 setwd(label_19)
-save(ord, file="ord_T3-2_19_natural_scale.rda")
+save(ord, file="ord_T3-2_19.rda")
 load(file.path(label_19, "ord_T3-2_19_natural_scale.rda"))
 
 
@@ -98,7 +98,7 @@ stressplot(ord)
 
 ## NMDS ordination coordinates and spp scores saved as data frame ~~~~~~~~~~~~~~
 ## save ord point into data frame for plotting, additional analyses
-dat <- save.points(metadata, ord$points, natural_scale_comm)
+dat <- save.points(metadata, ord$points, community)
 
 
 ## save species correlation coefficients as separate data.frame and csv 
@@ -106,8 +106,8 @@ spp_scores <- save.spp(ord)
 
 
 ## save csv files
-write.csv(dat, file.path(label_19, "ord_pts_T3-2_19_natural_scale.csv"), row.names=FALSE)
-write.csv(spp_scores, file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"), row.names=FALSE)
+write.csv(dat, file.path(label_19, "diversity_ord_pts_T3-2_19_labels.csv"), row.names=FALSE)
+write.csv(spp_scores, file.path(label_19, "spp_scores_T3-2_19_labels.csv"), row.names=FALSE)
 ## END extract and save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -188,21 +188,6 @@ pairwise_results <- pairwise_permanova_manual(dist_matrix, "site", metadata)
 
 # View results
 print(pairwise_results)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
