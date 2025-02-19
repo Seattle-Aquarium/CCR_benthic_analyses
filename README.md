@@ -6,10 +6,11 @@ This repository contains code and files necessary to work with our ROV survey im
 Most R scripts that involve longer workflows include a separate script that we `source()`. For example, the main `NMDS.R` script we use to perform multivariate analyses invokes `source(NMDS_functions.R)` to run. These `..._functions.R` scripts are not noted separately below, but can be found within `..\code` alongside all other scripts. 
 
 <p float="center">
- <img src="data_output/patches/figs/KE_holdfas.png" width="250" height="250" />
- <img src="data_output/patches/figs/GR_ulva_36.png" width="250" height="250" />
+ <img src="data_output/patches/figs/KE_holdfas.png" width="250" height="250" />&nbsp;&nbsp;&nbsp;
+ <img src="data_output/patches/figs/GR_ulva_36.png" width="250" height="250" />&nbsp;&nbsp;&nbsp;
  <img src="data_output/patches/figs/RE_branch.png" width="250" height="250" />
 </p>
+
 
 
 ### code
