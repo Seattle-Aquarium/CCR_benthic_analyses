@@ -7,7 +7,7 @@ Most R scripts that involve longer workflows include a separate script that we `
 
 <p float="center">
  <img src="data_output/patches/figs/KE_holdfas.png" width="250" height="250" />&nbsp;&nbsp;&nbsp;
- <img src="data_output/patches/figs/GR_ulva_36.png" width="250" height="250" />&nbsp;&nbsp;&nbsp;
+ <img src="data_output/patches/figs/GR_ulva.png" width="250" height="250" />&nbsp;&nbsp;&nbsp;
  <img src="data_output/patches/figs/RE_branch.png" width="250" height="250" />
 </p>
 
