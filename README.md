@@ -1,5 +1,17 @@
 # CCR benthic analyses
-This repo contains code and data to perform analyses and visualizations of percent-cover data exported from CoralNet. 
+
+### overview 
+This repository contains code, ROV survey imagery patches used to train computer vision models, and percent-cover and abundance data extracted from the manual annotation of those models. Furthermore, we also host code to perform a variety of data analysis tasks, including multivariate analyses of community structure, calculation of a variety of diversity metrics, and statistical analyses. 
+
+Most R scripts that involve longer workflows include a separate script that we `source()`. For example, the main `NMDS.R` script we use to perform multivariate analyses invokes `source(NMDS_functions.R)` to run. 
+
+<p float="center">
+ <img src="data_output/patches/figs/GR_ulva_36.png" width="250" height="250" />
+ <img src="data_output/patches/figs/KE_holdfas.png" width="250" height="250" />
+ <img src="data_output/patches/figs/RE_branch.png" width="250" height="250" />
+</p>
+
+
 
 ### code
 - `diversity_metrics.R`: calculate species richness and the Shannon-Weiner diversity metric, Stimpson's diveristy metric, and Peilou's evenness, used in conjunction with the Shannon-Weiner matric. 
