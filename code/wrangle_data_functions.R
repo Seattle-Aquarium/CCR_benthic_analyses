@@ -6,6 +6,13 @@ front.ofthe.line <- function(data){
 }
 
 
+## function to rename columns
+rename.columns <- function(data, old, new) {
+  names(data)[names(data) %in% old] <- new
+  return(data)
+}
+
+
 ## function to create a unique key identifier combining site and transect info
 create.key <- function(data){
   data$key <- data$site
@@ -100,9 +107,31 @@ annotation.sum <- function(data, first.col, last.col){
   df <- as.data.frame(t(df))
   df <- tibble::rownames_to_column(df, var = "category")
   colnames(df)[2] <- "total_annotations"
-  df <- df %>%
-    mutate(across(where(is.numeric), ~ . * 100))
   return(df)
 }
+
+
+## calculate the range of depth values 
+calculate.depth.spans <- function(dat) {
+
+  dat$depth <- dat$depth * -1
+  
+  dat <- dat %>%
+    group_by(site) %>%
+    mutate(depth_site_span = max(depth, na.rm = TRUE) - min(depth, na.rm = TRUE)) %>%
+    ungroup()
+  
+  dat <- dat %>%
+    group_by(site, transect) %>%
+    mutate(depth_transect_span = max(depth, na.rm = TRUE) - min(depth, na.rm = TRUE)) %>%
+    ungroup()
+  
+  dat <- front.ofthe.line(dat)
+  dat <- front.ofthe.line(dat)
+  
+  return(dat)
+}
+
+
 
 

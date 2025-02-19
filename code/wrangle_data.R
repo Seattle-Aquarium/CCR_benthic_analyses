@@ -28,6 +28,7 @@ code <- "code"
 data_input <- "data_input"
 data_output <- "data_output"
 figs <- "figs"
+label_69 <- "data_output/69_labels"
 
 
 ## source functions 
@@ -48,8 +49,18 @@ dat <- create.SU(dat)
 
 
 ## Columns to preserve
-cols_to_preserve <- c("SU", "key", "site", "transect", "img_name") # Columns to preserve
-cols_to_remove <- c("alt_smooth", "SimDIS")
+cols_to_preserve <- c("SU", 
+                      "key", 
+                      "site", 
+                      "transect", 
+                      "depth", 
+                      "avg_dist", 
+                      "sim_x", 
+                      "sim_y", 
+                      "img_name")
+
+cols_to_remove <- c("alt_smooth", 
+                    "SimDIS")
 
 
 ## Invoke the function to delete columns between "SU" and "Points", but preserve certain columns
@@ -58,6 +69,16 @@ dat <- delete.columns(dat, "SU", "Points", cols_to_preserve)
 
 ## specific columns to remove, if present
 dat <- dat[, !names(dat) %in% cols_to_remove]
+
+
+## calculate range of depth spans
+dat <- calculate.depth.spans(dat)
+
+
+## list of column names to change 
+old.names <- c("avg_dist", "sim_x", "sim_y")
+new.names <- c("altitude", "GPS_x", "GPS_y")
+dat <- rename.columns(dat, old.names, new.names)
 ## END metadata cleanup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -72,6 +93,24 @@ dat <- calculate.percent(dat, cup_SI, surf_SG, 2)
 ## add total percent column at front of data.frame - check that sums to 1 
 dat$sum <- rowSums(select(dat, cup_SI:surf_SG))
 dat <- front.ofthe.line(dat)
+
+
+## list of cols to re-order
+cols.list <- c("SU", 
+               "key",
+               "site", 
+               "transect", 
+               "depth", 
+               "depth_site_span", 
+               "depth_transect_span",
+               "altitude",
+               "GPS_x",
+               "GPS_y",
+               "img_name")
+
+
+## reorder columns of metadata
+dat <- reorder.cols(dat, cols.list)
 ## END percent-cover calculation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -80,27 +119,27 @@ dat <- front.ofthe.line(dat)
 
 ## reduce to key transects of interest ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 T3.1 <- dat %>% filter(transect %in% c("1", "2", "3"))
-count_rows(T3.1, "key")
+count.rows(T3.1, "key")
 
 
 ## sample down to 50 per transect, or retain all rows if nrow <50
 T3.2 <- sample.down(T3.1, "key", 50)
-count_rows(test.T3, "key")
+count.rows(T3.2, "key")
 
 
 ## only retain transects with at least 50 photos. 
-T3.3 <- sample.down.filtered(T3, "key", 50)
-count_rows(second.test.T3, "key")
+T3.3 <- sample.down.filtered(T3.2, "key", 50)
+count.rows(T3.3, "key")
 
 
 ## test to make sure the sampling didn't generate any repeat rows
-duplicates <- T3.3 %>% count(SU) %>% filter(n > 1)
+duplicates <- T3.2 %>% count(SU) %>% filter(n > 1)
 
 
 ## save relevant files ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-write.csv(T3.1, file.path(active, "T3-1_69_labels.csv"), row.names=FALSE)
-write.csv(T3.2, file.path(active, "T3-2_69_labels.csv"), row.names=FALSE)
-write.csv(T3.3, file.path(active, "T3-3_69_labels.csv"), row.names=FALSE)
+write.csv(T3.1, file.path(label_69, "T3-1_69_labels.csv"), row.names=FALSE)
+write.csv(T3.2, file.path(label_69, "T3-2_69_labels.csv"), row.names=FALSE)
+write.csv(T3.3, file.path(label_69, "T3-3_69_labels.csv"), row.names=FALSE)
 ## END row sampling and file save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -113,9 +152,9 @@ T3.3_totals <- annotation.sum(T3.3, "cup_SI", "surf_SG")
 
 
 ## save csvs 
-write.csv(T3.1_totals, file.path(active, "T3-1_69_labels_totals.csv"), row.names=FALSE)
-write.csv(T3.2_totals, file.path(active, "T3-2_69_labels_totals.csv"), row.names=FALSE)
-write.csv(T3.3_totals, file.path(active, "T3-3_69_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.1_totals, file.path(label_69, "T3-1_69_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.2_totals, file.path(label_69, "T3-2_69_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.3_totals, file.path(label_69, "T3-3_69_labels_totals.csv"), row.names=FALSE)
 ## END category sums ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
 
 

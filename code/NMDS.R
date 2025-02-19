@@ -32,7 +32,7 @@ source(file.path(code, "NMDS_functions.R"))
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
+dat <- read.csv(file.path(label_19, "diversity_T3-2_19_labels.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -41,8 +41,8 @@ dat <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
 
 ## prep and run NMDS analysis ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## partition metadata and the community matrix
-metadata <- dat[, c(1:6)]
-community <- dat[, c(7:25)]
+metadata <- dat[, c(1:14)]
+community <- dat[, c(15:32)]
 
 
 ## return percentages to natural scale
@@ -109,6 +109,99 @@ spp_scores <- save.spp(ord)
 write.csv(dat, file.path(label_19, "ord_pts_T3-2_19_natural_scale.csv"), row.names=FALSE)
 write.csv(spp_scores, file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"), row.names=FALSE)
 ## END extract and save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## PERMANOVA ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## classify as factor for color plotting
+dat$transect <- as.factor(dat$transect)
+dat$site <- as.factor(dat$site)
+dat$key <- as.factor(dat$key)
+
+
+## partition metadata and the community matrix
+metadata <- dat[, c(1:10)]
+community <- dat[, c(11:29)]
+
+
+## compute a distance matrix
+dist_matrix <- vegdist(community, method = "bray")
+
+
+## run PERMANOVA
+permanova <- adonis2(dist_matrix ~ site, data = metadata, permutations = 999)
+
+
+# Print results
+print(permanova)
+
+
+# Check for homogeneity of dispersion
+dispersion_test <- betadisper(dist_matrix, metadata$site)
+anova(dispersion_test)  # If p < 0.05, dispersion is significantly different
+
+# Visualize dispersion
+plot(dispersion_test)
+
+
+## pairwise site-site tests
+pairwise_permanova_manual <- function(dist_matrix, grouping_factor, data, permutations = 999) {
+  # Get unique levels of the factor (e.g., sites)
+  levels_list <- unique(data[[grouping_factor]])
+  
+  # Create empty dataframe to store results
+  results <- data.frame(Comparison = character(), R2 = numeric(), F.Model = numeric(), p.value = numeric(), stringsAsFactors = FALSE)
+  
+  # Loop through all pairs of levels
+  for (i in 1:(length(levels_list) - 1)) {
+    for (j in (i + 1):length(levels_list)) {
+      group1 <- levels_list[i]
+      group2 <- levels_list[j]
+      
+      # Subset metadata and distance matrix for just the two groups
+      subset_data <- data[data[[grouping_factor]] %in% c(group1, group2), ]
+      subset_dist <- as.matrix(dist_matrix)[rownames(subset_data), rownames(subset_data)]
+      
+      # Run PERMANOVA with reformulated formula
+      test_result <- adonis2(as.dist(subset_dist) ~ reformulate(grouping_factor), data = subset_data, permutations = permutations)
+      
+      # Store results
+      results <- rbind(results, data.frame(
+        Comparison = paste(group1, "vs", group2),
+        R2 = test_result$R2[1],
+        F.Model = test_result$F[1],
+        p.value = test_result$`Pr(>F)`[1]
+      ))
+    }
+  }
+  
+  # Adjust p-values for multiple comparisons (Bonferroni correction)
+  results$p.adj <- p.adjust(results$p.value, method = "bonferroni")
+  
+  return(results)
+}
+
+# Run pairwise PERMANOVA by site
+pairwise_results <- pairwise_permanova_manual(dist_matrix, "site", metadata)
+
+# View results
+print(pairwise_results)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

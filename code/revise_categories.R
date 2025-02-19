@@ -24,17 +24,16 @@ getwd()
 
 ## relative file paths
 code <- "code"
-data_input <- "data_input"
-data_output <- "data_output"
-figs <- "figs"
+label_69 <- "data_output/69_labels"
+label_19 <- "data_output/19_labels"
 
 
 ## source functions 
-source(file.path(code, "wrangle_and_revise_functions.R"))
+source(file.path(code, "revise_categories_functions.R"))
 
 
 ## read in .csv 
-dat <- read.csv(file.path(active, "T3-3_69_labels.csv"))
+dat <- read.csv(file.path(label_69, "T3-3_69_labels.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -180,10 +179,22 @@ revised <- remove.columns(revised, c("rock_weed",
 
 ## delete any final extraneous columns 
 revised <- remove.columns(revised, c("bivalve_SI"))
+revised <- remove.columns(revised, c("kelp_holdfast"))
 
 
 ## new ordering of columns
-new.order <- c("sum", "SU", "key", "site", "transect", "img_name",
+new.order <- c("SU", 
+               "key", 
+               "site", 
+               "transect", 
+               "depth", 
+               "depth_site_span",
+               "depth_transect_span",
+               "altitude", 
+               "GPS_x", 
+               "GPS_y", 
+               "img_name",
+               
                "soft_sediment",
                "shell_debris",
                "cobble",
@@ -192,7 +203,6 @@ new.order <- c("sum", "SU", "key", "site", "transect", "img_name",
                "anthro_substrate",
                "unknown",
                "filamentous_brown",
-               "kelp_holdfast",
                "sargassum",
                "sugar_kelp",
                "green_algae",
@@ -216,26 +226,27 @@ revised <- revised %>% select(all_of(new.order))
 
 
 ## save data
-write.csv(revised, file.path(active, "T3-3_19_labels.csv"), row.names = FALSE)
+write.csv(revised, file.path(label_19, "T3-3_19_labels.csv"), row.names = FALSE)
 ## END column revision ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 ## calculate category sums and save as separate files ~~~~~~~~~~~~~~~~~~~~~~~ ##
-T3.1 <- read.csv(file.path(active, "T3-1_19_labels.csv"))
-T3.2 <- read.csv(file.path(active, "T3-2_19_labels.csv"))
+T3.1 <- read.csv(file.path(label_19, "T3-1_19_labels.csv"))
+T3.2 <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
+T3.3 <- read.csv(file.path(label_19, "T3-3_19_labels.csv"))
 
 
-
+## calculate the total number of annotations per dataframe
 T3.1_totals <- annotation.sum(T3.1, "soft_sediment", "mobile_invert")
 T3.2_totals <- annotation.sum(T3.2, "soft_sediment", "mobile_invert")
-T3.3_totals <- annotation.sum(revised, "soft_sediment", "mobile_invert")
+T3.3_totals <- annotation.sum(T3.3, "soft_sediment", "mobile_invert")
 
 
 ## save csvs 
-write.csv(T3.1_totals, file.path(active, "T3-1_19_labels_totals.csv"), row.names=FALSE)
-write.csv(T3.2_totals, file.path(active, "T3-2_19_labels_totals.csv"), row.names=FALSE)
-write.csv(T3.3_totals, file.path(active, "T3-3_19_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.1_totals, file.path(label_19, "T3-1_19_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.2_totals, file.path(label_19, "T3-2_19_labels_totals.csv"), row.names=FALSE)
+write.csv(T3.3_totals, file.path(label_19, "T3-3_19_labels_totals.csv"), row.names=FALSE)
 ## END category sums ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
 
 

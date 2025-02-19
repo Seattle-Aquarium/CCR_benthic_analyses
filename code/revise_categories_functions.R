@@ -15,6 +15,14 @@ remove.characters <- function(df, column_name, direction, num_chars) {
 }
 
 
+## function to reorder columns in a dataframe
+reorder.cols <- function(data, cols) {
+  other_cols <- setdiff(names(data), cols)
+  data <- data[, c(cols, other_cols)]
+  return(data)
+}
+
+
 ## function to bring new column to the [1] position 
 front.ofthe.line <- function(data){
   num.col <- ncol(data)
@@ -74,8 +82,8 @@ remove.columns <- function(df, columns_to_delete) {
 ## function that uses previous two functions to edit categories
 revise.categories <- function(data, category_list, new_column){
   new_category <- category_list
-  data <- combine_columns(data, new_category, new_column)
-  data <- remove_columns(data, new_category)
+  data <- combine.columns(data, new_category, new_column)
+  data <- remove.columns(data, new_category)
   return(data)
 }
 
