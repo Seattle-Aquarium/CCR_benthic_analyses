@@ -36,6 +36,33 @@ insert.df <- function(df_A, df_B, position) {
 }
 
 
+## filter sites
+filter.sites <- function(df) {
+  sites_to_keep <- c(2, 3, 4, 5, 6, 7)
+  filtered_df <- df[df$site %in% sites_to_keep, ]
+  return(filtered_df)
+}
+
+
+## function to insert a single column from a dataframe anywhere
+move.col <- function(df, col, pos) {
+  cols <- names(df)
+  cols <- cols[cols != col]
+  if (pos < 1) pos <- 1
+  if (pos > length(cols) + 1) pos <- length(cols) + 1
+  new_order <- append(cols, col, after = pos - 1)
+  df <- df[, new_order]
+  return(df)
+}
+
+
+## function to round a column off by X decimal points
+decimal.round <- function(df, col, X) {
+  df[[col]] <- round(df[[col]], digits = X)
+  return(df)
+}
+
+
 ## function to remove unnecessary columns
 delete.cols <- function(df, columns_to_remove) {
   df <- df[, !(colnames(df) %in% columns_to_remove), drop = FALSE]

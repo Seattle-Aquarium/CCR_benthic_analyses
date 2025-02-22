@@ -92,6 +92,55 @@ sum <- sum_total_obs(filtered, "key", "AN_large", "SS_ochre")
 
 
 
+dat$sugar_textured_ratio <- (dat$sugar_kelp+1) / (dat$textured_kelp+1)
+
+
+p1 <- ggplot(dat, aes(x=key, y=sugar_textured_ratio)) +
+  geom_point()
+print(p1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## END SCRIPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

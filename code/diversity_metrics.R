@@ -29,7 +29,7 @@ label_69 <- "data_output/69_labels"
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_69, "diversity_69_labels_VIAME.csv"))
+dat <- read.csv(file.path(label_19, "diversity_19_labels_VIAME.csv"))
 #dat <- read.csv(file.path(label_69, "T3-2_69_labels.csv"))
 #spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"))
 
@@ -85,6 +85,67 @@ dat <- rename.cols(dat, cols_to_rename)
 
 ## add col for location
 dat <- specify.location(dat)
+## END diversity calculations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## calculate ratio of taxa ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+## calculate kelp ratio
+dat$kelp_ratio <- (dat$sugar_kelp+1) / (dat$textured_kelp+1)
+
+
+## calculate flipped kelp ratio 
+dat$flipped_kelp_ratio <- (dat$textured_kelp+1) / (dat$sugar_kelp+1)
+
+
+## calculate substrate ratio #1 
+dat$substrate_ratio <- (dat$pebble+1) / (dat$hard_substrate+1)
+
+
+## calculate substrate ratio #2 
+dat$substrate_ratio_2 <- (dat$pebble+1 + dat$shell_debris+1) / (dat$hard_substrate+1)
+
+
+## pebble + shell_debris
+dat$pebble_shell <- dat$pebble + dat$shell_debris
+
+
+## substrate + CCA
+dat$hard_substrate_CCA <- dat$hard_substrate + dat$coralline_algae
+
+
+## round off the decimal pts
+dat <- decimal.round(dat, "kelp_ratio", 1)
+dat <- decimal.round(dat, "flipped_kelp_ratio", 1)
+dat <- decimal.round(dat, "substrate_ratio_2", 1)
+dat <- decimal.round(dat, "substrate_ratio_2", 1)
+
+
+
+## move column to front of taxa section of dataframe
+dat <- move.col(dat, "kelp_ratio", 18)
+dat <- move.col(dat, "flipped_kelp_ratio", 19)
+dat <- move.col(dat, "substrate_ratio", 19)
+dat <- move.col(dat, "substrate_ratio_2", 20)
+dat <- move.col(dat, "pebble_shell", 22)
+dat <- move.col(dat, "hard_substrate_CCA", 23)
+
+
+
+## filter data 
+test <- filter.sites(dat)
+
+
+## END ratio calculation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+plot(test$hard_substrate, test$flipped_kelp_ratio)
+
+plot(test$kelp_ratio, test$flipped_kelp_ratio)
 
 
 
