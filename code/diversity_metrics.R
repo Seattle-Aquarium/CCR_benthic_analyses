@@ -29,8 +29,8 @@ label_69 <- "data_output/69_labels"
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_19, "T3-2_19_labels.csv"))
-dat <- read.csv(file.path(label_69, "T3-2_69_labels.csv"))
+dat <- read.csv(file.path(label_69, "diversity_69_labels_VIAME.csv"))
+#dat <- read.csv(file.path(label_69, "T3-2_69_labels.csv"))
 #spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"))
 
 
@@ -50,13 +50,8 @@ source(file.path(code, "diversity_metrics_functions.R"))
 
 ## diversity metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## partition data for diversity metrics
-metadata <- dat[, c(1:11)]
-community <- dat[, c(12:29)]
-
-
-## return 0-1% to natural scale, if necessary  
-#community <- community * 100
-#dat <- multiply.100(dat, 9, 77)
+metadata <- dat[, c(1:16)]
+community <- dat[, c(15:105)]
 
 
 ## calculate species diversity metrics
@@ -68,7 +63,7 @@ dat <- insert.df(diversity, dat, 11)
 
 
 ## list of cols to remove
-cols_to_remove <- c("SU", "Site")
+cols_to_remove <- c("Site", "Shannon", "Simpson", "richness", "Pielou")
 
 
 ## thin out columns
@@ -88,8 +83,14 @@ cols_to_rename <- c(
 dat <- rename.cols(dat, cols_to_rename)
 
 
+## add col for location
+dat <- specify.location(dat)
+
+
+
+
 ## save csv files
-write.csv(dat, file.path(label_69, "diversity_T3-2_69_labels.csv"), row.names=FALSE)
+write.csv(dat, file.path(label_69, "diversity_69_labels_VIAME.csv"), row.names=FALSE)
 ## END diversity metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

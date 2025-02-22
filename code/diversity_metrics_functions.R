@@ -57,6 +57,28 @@ multiply.100 <- function(data, start_col, end_col) {
 }
 
 
+## function to bring new column to the [1] position 
+front.ofthe.line <- function(data){
+  num.col <- ncol(data)
+  data <- data[c(num.col, 1:num.col-1)]
+  return(data)
+}
+
+
+## function to create a new column of data re: location
+specify.location <- function(data) {
+  data <- data %>%
+    mutate(location = case_when(
+      site %in% c(2, 3, 4) ~ "Elliott_Bay_Marina",
+      site %in% c(5, 6, 7) ~ "Centennial_Park",
+      site %in% c(1, 8) ~ "other",
+      TRUE ~ NA_character_  # Ensures no unexpected values remain
+    ))
+  
+  data <- front.ofthe.line(data)
+  return(data)
+}
+
 
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
