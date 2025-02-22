@@ -24,7 +24,8 @@ getwd()
 code <- "code"
 figs <- "figs"
 label_19 <- "data_output/19_labels"
-label_69 <- "data_output/69_labels"
+transects <- "figs/19_labels/ordinations/transects" 
+sites <- "figs/19_labels/ordinations/sites"
 
 
 ## invoke relative file path 
@@ -83,6 +84,25 @@ p2 <- plot.NMDS.ellipses(dat)
 print(p2)
 
 
+## plot subset of ellipses
+p2.5 <- plot.select.ellipses(dat, highlight_sites = c("1", "6", "7", "8", "2", "3", "4"))
+print(p2.5)
+save.plot(p2.5, "NMDS_ellipse_1-6-7-8", width = 11, height = 8)
+
+
+## plot and save all ellipses separately
+plot.NMDS.by.site(dat, save_path = sites, width = 11, height = 8, axis_offset = 0.25)
+
+
+## plot NMDS transects 
+p2.75 <- plot.NMDS.transects(dat, highlight_site = c("6"))
+print(p2.75)
+
+
+## plot and save all transects
+plot.NMDS.transects.all(dat, transects, width = 11, height = 8)
+
+
 ## plot NMDS and overlay species scores 
 p3 <- plot.NMDS.spp.scores(dat)
 print(p3)
@@ -104,7 +124,7 @@ my.window(12,8)
 
 ## invoke a single label, at a single site, for all transects:
 print(single.category.1.site(dat, textured_kelp, site_number=6))  
-
+depth_site_span
 
 ## invoke a single label at all x8 sites, for all transects: 
 print(single.category.8.sites(dat, textured_kelp))  
@@ -139,12 +159,18 @@ my.window(12,8)
 
 
 ## print spp diversity 
-print(diversity.8.sites(dat, Shannon))
-
-
+print(diversity.8.sites(dat, Simpson))
 ## END kernel density plots of spp diversity ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+t1 <- ggplot(data = dat, aes(x=sugar_kelp, y=Simpson)) +
+  geom_point() + my.theme + xlim(0,100) + ylim(0,1) +
+  geom_smooth()
+print(t1)
 
 
 

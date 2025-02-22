@@ -118,7 +118,7 @@ plot.NMDS <- function(data){
     ggtitle("2D NMDS ordination of 19 percent-cover categories\nacross 1011 ROV survey images, totaling 96,365 data pts") +
     coord_fixed() +  # Fixes aspect ratio
     theme(
-      plot.title = element_text(size = 16, hjust = 0.5),
+      plot.title = element_text(size = 16),
       legend.position = "right",  # Keeps legend on the right
       legend.text = element_text(size = 14),
       legend.title = element_text(size = 16),
@@ -166,6 +166,278 @@ plot.NMDS.ellipses <- function(data){
   
   return(p1)
 }
+
+
+
+## plot NMDS ellipses with multiple site selection (by number)
+plot.select.ellipses <- function(data, highlight_sites){
+  # Define site labels
+  site.labs <- c(
+    "1" = "Magnolia",
+    "2" = "EBM West",
+    "3" = "EBM Center",
+    "4" = "EBM East",
+    "5" = "Grain Elevator",
+    "6" = "Sirens of Spring",
+    "7" = "Pocket Beach",
+    "8" = "Coast Guard Stn"
+  )
+  
+  data <- data %>%
+    mutate(site = factor(site, levels = names(site.labs), labels = site.labs))
+   highlight_site_names <- site.labs[highlight_sites]
+  
+  if (any(is.na(highlight_site_names))) {
+    stop("Invalid site numbers provided. Must be one or more of: ", paste(names(site.labs), collapse = ", "))
+  }
+  
+  site.cols.named <- setNames(site.cols, site.labs)
+  data <- data %>%
+    mutate(point_color = ifelse(site %in% highlight_site_names, as.character(site), "gray"),
+           point_alpha = ifelse(site %in% highlight_site_names, 1, 0.15))  # Lower alpha for other points
+  
+  site_colors <- site.cols.named  # Copy original colors with site names
+  site_colors["gray"] <- "gray"   # Add gray for non-highlighted sites
+  
+  p1 <- ggplot(data=data, aes(x=MDS1, y=MDS2)) +
+    geom_point(size=2, aes(color=point_color, alpha=point_alpha)) + 
+    scale_color_manual(values = site_colors, name = "Urban Kelp\nsurvey site") +  # Single scale
+    scale_alpha_identity() +  # Use alpha directly from data
+    stat_ellipse(data = data %>% filter(site %in% highlight_site_names), 
+                 aes(group = site, color = site), linewidth = 1.2, level = 0.95) +
+    xlab("Axis 1") + ylab("Axis 2") + coord_fixed() + 
+    ggtitle("2D NMDS ordination of 19 percent-cover categories across\n 1011 ROV survey images, totaling 96,365 data pts") +
+    my.theme +
+    theme(
+      legend.text = element_text(size = 14),
+      legend.title = element_text(size = 16),
+      legend.key.size = unit(1, "cm"),
+      axis.title = element_text(size = 16),
+      axis.text = element_text(size = 14)
+    )
+  
+  return(p1)
+}
+
+
+## 
+plot.NMDS.by.site <- function(data, save_path = "figs/19_labels/ordinations/sites", width = 8, height = 6, axis_offset = 0.3) {
+  # Define site labels (now using numbers)
+  site.labs <- c(
+    "1" = "Magnolia",
+    "2" = "EBM West",
+    "3" = "EBM Center",
+    "4" = "EBM East",
+    "5" = "Grain Elevator",
+    "6" = "Sirens of Spring",
+    "7" = "Pocket Beach",
+    "8" = "Coast Guard Stn"
+  )
+  
+  # Ensure site column is a factor with numeric labels
+  data <- data %>%
+    mutate(site = factor(site, levels = names(site.labs)))
+  
+  site.cols.named <- setNames(site.cols, names(site.labs))  # Use site numbers as names
+  
+  # Ensure the save directory exists
+  if (!dir.exists(save_path)) {
+    dir.create(save_path, recursive = TRUE)
+    message("Created directory: ", save_path)
+  }
+  
+  # Define fixed x and y limits across all figures
+  xlims <- range(data$MDS1, na.rm = TRUE) + c(-axis_offset, axis_offset)
+  ylims <- range(data$MDS2, na.rm = TRUE) + c(-axis_offset, axis_offset)
+  
+  xbreaks <- seq(floor(xlims[1]), ceiling(xlims[2]), by = 0.5)
+  ybreaks <- seq(floor(ylims[1]), ceiling(ylims[2]), by = 0.5)
+  
+  # Iterate over each site and create separate plots
+  for (site_num in names(site.labs)) {
+    message("Processing site: ", site_num)
+    
+    # Filter data for the specific site
+    site_data <- data %>% filter(site == site_num)
+    
+    # Assign colors: Highlighted site retains color, other sites remain gray
+    data <- data %>%
+      mutate(point_color = ifelse(site == site_num, as.character(site), "gray"),
+             point_alpha = ifelse(site == site_num, 1, 0.15))  # Lower alpha for other sites
+    
+    site_colors <- c(site.cols.named, "gray" = "gray")
+    
+    p <- ggplot(data, aes(x = MDS1, y = MDS2)) +
+      geom_point(size = 2, aes(color = point_color, alpha = point_alpha)) + 
+      scale_color_manual(values = site_colors, name = "Site",
+                         breaks = names(site.labs),  # Ensure all site numbers are in legend
+                         labels = names(site.labs)) +  # Use site numbers instead of names
+      scale_alpha_identity() + 
+      stat_ellipse(data = site_data, aes(group = site, color = site), linewidth = 1.2, level = 0.95) +
+      coord_fixed(ratio = 1, xlim = xlims, ylim = ylims, expand = FALSE) +  # Maintain aspect ratio
+      scale_x_continuous(breaks = xbreaks, name = "Axis 1") +
+      scale_y_continuous(breaks = ybreaks, name = "Axis 2") +
+      ggtitle(paste0("2D NMDS ordination for Site ", site_num)) +
+      my.theme +
+      theme(
+        legend.text = element_text(size = 14),  # Fixed text size
+        legend.title = element_text(size = 16),
+        legend.key.size = unit(1.5, "cm"),  # Lock legend key size
+        legend.spacing.y = unit(0.5, "cm"),  # Fixed vertical spacing
+        legend.box.margin = margin(10, 10, 10, 10),  # Fixes legend box size
+        legend.position = "right",  # Keep legend in the same position
+        legend.box = "vertical",  # Keep legend layout consistent
+        axis.title = element_text(size = 16),
+        axis.text = element_text(size = 14),
+        plot.title = element_text(size = 18)
+      ) +
+      guides(color = guide_legend(ncol = 1))  # Keeps legend in a single-column format
+    
+    # Save plots
+    pdf_path <- file.path(save_path, paste0("NMDS_Site_", site_num, ".pdf"))
+    png_path <- file.path(save_path, paste0("NMDS_Site_", site_num, ".png"))
+    
+    ggsave(filename = pdf_path, plot = p, width = width, height = height)
+    ggsave(filename = png_path, plot = p, width = width, height = height, dpi = 300)
+    
+    message("Saved plots for site: ", site_num)
+  }
+  
+  message("All plots saved successfully.")
+}
+
+
+
+
+
+## Fix NMDS plot consistency across axes and legends, ensuring ellipses fit
+plot.NMDS.transects <- function(data, highlight_site){
+  # Define site labels
+  site.labs <- c(
+    "1" = "Magnolia",
+    "2" = "EBM West",
+    "3" = "EBM Center",
+    "4" = "EBM East",
+    "5" = "Grain Elevator",
+    "6" = "Sirens of Spring",
+    "7" = "Pocket Beach",
+    "8" = "Coast Guard Stn"
+  )
+  
+  # Convert site column from numbers to factor with site names
+  data <- data %>%
+    mutate(site = factor(site, levels = names(site.labs), labels = site.labs))
+  
+  # Ensure the highlight_site is in the correct format
+  if (!(highlight_site %in% names(site.labs))) {
+    stop("Invalid site number. Must be one of: ", paste(names(site.labs), collapse = ", "))
+  }
+  
+  # Convert site number to site name
+  highlight_site_name <- site.labs[highlight_site]
+  
+  # Extract unique transects for the selected site
+  unique_transects <- unique(data$transect[data$site == highlight_site_name])
+  
+  # Assign pre-defined colors for 2 or 3 transects
+  transect_colors <- if (length(unique_transects) == 2) {
+    c("#a43fa6", "#3f7fc3")  # Purple & Blue
+  } else {
+    c("#a43fa6", "#3f7fc3", "#d6a900")  # Purple, Blue, Yellow
+  }
+  
+  # Name the color vector using the transect IDs
+  transect_colors <- setNames(transect_colors[1:length(unique_transects)], unique_transects)
+  
+  # Modify colors: Transects get unique colors, all other sites are gray
+  data <- data %>%
+    mutate(point_color = ifelse(site == highlight_site_name, as.character(transect), "gray"),
+           point_alpha = ifelse(site == highlight_site_name, 1, 0.15))  # Lower alpha for other points
+  
+  # Add gray for non-highlighted sites
+  transect_colors["gray"] <- "gray"
+  
+  # Determine fixed axis limits based on the full dataset
+  xlims <- range(data$MDS1, na.rm = TRUE) + c(-0.45, 0.3)  # Adds buffer to avoid cutoff
+  ylims <- range(data$MDS2, na.rm = TRUE) + c(-0.3, 0.3)  # Adds buffer to avoid cutoff
+  
+  # Determine axis breaks in increments of 0.5
+  xbreaks <- seq(floor(xlims[1]), ceiling(xlims[2]), by = 0.5)
+  ybreaks <- seq(floor(ylims[1]), ceiling(ylims[2]), by = 0.5)
+  
+  # Generate the NMDS plot
+  p1 <- ggplot(data=data, aes(x=MDS1, y=MDS2)) +
+    geom_point(size=2, aes(color=point_color, alpha=point_alpha)) + 
+    scale_color_manual(values = transect_colors, name = "Transects") +  # Use custom transect colors
+    scale_alpha_identity() +  # Use alpha directly from data
+    stat_ellipse(data = data %>% filter(site == highlight_site_name), 
+                 aes(group = transect, color = as.factor(transect)), linewidth = 1.2, level = 0.95) +  # Ellipses per transect
+    coord_fixed(ratio = 1, xlim = xlims, ylim = ylims, expand = FALSE) +  # Maintain fixed aspect ratio & size
+    scale_x_continuous(breaks = xbreaks, name = "Axis 1") +  # Fix x-axis labels to 0.5 increments
+    scale_y_continuous(breaks = ybreaks, name = "Axis 2") +  # Fix y-axis labels to 0.5 increments
+    ggtitle(paste0("NMDS ordination highlighting transects within ", highlight_site_name)) +
+    my.theme +
+    theme(
+      legend.text = element_text(size = 16),
+      legend.title = element_text(size = 18),
+      legend.key.size = unit(1, "cm"),
+      axis.title = element_text(size = 18),
+      axis.text = element_text(size = 18),
+      plot.title = element_text(size = 20),
+      legend.position = "right",  # Fix legend position
+      legend.box = "vertical",  # Keep a consistent layout
+      legend.spacing.y = unit(0.5, "cm")  # Standardize legend spacing
+    ) +
+    guides(color = guide_legend(ncol = 1))  # Keep legend in a single-column format
+  
+  return(p1)
+}
+
+
+
+## Function to generate and save NMDS plots for all 8 sites
+plot.NMDS.transects.all <- function(df, transects, width = 7, height = 7) {
+  # Ensure input is a data frame
+  if (!inherits(df, "data.frame")) {
+    stop("Error: 'df' must be a data frame.")
+  }
+  
+  # Define site labels
+  site.labs <- c(
+    "1" = "Magnolia",
+    "2" = "EBM West",
+    "3" = "EBM Center",
+    "4" = "EBM East",
+    "5" = "Grain Elevator",
+    "6" = "Sirens of Spring",
+    "7" = "Pocket Beach",
+    "8" = "Coast Guard Stn"
+  )
+  
+  # Loop through each site and generate plots
+  for (site_num in names(site.labs)) {
+    # Generate plot
+    p <- plot.NMDS.transects(df, highlight_site = site_num)
+    
+    # Define file paths for saving
+    site_name <- gsub(" ", "_", site.labs[site_num])  # Replace spaces with underscores
+    pdf_file <- file.path(transects, paste0("NMDS_transects_", site_name, ".pdf"))
+    png_file <- file.path(transects, paste0("NMDS_transects_", site_name, ".png"))
+    
+    # Save as PDF
+    ggsave(pdf_file, plot = p, device = "pdf", width = width, height = height, units = "in", dpi = 300)
+    
+    # Save as PNG
+    ggsave(png_file, plot = p, device = "png", width = width, height = height, units = "in", dpi = 300)
+    
+    # Print confirmation message
+    message("Saved: ", pdf_file, " and ", png_file)
+  }
+}
+
+
+
+
 
 
 ## plot NMDS ordination with species correlation coefficients and outlined labels
