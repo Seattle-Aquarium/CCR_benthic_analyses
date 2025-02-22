@@ -24,6 +24,7 @@ getwd()
 ## relative file paths
 code <- "code"
 figs <- "figs"
+input <- "data_input"
 label_19 <- "data_output/19_labels"
 label_69 <- "data_output/69_labels"
 
@@ -92,23 +93,7 @@ dat <- specify.location(dat)
 
 
 ## calculate ratio of taxa ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-## calculate kelp ratio
-dat$kelp_ratio <- (dat$sugar_kelp+1) / (dat$textured_kelp+1)
-
-
-## calculate flipped kelp ratio 
-dat$flipped_kelp_ratio <- (dat$textured_kelp+1) / (dat$sugar_kelp+1)
-
-
-## calculate substrate ratio #1 
-dat$substrate_ratio <- (dat$pebble+1) / (dat$hard_substrate+1)
-
-
-## calculate substrate ratio #2 
-dat$substrate_ratio_2 <- (dat$pebble+1 + dat$shell_debris+1) / (dat$hard_substrate+1)
-
-
+## combine relevant substrate categories
 ## pebble + shell_debris
 dat$pebble_shell <- dat$pebble + dat$shell_debris
 
@@ -116,43 +101,39 @@ dat$pebble_shell <- dat$pebble + dat$shell_debris
 ## substrate + CCA
 dat$hard_substrate_CCA <- dat$hard_substrate + dat$coralline_algae
 
+## taxa ratios 
+## calculate kelp ratio
+dat$kelp_ratio <- (dat$sugar_kelp+1) / (dat$textured_kelp+1)
+
+
+## calculate flipped kelp ratio 
+dat$kelp_ratio_flipped <- (dat$textured_kelp+1) / (dat$sugar_kelp+1)
+
+
+## calculate substrate ratio #1 
+dat$substrate_ratio <- (dat$pebble+1) / (dat$hard_substrate_CCA+1)
+
+
+## calculate substrate ratio #2 
+dat$substrate_ratio_2 <- (dat$pebble_shell+1) / (dat$hard_substrate_CCA+1)
+
 
 ## round off the decimal pts
 dat <- decimal.round(dat, "kelp_ratio", 1)
-dat <- decimal.round(dat, "flipped_kelp_ratio", 1)
+dat <- decimal.round(dat, "kelp_ratio_flipped", 1)
+dat <- decimal.round(dat, "substrate_ratio", 1)
 dat <- decimal.round(dat, "substrate_ratio_2", 1)
-dat <- decimal.round(dat, "substrate_ratio_2", 1)
-
 
 
 ## move column to front of taxa section of dataframe
 dat <- move.col(dat, "kelp_ratio", 18)
-dat <- move.col(dat, "flipped_kelp_ratio", 19)
-dat <- move.col(dat, "substrate_ratio", 19)
-dat <- move.col(dat, "substrate_ratio_2", 20)
+dat <- move.col(dat, "kelp_ratio_flipped", 19)
+dat <- move.col(dat, "substrate_ratio", 20)
+dat <- move.col(dat, "substrate_ratio_2", 21)
 dat <- move.col(dat, "pebble_shell", 22)
 dat <- move.col(dat, "hard_substrate_CCA", 23)
-
-
-
-## filter data 
-test <- filter.sites(dat)
-
-
 ## END ratio calculation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-
-plot(test$hard_substrate, test$flipped_kelp_ratio)
-
-plot(test$kelp_ratio, test$flipped_kelp_ratio)
-
-
-
-
-## save csv files
-write.csv(dat, file.path(label_69, "diversity_69_labels_VIAME.csv"), row.names=FALSE)
-## END diversity metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
