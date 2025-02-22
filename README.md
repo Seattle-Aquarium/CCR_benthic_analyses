@@ -34,12 +34,12 @@ Most R scripts that involve longer workflows include a separate script that we `
 - output folder for various figures 
 
 <p float="center">
-  <img src="figs/photos/NMDS_ellipses.PNG" width="400" height="300" />
-  <img src="figs/photos/NMDS_spp_scores.png" width="400" height="300" />
+  <img src="figs/readme_images/NMDS_ellipses.PNG" width="400" height="300" />
+  <img src="figs/readme_images/NMDS_spp_scores.png" width="400" height="300" />
  </p>
 
  <p float="center">
-  <img src="figs/photos/sargassum.PNG" width="550" height="300" />
+  <img src="figs/readme_images/sargassum.PNG" width="550" height="300" />
  </p>
 
  
