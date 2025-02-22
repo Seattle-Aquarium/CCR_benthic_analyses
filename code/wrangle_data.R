@@ -29,13 +29,14 @@ data_input <- "data_input"
 data_output <- "data_output"
 figs <- "figs"
 label_69 <- "data_output/69_labels"
-
+label_19 <- "data_output/19_labels"
 
 ## source functions 
 source(file.path(code, "wrangle_data_functions.R"))
 
 
 dat <- read.csv(file.path(data_input, "original_CoralNet_2022_dataset.csv"))
+dat <- read.csv(file.path(label_19, "diversity_19_labels_VIAME.csv"))
 dat <- create.SU(dat)
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
