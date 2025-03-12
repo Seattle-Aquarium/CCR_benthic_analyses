@@ -1,3 +1,11 @@
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## functions to wrangle data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
 ## function to bring new column to the [1] position 
 front.ofthe.line <- function(data){
   num.col <- ncol(data)
@@ -113,25 +121,25 @@ annotation.sum <- function(data, first.col, last.col){
 
 ## calculate the range of depth values 
 calculate.depth.spans <- function(dat) {
-
   dat$depth <- dat$depth * -1
-  
   dat <- dat %>%
     group_by(site) %>%
     mutate(depth_site_span = max(depth, na.rm = TRUE) - min(depth, na.rm = TRUE)) %>%
     ungroup()
-  
   dat <- dat %>%
     group_by(site, transect) %>%
     mutate(depth_transect_span = max(depth, na.rm = TRUE) - min(depth, na.rm = TRUE)) %>%
     ungroup()
-  
   dat <- front.ofthe.line(dat)
   dat <- front.ofthe.line(dat)
-  
   return(dat)
 }
+## END functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END of script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

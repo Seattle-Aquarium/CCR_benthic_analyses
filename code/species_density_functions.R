@@ -1,6 +1,20 @@
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## functions to calculate species density metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
 ## drop every nth row
 drop.rows <- function(df, n) {
   df[-seq(n, nrow(df), by = n), ]
+}
+
+
+## retain every nth row
+retain.rows <- function(df, n) {
+  df[seq(n, nrow(df), by = n), ]
 }
 
 
@@ -47,6 +61,17 @@ calculate.density <- function(df, site_col, transect_col, start_col, end_col, ro
               .groups = "drop") -> density_df
   
   return(density_df)
+}
+
+
+## Function to calculate total density per transect within each site
+calculate.total.density <- function(df, site_col, transect_col, start_col, end_col, round_digits) {
+  df %>%
+    group_by(!!sym(site_col), !!sym(transect_col)) %>%
+    summarise(total_density = round(sum(across(all_of(start_col):all_of(end_col)), na.rm = TRUE) / n(), round_digits),
+              .groups = "drop") -> total_density_df
+  
+  return(total_density_df)
 }
 
 
@@ -133,9 +158,12 @@ rename.site <- function(df) {
   df$site <- factor(df$site)
   return(df)
 }
+## END functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 
-
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

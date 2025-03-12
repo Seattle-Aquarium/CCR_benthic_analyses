@@ -1,7 +1,5 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## CoralNet data processing and category editing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## wrangle data to key columns, calculate percent-cover, reduce to key columns ~
-## 2025_02_06, zhr  
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -46,7 +44,7 @@ dat <- create.SU(dat)
 
 ## clean up metadata ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## split off metadata and save, if desired
-#metadata <- split_dataframe(dat, 27)
+metadata <- split_dataframe(dat, 27)
 
 
 ## Columns to preserve

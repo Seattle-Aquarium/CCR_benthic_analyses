@@ -30,7 +30,7 @@ label_69 <- "data_output/69_labels"
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_19, "diversity_19_labels_VIAME.csv"))
+dat <- read.csv(file.path(label_19, "ratios.csv"))
 #dat <- read.csv(file.path(label_69, "T3-2_69_labels.csv"))
 #spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_natural_scale.csv"))
 
@@ -86,6 +86,18 @@ dat <- rename.cols(dat, cols_to_rename)
 
 ## add col for location
 dat <- specify.location(dat)
+
+
+## Compute median for "Shannon" and "evenness" per site and transect
+median_results <- as.data.frame(calculate_median(dat, measure_cols = c("Shannon", "Pielou")))
+
+
+## View the results
+print(median_results)
+
+
+## calculate variance
+var <- calculate_variance(dat, measure_cols = c("Shannon"))
 ## END diversity calculations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -133,7 +145,6 @@ dat <- move.col(dat, "substrate_ratio_2", 21)
 dat <- move.col(dat, "pebble_shell", 22)
 dat <- move.col(dat, "hard_substrate_CCA", 23)
 ## END ratio calculation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 
 

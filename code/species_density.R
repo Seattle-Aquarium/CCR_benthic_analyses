@@ -1,7 +1,5 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## CoralNet data processing and category editing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## wrangle data to key columns, calculate percent-cover, reduce to key columns ~
-## 2025_02_06, zhr  
+## Calculate species density metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -35,8 +33,7 @@ source(file.path(code, "species_density_functions.R"))
 
 
 ## read in data
-#dat <- read.csv(file.path(label_19, "diversity_19_labels_VIAME.csv"))
-dat <- read.csv(file.path(input, "HSIL_VIAME_2024.csv"))
+HSIL <- read.csv(file.path(input, "HSIL_VIAME_2024_v2.csv"))
 Port <- read.csv(file.path(input, "Port_VIAME_2022.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -44,30 +41,32 @@ Port <- read.csv(file.path(input, "Port_VIAME_2022.csv"))
 
 
 
-## data wrangling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dat <- rm.chars(dat, "Transect.ID", 1, "left")
-dat <- rename.columns(dat, "Transect.ID", "transect")
-dat <- rename.columns(dat, "Site.ID", "site")
-dat <- rename.columns(dat, "Name", "img_name")
-dat <- rename.site(dat)
-dat <- create.key(dat)
+## data wrangling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+HSIL <- rm.chars(HSIL, "Transect_ID", 1, "left")
+HSIL <- rename.columns(HSIL, "Transect_ID", "transect")
+HSIL <- rename.columns(HSIL, "Site_ID", "site")
+HSIL <- rename.columns(HSIL, "Img_Name", "img_name")
+HSIL <- rename.site(HSIL)
+HSIL <- create.key(HSIL)
+
 
 ## other df
-Port <- rm.chars(Port, "Transect.ID", 1, "left")
-Port <- rm.chars(Port, "Site.ID", 1, "left")
-Port <- rename.columns(Port, "Transect.ID", "transect")
-Port <- rename.columns(Port, "Site.ID", "site")
-Port <- rename.columns(Port, "Name", "img_name")
+Port <- rm.chars(Port, "Transect_ID", 1, "left")
+Port <- rm.chars(Port, "Site_ID", 1, "left")
+Port <- rename.columns(Port, "Transect_ID", "transect")
+Port <- rename.columns(Port, "Site_ID", "site")
+Port <- rename.columns(Port, "Img_Name", "img_name")
 Port <- create.key(Port)
-## END data wrangling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END wrangling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 
-## data prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## data prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## rarify data, if necessary
-dat <- drop.rows(dat, 2)
+HSIL_2 <- retain.rows(HSIL, 2)
+HSIL_3 <- retain.rows(HSIL, 3)
 
 
 ## list of transects to retain
@@ -89,78 +88,58 @@ transect_list <- c(
 
 ## output with filtered transects
 Port <- filter.transects(Port, "key", transect_list)
-## END data prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END HSILa prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 
 ## calculate summary metrics including density, sum total abundance ~~~~~~~~~~~~
-## calculate density -- run on percent-cover data
-density_CoralNet <- calculate.density(filtered, "site", "transect", "soft_sediment", "mobile_invert", 2)
-
-
-## calculate density -- run on VIAME data
-VIAME_2024 <- calculate.density(dat, "site", "transect", "SS_ochre", "SP_shiner", 3)
-VIAME_2022 <- calculate.density(Port, "site", "transect", "CR_kelp", "SP_kelp", 3)
+## calculate density -- run on VIAME HSILa
+HSIL_density_2 <- calculate.density(HSIL_2, "site", "transect", "SS_ochre", "SP_shiner", 3)
+HSIL_density_3 <- calculate.density(HSIL_3, "site", "transect", "SS_ochre", "SP_shiner", 3)
+Port_density <- calculate.density(Port, "site", "transect", "CR_kelp", "unknown", 3)
 
 
 ## total obs per each column
-total <- total.label.obs(dat, "key", "AN_large", "SS_ochre")
+total_per_label_Port <- total.label.obs(Port, "key", "CR_kelp", "unknown")
+total_per_label_HSIL <- total.label.obs(HSIL, "key", "SS_ochre", "SP_shiner")
+total_per_label_HSIL_2 <- total.label.obs(HSIL_2, "key", "SS_ochre", "SP_shiner")
+total_per_label_HSIL_3 <- total.label.obs(HSIL_3, "key", "SS_ochre", "SP_shiner")
 
 
 ## calculate sum total observations per transect
-sum <- sum_total_obs(filtered, "key", "AN_large", "SS_ochre")
+sum_total_Port <- sum_total_obs(Port, "key", "CR_kelp", "unknown")
+sum_total_HSIL_2 <- sum_total_obs(HSIL_2, "key", "SS_ochre", "SP_shiner")
+sum_total_HSIL_3 <- sum_total_obs(HSIL_3, "key", "SS_ochre", "SP_shiner")
+
+
+## calculate total density
+HSIL_total_density_2 <- calculate.total.density(HSIL_2, "site", "transect", "SS_ochre", "SP_shiner", 3)
+HSIL_total_density_3 <- calculate.total.density(HSIL_3, "site", "transect", "SS_ochre", "SP_shiner", 3)
+Port_total_density <- calculate.total.density(Port, "site", "transect", "CR_kelp", "unknown", 3)
 ## END summary calculations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 
-## calculate ratio of taxa ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## combine relevant substrate categories
-## pebble + shell_debris
-dat$pebble_shell <- dat$pebble + dat$shell_debris
+# Perform Wilcoxon signed-rank test for matched samples
+wilcox.test(HSIL_density_2$density_SS_ochre, Port_density$density_SS_ochre, paired = TRUE)
+wilcox.test(HSIL_density_3$density_SS_ochre, Port_density$density_SS_ochre, paired = TRUE)
 
 
-## substrate + CCA
-dat$hard_substrate_CCA <- dat$hard_substrate + dat$coralline_algae
-
-## taxa ratios 
-## calculate kelp ratio
-dat$kelp_ratio <- (dat$sugar_kelp+1) / (dat$textured_kelp+1)
+wilcox.test(HSIL_density_2$density_SS_leather, Port_density$density_SS_leather, paired = TRUE)
+wilcox.test(HSIL_density_3$density_SS_leather, Port_density$density_SS_leather, paired = TRUE)
 
 
-## calculate flipped kelp ratio 
-dat$kelp_ratio_flipped <- (dat$textured_kelp+1) / (dat$sugar_kelp+1)
+wilcox.test(HSIL_density_2$density_CR_kelp, Port_density$density_CR_kelp, paired = TRUE)
+wilcox.test(HSIL_density_3$density_CR_kelp, Port_density$density_CR_kelp, paired = TRUE)
 
 
-## calculate substrate ratio #1 
-dat$substrate_ratio <- (dat$pebble+1) / (dat$hard_substrate_CCA+1)
-
-
-## calculate substrate ratio #2 
-dat$substrate_ratio_2 <- (dat$pebble_shell+1) / (dat$hard_substrate_CCA+1)
-
-
-
-
-## round off the decimal pts
-dat <- decimal.round(dat, "kelp_ratio", 1)
-dat <- decimal.round(dat, "kelp_ratio_flipped", 1)
-dat <- decimal.round(dat, "substrate_ratio", 1)
-dat <- decimal.round(dat, "substrate_ratio_2", 1)
-
-
-
-## move column to front of taxa section of dataframe
-dat <- move.col(dat, "kelp_ratio", 18)
-dat <- move.col(dat, "kelp_ratio_flipped", 19)
-dat <- move.col(dat, "substrate_ratio", 20)
-dat <- move.col(dat, "substrate_ratio_2", 21)
-dat <- move.col(dat, "pebble_shell", 22)
-dat <- move.col(dat, "hard_substrate_CCA", 23)
-## END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+wilcox.test(HSIL_total_density_2$total_density, Port_total_density$total_density, paired = TRUE)
+wilcox.test(HSIL_total_density_3$total_density, Port_total_density$total_density, paired = TRUE)
+## END Wilcox signed rank test ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 

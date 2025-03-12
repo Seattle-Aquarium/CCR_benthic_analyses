@@ -6,7 +6,6 @@
 
 
 
-
 ## Calculate diversity metrics
 calculate.diversity <- function(species_data) {
   
@@ -105,6 +104,31 @@ specify.location <- function(data) {
   data <- front.ofthe.line(data)
   return(data)
 }
+
+
+## function to calculate median value of diveristy (or other) data. 
+calculate_median <- function(data, group_cols = c("site", "transect"), measure_cols) {
+  
+  result <- data %>%
+    group_by(across(all_of(group_cols))) %>%
+    summarise(across(all_of(measure_cols), median, na.rm = TRUE), .groups = "drop")
+  
+  return(result)
+}
+
+
+## function to calculate variance
+calculate_variance <- function(data, group_cols = c("site", "transect"), measure_cols) {
+  
+  result <- data %>%
+    group_by(across(all_of(group_cols))) %>%
+    summarise(across(all_of(measure_cols), var, na.rm = TRUE), .groups = "drop")
+  
+  return(result)
+}
+## END functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 
 
 

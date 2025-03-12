@@ -1,5 +1,13 @@
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## NMDS functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
 ## log base10 transformation, IF required 
-log.transform <- function(data){
+log.transform.df <- function(data){
   num.col <- ncol(data)
   out <- log10(data[,1:num.col]+1)
   return(out)
@@ -50,6 +58,7 @@ save.spp <- function(ord) {
 my.window <- function(x, y){
   windows(x, y, record = TRUE)
 }
+## end star-up functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -63,8 +72,6 @@ my.theme = theme(panel.grid.major = element_blank(),
                  axis.title=element_text(size=16),
                  axis.text=element_text(size=14),
                  plot.title = element_text(size=16))
-
-
 
 
 ## specify hex codes for custom colors
@@ -93,6 +100,7 @@ site.labs <- c(
 )
 
 
+## category labels 
 labels <- c(
   "sugar_kelp",
   "textured_kelp",
@@ -115,6 +123,7 @@ labels <- c(
   "cobble",
   "anthro_substrate"
 )
+
 
 ## plot NMDS 
 plot.NMDS <- function(data){
@@ -156,8 +165,7 @@ plot.NMDS.spp_scores <- function(data){
 }
 
 
-
-# Function to plot density for a single site, dynamically choosing the column to visualize
+## Function to plot density for a single site, dynamically choosing the column to visualize
 plot_site_density <- function(data, column, site_number) {
   filtered_data <- data %>% filter(site == site_number)  # Filter for selected site
   
@@ -209,8 +217,6 @@ plot_all_sites_density <- function(data, column) {
   
   return(p)
 }
-
-
 
 
 ## plot all categories for a single site
