@@ -11,9 +11,35 @@ Most R scripts that involve longer workflows include a separate script that we `
  <img src="data_output/patches/figs/RE_branch.png" width="250" height="270" />
 </p>
 
-We are using [CoralNet-Toolbox](https://github.com/Jordan-Pierce/CoralNet-Toolbox) to train a ML model to generate metrics of percent-cover and abundances from our ROV imagery. You can find examples of our percent-cover image patches [here](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/tree/main/data_output/patches/labels) in `data_output`, and you can find the model weights from a trained classifier [here](https://www.dropbox.com/scl/fo/ro11h5n7aaydzvij028y9/AKqxPHgltMklumPAGXxzV24?rlkey=iiuv3rcrt2uh1osuxbdy0n4xz&dl=0) on the Seattle Aquarium's DropBox.  
+### Machine learning (ML) processing of survey imagery  
+We are training ML models to generate data from our ROV survey imagery. Specifically, we are generating metrics of percent-cover classification (for aggregate taxa and substrate categories) and object detection (for individually conspicuous species). Both classification and object detection models are being trained using Ultralytics via [CoralNet-Toolbox](https://github.com/Jordan-Pierce/CoralNet-Toolbox). The use of Ultralytics by Toolbox allows numerous augmentations and transformations of the patches and objects (depicted via the figure below), enabling a more robust model due to the variation introduced.
 
-### other CCR GitHub repositories
+<div align="center">
+  <img src="figs/readme_images/schematic.PNG" width="800", height="455">
+</div> 
+
+
+
+#### Percent-cover classification
+* We have categorized **31 percent-cover classes**, including red, green, and brown algae, substrate types, sessile and mobile species. View our label set [here](https://www.dropbox.com/scl/fi/o2oxc0fen94m5o8x5a5el/percent_cover_labelset.xlsx?rlkey=kh8dlx9fpo9pz5wxnn8eaq5e4&dl=0).
+* You can find examples of our percent-cover image patches [here](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/tree/main/data_output/patches/labels) in `data_output`.
+* See the confusion matrix below for the current predicted vs real percent-accuracy of our model (overall model accuracy = 91.5%).
+* You can find the model weights from a trained classifier [here](https://www.dropbox.com/scl/fo/ro11h5n7aaydzvij028y9/AKqxPHgltMklumPAGXxzV24?rlkey=iiuv3rcrt2uh1osuxbdy0n4xz&dl=0) on the Seattle Aquarium's DropBox
+<div align="center">
+  <img src="figs/readme_images/Toolbox_percentcover.gif" alt="Description of GIF", width="500", height="300">
+  <img src="figs/readme_images/matrix.png", width="450", height="350">
+</div>
+
+#### Object detection
+* We are training an object detection model to automate identification of animals in survey imagery. Annotations to create the training the dataset are being created in VIAME thanks to our hardworking "AI Teacher" volunteers. View the species list [here](https://www.dropbox.com/scl/fi/v8k7ndggqiwn6cdxrfnyj/objects_labelset.xlsx?rlkey=p26n0qj0jekl5j0s0cbt2g1bj&dl=0).
+<div align="center">
+  <img src="figs/readme_images/VIAME_detection.gif" alt="Description of GIF", width="500", height="300">
+</div> 
+
+
+
+
+### Other CCR GitHub repositories
 
 ```mermaid
 graph TD
