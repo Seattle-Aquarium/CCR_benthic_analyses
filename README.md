@@ -23,11 +23,10 @@ We are training ML models to generate data from our ROV survey imagery. Specific
 #### Percent-cover classification
 * We have categorized **31 percent-cover classes**, including red, green, and brown algae, substrate types, sessile and mobile species. View our label set [here](https://www.dropbox.com/scl/fi/o2oxc0fen94m5o8x5a5el/percent_cover_labelset.xlsx?rlkey=kh8dlx9fpo9pz5wxnn8eaq5e4&dl=0).
 * You can find examples of our percent-cover image patches [here](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/tree/main/data_output/patches/labels) in `data_output`.
-* See the confusion matrix below for the current predicted vs real percent-accuracy of our model (overall model accuracy = 91.5%).
+* See the confusion matrix linked [here](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/figs/readme_images/matrix.png) for the current predicted vs real percent-accuracy of our model (with an overall model accuracy = 91.5%).
 * You can find the model weights from a trained classifier [here](https://www.dropbox.com/scl/fo/ro11h5n7aaydzvij028y9/AKqxPHgltMklumPAGXxzV24?rlkey=iiuv3rcrt2uh1osuxbdy0n4xz&dl=0) on the Seattle Aquarium's DropBox
 <div align="center">
   <img src="figs/readme_images/Toolbox_percentcover.gif" alt="Description of GIF", width="500", height="300">
-  <img src="figs/readme_images/matrix.png", width="450", height="350">
 </div>
 
 #### Object detection
