@@ -27,13 +27,13 @@ We are training ML models to generate data from our ROV survey imagery. Specific
 * You can find the model weights from a trained classifier [here](https://www.dropbox.com/scl/fo/ro11h5n7aaydzvij028y9/AKqxPHgltMklumPAGXxzV24?rlkey=iiuv3rcrt2uh1osuxbdy0n4xz&dl=0) on the Seattle Aquarium's DropBox.
   
 <div align="center">
-  <img src="figs/readme_images/Toolbox_percentcover.gif" alt="Description of GIF", width="800", height="480">
+  <img src="figs/readme_images/Toolbox_percentcover.gif" alt="Description of GIF", width="650", height="360">
 </div>
 
 #### Object detection
 * We are training an object detection model to automate identification of animals in survey imagery. Annotations to create the training the dataset are being created in VIAME thanks to our hardworking "AI Teacher" volunteers. View the species list [here](https://www.dropbox.com/scl/fi/v8k7ndggqiwn6cdxrfnyj/objects_labelset.xlsx?rlkey=p26n0qj0jekl5j0s0cbt2g1bj&dl=0).
 <div align="center">
-  <img src="figs/readme_images/VIAME_detection.gif" alt="Description of GIF", width="800", height="480">
+  <img src="figs/readme_images/VIAME_detection.gif" alt="Description of GIF", width="650", height="360">
 </div> 
 
 ### Other CCR GitHub repositories
