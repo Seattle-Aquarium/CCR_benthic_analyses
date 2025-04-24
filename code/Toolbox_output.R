@@ -15,8 +15,8 @@ options(error = NULL)
 ## add libraries
 library(tidyverse)
 library(jpeg)
-library(ggplot2)
 library(grid)
+library(cowplot)
 
 
 ## set working directory to home folder
@@ -36,8 +36,8 @@ source(file.path(code, "Toolbox_output_functions.R"))
 
 
 ## read in data
-dat <- read.csv(file.path(data_input, "Centennial_Park_t6.csv"))
-dat <- read.csv(file.path(data_input, "example_percent-cover_data.csv"))
+#dat <- read.csv(file.path(data_input, "Centennial_Park_t6.csv"))
+dat <- read.csv(file.path(data_input, "percent_cover_25_images.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -88,7 +88,7 @@ dat <- add.text.to.cell(dat, "machine_prediction")
 
 
 ## invokes function to calculate the x4 pixel corners of each image patch
-dat <- calculate_patch_bounds(dat)
+dat <- calculate.patch.bounds(dat)
 
 
 ## new column order ordering 
@@ -107,15 +107,15 @@ new_order <- c("image_name",
 
 
 ## Reorder columns
-dat <- reorder_columns(dat, new_order)
+dat <- reorder.columns(dat, new_order)
 
 
 ## double check bounding boxes by plotting on a single image
-plot_boxes_on_image(dat, data_input)
+plot.boxes.on.image(dat, data_input)
 
 
 ## write a .csv and save the output
-write.csv(dat, "example_percent-cover_output.csv")
+write.csv(dat, "feature_detector_percent-cover.csv")
 ## END data cleanup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -125,6 +125,26 @@ write.csv(dat, "example_percent-cover_output.csv")
 ## calculate Toolbox efficacy ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 summary_output <- summarize.predictions(dat)
 ## END Toolbox efficacy calculation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+## visualizations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## filter group to remove "manual_update" 
+new_dat <- filter.out.group(dat, "machine_prediction", "manual_update")
+
+
+## plot kernel densities 
+plot.kernels.by.group(new_dat, "confidence", 20)
+
+
+## plot a frequency histogram tallying # of annotations per label
+plot.freq.hist(summary_output, 
+               group = "label_name", 
+               count = "total_count",
+               plot_title = "2500 percent-cover data points across 25 images")
+## END visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
