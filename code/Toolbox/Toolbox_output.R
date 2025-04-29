@@ -25,9 +25,9 @@ getwd()
 
 
 ## relative file paths
-code <- "code"
+code <- "code/Toolbox"
 data_input <- "data_input"
-data_output <- "data_output"
+data_output <- "data_output/Toolbox"
 figs <- "figs"
 
 
@@ -36,8 +36,8 @@ source(file.path(code, "Toolbox_output_functions.R"))
 
 
 ## read in data
-#dat <- read.csv(file.path(data_input, "Centennial_Park_t6.csv"))
-dat <- read.csv(file.path(data_input, "percent_cover_25_images.csv"))
+dat <- read.csv(file.path(data_output, "CP_t6_percent-cover.csv"))
+#dat <- read.csv(file.path(data_input, "percent_cover_25_images.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -114,8 +114,26 @@ dat <- reorder.columns(dat, new_order)
 plot.boxes.on.image(dat, data_input)
 
 
+## transform data to short form for abundance counts
+short_counts <- short.form.counts(dat)
+
+
+## tranform data to short form for percent-cover
+short_percent <- short.form.percent(dat)
+
+
 ## write a .csv and save the output
-write.csv(dat, "feature_detector_percent-cover.csv")
+write.csv(short_percent, "short_percent.csv")
+
+
+## save .csv 
+save.csv(short_percent, "data_output/CP_t6_percent-cover.csv")
+
+
+## plot kernel densities for all groups
+plot.kernels.by.column(dat, presence_cutoff = 0.10, max_cutoff = 0.10)
+
+
 ## END data cleanup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -124,6 +142,7 @@ write.csv(dat, "feature_detector_percent-cover.csv")
 
 ## calculate Toolbox efficacy ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 summary_output <- summarize.predictions(dat)
+write.csv(summary_output, "CP_t6_summary.csv")
 ## END Toolbox efficacy calculation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -136,7 +155,7 @@ new_dat <- filter.out.group(dat, "machine_prediction", "manual_update")
 
 
 ## plot kernel densities 
-plot.kernels.by.group(new_dat, "confidence", 20)
+plot.kernels.by.group(short_percent, "confidence", 0)
 
 
 ## plot a frequency histogram tallying # of annotations per label
@@ -145,6 +164,23 @@ plot.freq.hist(summary_output,
                count = "total_count",
                plot_title = "2500 percent-cover data points across 25 images")
 ## END visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+
+
+
+column_medians <- short_percent[, -1] |> 
+  summarise(across(everything(), ~ median(.x, na.rm = TRUE))) |> 
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "median_value") |> 
+  arrange(desc(median_value))
+
+# View the result
+print(column_medians)
+
+
 
 
 

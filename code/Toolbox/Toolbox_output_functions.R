@@ -14,6 +14,12 @@ front.ofthe.line <- function(data){
 }
 
 
+## function to save .csv 
+save.csv <- function(data, path) {
+  write.csv(data, file = path, row.names = FALSE)
+}
+
+
 ## function to filter by group 
 filter.out.group <- function(df, col, group) {
   df %>% 
@@ -84,6 +90,7 @@ plot.boxes.on.image <- function(df, image_dir) {
 
 
 ## create an output dataframe that summarizes preditions
+## create an output dataframe that summarizes predictions
 summarize.predictions <- function(dat) {
   
   summary_df <- dat |>
@@ -98,11 +105,54 @@ summarize.predictions <- function(dat) {
       percent_confidence = round(median(confidence[machine_prediction != "manual_update"], na.rm = TRUE), 2),
       .groups = "drop"
     ) |>
-    dplyr::arrange(dplyr::desc(total_count)) |>
-    dplyr::select(label_name, label_code, total_count, correct_prediction, manually_updated,
+    dplyr::arrange(dplyr::desc(total_count))
+  
+  # Calculate percent_cover
+  summary_df <- summary_df |>
+    dplyr::mutate(percent_cover = round(100 * total_count / sum(total_count), 2)) |>
+    dplyr::select(label_name, label_code, total_count, percent_cover, correct_prediction, manually_updated,
                   proportion_correct, proportion_revised, percent_confidence)
   
   return(summary_df)
+}
+
+
+## function to pivot from long to short form
+short.form.counts <- function(dat) {
+  dat_short <- dat |>
+    dplyr::count(image_name, label_name) |>
+    tidyr::pivot_wider(
+      names_from = label_name,
+      values_from = n,
+      values_fill = 0  # fill missing combinations with 0
+    )
+  
+  return(dat_short)
+}
+
+
+library(tidyverse)
+
+
+## function to pivot from long to short form with percent cover
+short.form.percent <- function(dat) {
+  dat_percent <- dat |>
+    dplyr::count(image_name, label_name) |>
+    tidyr::pivot_wider(
+      names_from = label_name,
+      values_from = n,
+      values_fill = 0
+    ) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(
+      dplyr::across(
+        -image_name,
+        ~ round(.x / sum(c_across(-image_name)), 2)
+      )
+    ) |>
+    dplyr::ungroup()
+  
+  return(dat_percent)
 }
 
 
@@ -194,6 +244,108 @@ plot.freq.hist <- function(df, group, count, plot_title = NULL) {
       plot.title = element_text(hjust = 0, size = 18, face = "bold")
     )
 }
+
+
+
+
+
+
+library(tidyverse)
+library(cowplot)
+
+plot.kernels.by.column <- function(dat, ncol = 4, presence_cutoff = 0.02, max_cutoff = 0.05) {
+  
+  # Step 1: Pivot to long format
+  dat_long <- dat |>
+    pivot_longer(
+      cols = -image_name,
+      names_to = "variable",
+      values_to = "value"
+    )
+  
+  # Step 2: Combined filtering
+  summary_df <- dat_long |>
+    group_by(variable) |>
+    summarize(
+      prevalence = mean(value > 0, na.rm = TRUE),
+      max_value = max(value, na.rm = TRUE),
+      median_value = median(value, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    filter(prevalence > presence_cutoff | max_value > max_cutoff) |>
+    arrange(desc(prevalence))
+  
+  # Step 3: Filter and order
+  dat_filtered <- dat_long |>
+    filter(variable %in% summary_df$variable) |>
+    mutate(variable = factor(variable, levels = summary_df$variable))
+  
+  # Step 4: Grid dimensions
+  total_plots <- length(levels(dat_filtered$variable))
+  nrow_grid <- ceiling(total_plots / ncol)
+  
+  # Step 5: Build subplots
+  plots <- lapply(seq_along(levels(dat_filtered$variable)), function(i) {
+    var <- levels(dat_filtered$variable)[i]
+    df_var <- dat_filtered %>% filter(variable == var)
+    med <- round(summary_df$median_value[summary_df$variable == var], 2)
+    
+    row_index <- ceiling(i / ncol)
+    col_index <- (i - 1) %% ncol + 1
+    
+    p <- ggplot(df_var, aes(x = value)) +
+      geom_density(fill = "#00688B", alpha = 0.6, adjust = 1.0) +
+      labs(title = var) +
+      coord_cartesian(xlim = c(0, 1)) +
+      annotate("text", x = 1, y = Inf, label = paste0("median = ", med),
+               hjust = 1.1, vjust = 1.5, size = 3.2) +
+      my.theme +
+      theme(
+        # ubfigure plot title (column title) styling
+        plot.title = element_text(size = 12, hjust = 0),
+        plot.margin = margin(5, 5, 5, 5),
+        
+        # xis text sizing (you can edit size = 8 here)
+        axis.text.x = if (row_index == nrow_grid) element_text(size = 10) else element_blank(),
+        axis.text.y = if (col_index == 1) element_text(size = 10) else element_blank(),
+        axis.ticks.x = if (row_index == nrow_grid) element_line() else element_blank(),
+        axis.ticks.y = if (col_index == 1) element_line() else element_blank(),
+        
+        # Always hide axis titles
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank()
+      )
+    
+    return(p)
+  })
+  
+  # Main grid of subplots
+  plot_grid_main <- plot_grid(plotlist = plots, ncol = ncol)
+  
+  # Add overall layout with labels
+  final_plot <- plot_grid(
+    # Title row, left-aligned
+    ggdraw() + draw_label("kernel densities of percent-cover", fontface = "bold", size = 14, x = 0, hjust = -0.1),
+    
+    # Middle row: y-axis label + main plot grid
+    plot_grid(
+      ggdraw() + draw_label("density", angle = 90, vjust = 0.5, hjust = 0.5, size = 14),
+      plot_grid_main,
+      ncol = 2,
+      rel_widths = c(0.05, 1)
+    ),
+    
+    # Bottom row: x-axis label, centered
+    ggdraw() + draw_label("percent-cover", vjust = 0.5, size = 14),
+    
+    ncol = 1,
+    rel_heights = c(0.08, 1, 0.06)
+  )
+  
+  return(final_plot)
+}
+
+
 ## END functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
