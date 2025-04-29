@@ -128,12 +128,6 @@ write.csv(short_percent, "short_percent.csv")
 
 ## save .csv 
 save.csv(short_percent, "data_output/CP_t6_percent-cover.csv")
-
-
-## plot kernel densities for all groups
-plot.kernels.by.column(dat, presence_cutoff = 0.10, max_cutoff = 0.10)
-
-
 ## END data cleanup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -150,6 +144,10 @@ write.csv(summary_output, "CP_t6_summary.csv")
 
 
 ## visualizations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## plot kernel densities for all groups
+plot.kernels.by.column(dat, presence_cutoff = 0.10, max_cutoff = 0.10)
+
+
 ## filter group to remove "manual_update" 
 new_dat <- filter.out.group(dat, "machine_prediction", "manual_update")
 
@@ -164,23 +162,6 @@ plot.freq.hist(summary_output,
                count = "total_count",
                plot_title = "2500 percent-cover data points across 25 images")
 ## END visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-
-
-
-
-column_medians <- short_percent[, -1] |> 
-  summarise(across(everything(), ~ median(.x, na.rm = TRUE))) |> 
-  pivot_longer(cols = everything(), names_to = "variable", values_to = "median_value") |> 
-  arrange(desc(median_value))
-
-# View the result
-print(column_medians)
-
-
 
 
 
