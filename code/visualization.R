@@ -31,7 +31,7 @@ sites <- "figs/19_labels/ordinations/sites"
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_19, "ratios.csv"))
+dat <- read.csv(file.path(label_19, "percent-cover_abundances.csv"))
 spp_scores <- read.csv(file.path(label_19, "spp_scores_T3-2_19_labels.csv"))
 
 
@@ -302,9 +302,6 @@ all.categories(log, save_path = "figs", width = 9, height = 13)
 ## END kernel density plots of categories ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-
-
-
 ## kernel density plots of spp diversity metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## create a window to plot
 my.window(12,8)
@@ -313,8 +310,6 @@ my.window(12,8)
 ## print spp diversity 
 print(diversity.8.sites(dat, Simpson))
 ## END kernel density plots of spp diversity ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
 
 
 
