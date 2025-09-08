@@ -20,7 +20,7 @@ library(cowplot)
 
 
 ## set working directory to home folder
-setwd("../")
+setwd("../../")
 getwd()
 
 
@@ -36,7 +36,8 @@ source(file.path(code, "Toolbox_output_functions.R"))
 
 
 ## read in data
-dat <- read.csv(file.path(data_output, "CP_t6_percent-cover.csv"))
+dat <- read.csv(file.path(data_input, "Centennial_Park_t5.csv"))
+#dat <- read.csv(file.path(data_output, "CP_t6_percent-cover.csv"))
 #dat <- read.csv(file.path(data_input, "percent_cover_25_images.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -111,7 +112,7 @@ dat <- reorder.columns(dat, new_order)
 
 
 ## double check bounding boxes by plotting on a single image
-plot.boxes.on.image(dat, data_input)
+#plot.boxes.on.image(dat, data_input)
 
 
 ## transform data to short form for abundance counts
@@ -122,8 +123,14 @@ short_counts <- short.form.counts(dat)
 short_percent <- short.form.percent(dat)
 
 
+## add site and transect information 
+short_percent <- add.metadata(short_percent, 
+                              site_value = "Centennial_Park", 
+                              transect_value = "5")
+
+
 ## write a .csv and save the output
-write.csv(short_percent, "short_percent.csv")
+save.csv(short_percent, "short_percent_t4.csv")
 
 
 ## save .csv 

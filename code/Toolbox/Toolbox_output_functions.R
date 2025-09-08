@@ -346,6 +346,25 @@ plot.kernels.by.column <- function(dat, ncol = 4, presence_cutoff = 0.02, max_cu
 }
 
 
+## function to add site and transect information
+add.metadata <- function(df, site_value, transect_value) {
+  # Create the new columns
+  site_col <- rep(site_value, nrow(df))
+  transect_col <- rep(transect_value, nrow(df))
+  
+  # Rebuild the dataframe with new columns in position 2 and 3
+  df <- cbind(
+    df[, 1, drop = FALSE],            # First column
+    site = site_col,                  # New site column
+    transect = transect_col,          # New transect column
+    df[, -1, drop = FALSE]            # All remaining columns except the first
+  )
+  
+  return(df)
+}
+
+
+
 ## END functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
