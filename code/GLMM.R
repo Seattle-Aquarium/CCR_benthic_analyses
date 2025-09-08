@@ -30,7 +30,7 @@ label_69 <- "data_output/69_labels"
 
 
 ## invoke relative file path 
-dat <- read.csv(file.path(label_19, "ratios.csv"))
+dat <- read.csv(file.path(label_19, "percent-cover_abundances.csv"))
 
 
 ## repeat factor for other dataset
@@ -68,6 +68,8 @@ fit_sk <- glmer(sugar ~ depth + location + (1|site) + (1|transect:site),
 summary(fit_sk)
 anova(null_sk, fit_sk, test = "Chisq") 
 pred <- predict(fit_sk, dat)
+
+pred <- predict(fit_sk, dat$depth)
 plot(pred)
 ## END glmm w/ sugar kelp ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -122,6 +124,63 @@ exp(-0.08)
 
 
 
+
+## visualize GLMM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+predicted_prob <- predict(null_sk, type = "response")
+predicted_odds <- predicted_prob / (1 - predicted_prob)
+
+predicted_prob_ra <- predict(null_ra, type = "response")
+
+pred_df3 <- data.frame(
+  depth = dat$depth,
+  odds = predicted_prob_ra
+)
+
+
+pred_df <- data.frame(
+  depth = dat$depth,
+  odds = predicted_odds
+)
+
+
+pred_df2 <- data.frame(
+  depth = dat$depth,
+  odds = predicted_prob
+)
+
+
+library(ggplot2)
+
+ggplot(pred_df2, aes(x = depth, y = odds)) +
+  geom_point(position = position_jitter(height = 0.0075), alpha = 0.5) +
+  geom_smooth(method = "loess", color = "blue") +
+  labs(x = "Depth",
+       y = "probability of Sugar Kelp",
+       title = "probability of sugar kelp vs. depth") +
+  theme_minimal()
+
+
+p1 <- ggplot(pred_df3, aes(x=depth, y=odds)) +
+  my.theme +
+  geom_point(position = position_jitter(height = 0.0075), alpha = 0.5) +
+  geom_smooth(method = "loess", color = "blue") +
+  labs(x = "depth (m)",
+       y = "probability of sugar kelp",
+       title = "probability of sugar kelp vs. depth")
+
+print(p1)
+  
+my.theme = theme(panel.grid.major = element_blank(),
+                 panel.grid.minor = element_blank(),
+                 panel.background = element_blank(), 
+                 axis.line = element_line(colour = "black"),
+                 axis.title=element_text(size=17),
+                 axis.text=element_text(size=17),
+                 plot.title = element_text(size=17))
+
+
+
+
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## Generalized linear mixed effects models ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## end of script  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
