@@ -20,7 +20,7 @@ getwd()
 
 
 ## relative path to image patches 
-patches <- "imagery/labels"
+patches <- "imagery/labels/edge_cases"
 output <- "figs/Zooniverse_figs"
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -56,7 +56,7 @@ category_list <- c(
 
 
 ## create a single grid image
-single.category.image.grid(category = "BR_sarg", n = 36, grid_dims = c(6, 6))
+single.category.image.grid(category = "RE_bush", n = 36, grid_dims = c(6, 6))
 
 
 ## Loop through each category in category_list and create all grid images
