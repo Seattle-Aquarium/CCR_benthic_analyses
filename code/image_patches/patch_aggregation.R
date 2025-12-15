@@ -15,13 +15,13 @@ source("patch_aggregation_functions.R")
 
 
 ## set working directory to home folder
-setwd("../")
+setwd("../../")
 getwd()
 
 
 ## relative path to image patches 
-patches <- "data_output/patches/labels"
-output <- "data_output/patches/figs"
+patches <- "imagery/labels"
+output <- "figs/Zooniverse_figs"
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -64,19 +64,6 @@ for (category in category_list) {
   create.image.grid(category = category, n = 36, grid_dims = c(6, 6))
 }
 ## END function invocation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
