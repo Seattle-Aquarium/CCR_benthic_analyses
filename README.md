@@ -6,18 +6,15 @@ This repository contains code and files necessary to work with our ROV survey im
 Most R scripts that involve longer workflows include a separate script that we `source()`. For example, the main `NMDS.R` script we use to perform multivariate analyses invokes `source(NMDS_functions.R)` to run. These `..._functions.R` scripts are not noted separately below, but can be found within `..\code` alongside all other scripts. 
 
 <p float="center">
- <img src="data_output/patches/figs/KE_holdfas.png" width="250" height="270" />&nbsp;&nbsp;&nbsp;
- <img src="data_output/patches/figs/GR_ulva.png" width="250" height="270" />&nbsp;&nbsp;&nbsp;
- <img src="data_output/patches/figs/RE_branch.png" width="250" height="270" />
+ <img src="image_patch_aggregation/figs/KE_holdfas.png" width="250" height="270" />&nbsp;&nbsp;&nbsp;
+ <img src="image_patch_aggregation/figs/GR_ulva.png" width="250" height="270" />&nbsp;&nbsp;&nbsp;
+ <img src="image_patch_aggregation/figs/RE_branch.png" width="250" height="270" />
 </p>
 
 ### Machine learning (ML) processing of survey imagery  
 We are training ML models to generate data from our ROV survey imagery. Specifically, we are generating metrics of percent-cover classification (for aggregate taxa and substrate categories) and object detection (for individually conspicuous species). Both classification and object detection models are being trained using Ultralytics via [CoralNet-Toolbox](https://github.com/Jordan-Pierce/CoralNet-Toolbox). The use of Ultralytics by Toolbox allows numerous augmentations and transformations of the patches and objects (depicted via the figure below), enabling a more robust model due to the variation introduced.
 
-<div align="center">
-  <img src="figs/readme_images/schematic.PNG" width="800", height="455">
-</div> 
-
+<img width="800" height="455" alt="schematic" src="https://github.com/user-attachments/assets/02f5a4e4-120c-45c5-b938-6a8b9e7c79d3" />
 
 
 #### Percent-cover classification
@@ -26,15 +23,11 @@ We are training ML models to generate data from our ROV survey imagery. Specific
 * See the confusion matrix linked [here](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/figs/readme_images/matrix.png) for the current predicted vs real percent-accuracy of our model (with an overall model accuracy = 91.5%).
 * You can find the model weights from a trained classifier [here](https://www.dropbox.com/scl/fo/ro11h5n7aaydzvij028y9/AKqxPHgltMklumPAGXxzV24?rlkey=iiuv3rcrt2uh1osuxbdy0n4xz&dl=0) on the Seattle Aquarium's DropBox.
   
-<div align="center">
-  <img src="figs/readme_images/Toolbox_percentcover.gif" alt="Description of GIF", width="650", height="360">
-</div>
+![Toolbox_percentcover](https://github.com/user-attachments/assets/92422325-2a75-4ecb-9db2-f66eb2c81580)
+
 
 #### Object detection
 * We are training an object detection model to automate identification of animals in survey imagery. Annotations to create the training the dataset are being created in VIAME thanks to our hardworking "AI Teacher" volunteers. View the species list [here](https://www.dropbox.com/scl/fi/v8k7ndggqiwn6cdxrfnyj/objects_labelset.xlsx?rlkey=p26n0qj0jekl5j0s0cbt2g1bj&dl=0).
-<div align="center">
-  <img src="figs/readme_images/VIAME_detection.gif" alt="Description of GIF", width="650", height="360">
-</div> 
 
 ## General information; workflows ready to implement
 The following repos contain general information about our work, and specialized repos for ROV telemetry analyses, processing and analyses of ROV-derived benthic abundance and distribution data, and simulating benthic data.  
@@ -66,42 +59,4 @@ B --> D["<a href='https://github.com/Seattle-Aquarium/CCR_kelp_feature_detection
 style B stroke:#FF8600,stroke-width:4px
 style C stroke:#FF8600,stroke-width:4px
 ```
-
-
-
-
-### code
-- `wrangle_data.R`: modify the raw CoralNet annotation output, merge with ROV telemetry metadata, and save it prior to further processing. 
-- `revise_categories.R`: modify the percent-cover categories within an exported CoralNet dataset.  
-- `diversity_metrics.R`: calculate species richness, Shannon-Weiner diversity metric, Stimpson's diveristy metric, and Peilou's evenness for percent-cover data or the combination of percent-cover and abundance data.
-- `species_density.R`: calculate species density metrics. 
-- `NMDS.R`: perform non-metric multidimensional scaling (NMDS) analyses on a community matrix. 
-- `visualization.R`: visualize NMDS ordinations, kernel densities, and species diversity metrics.
-- `GLMM.R`: compile generalized linear mixed effects models with percent-cover as the response.
-- `patch_aggregation.R`: extract image patches and aggregate them in custom specified grids to create figures for patch inspection, plotting, communication, etc.
-
-### data_input
-- `bull_kelp_stipes.csv` contains bull kelp stipe and bundle counts from the forward-facing video.
-- `CoralNet_2022_annotations.csv` raw CoralNet annotation output. 
-- `original_CoralNet_2022_dataset.csv` contains output from CoralNet annotations merged with our ROV telemetry file, containing 1479 images and 118,000 annotations in CoralNet.
-- `HSIL_VIAME_2024.csv` contains ROV-diver overlap data from summer 2024 surveys.
-- `Port_VIAME_2022.csv` contains summer 2022 percent-cover and abundance data.
-
-### data_output
-- `19_labels`: output folder with processed .csv files, ordinations, and other output files for our revised 19 CoralNet categories. 
-- `69_labels`: output folder with processed .csv files, ordinations, and other output files for our original 69 CoralNet categories. 
-- `patches`: folder containing example image patches extracted from our Toolbox datasets. 
-
-### figs
-- output folder for various figures 
-
-<p float="center">
-  <img src="figs/readme_images/NMDS_ellipses.PNG" width="400" height="300" />
-  <img src="figs/readme_images/NMDS_spp_scores.png" width="400" height="300" />
- </p>
-
- <p float="center">
-  <img src="figs/readme_images/sargassum.PNG" width="550" height="300" />
- </p>
-
  
