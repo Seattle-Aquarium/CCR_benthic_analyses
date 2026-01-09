@@ -43,17 +43,7 @@ See [wrangle_ROV_abundance_data.R](https://github.com/zhrandell/ROV-diver_method
 - [ROV_percent-cover.csv](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/data_output/ROV/ROV_percent-cover.csv)
 - [ROV_percent-cover_averaged.csv ](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/data_output/ROV/ROV_percent-cover_averaged.csv)
 
-I have a started some scripts to visualize both ROV and diver data, e.g.,
+We have a started some scripts to visualize and analyze both ROV and diver data, e.g.,
 
 - [analyze.R](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/code/analyze.R)
 - [analyze_functions.R](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/code/analyze_functions.R)
-
-and we can visualize the very simplest of information, e.g., plots of ROV vs diver abundance for single species. 
-
-<img src="https://github.com/user-attachments/assets/0b07d97f-9031-46cd-95c1-54c162a2e8a3" alt="cancer_crab" style="width:50%;" />
-
-### Next steps
-- identify an analytical framework to compare and contrast ROV vs diver data? perhaps a regression framework?
-- identify whether the regression framework will be appropriate for both abundance and distribution counts?
-- test framework with abundance data first.
-- abundances: compare and contrast ROV vs diver counts for: kelp_crab, cancer_crab, and ochre_mottled_star
