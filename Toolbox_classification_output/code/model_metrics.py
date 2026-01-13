@@ -1,3 +1,5 @@
+# Takes original csv file located in *data* folder as input -- does not operate with nested or "-cleaned.csv" files
+
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -78,11 +80,11 @@ if __name__ == "__main__":
     results = root / "results"
     
     # Prompt for CSV file
-    csv_name = (input("Enter name to CSV file: ").strip())
+    csv_name = (input("Enter name of CSV file: ").strip())
     csv_path = data / csv_name
     if not csv_path.is_file():
         print(f"Error: File '{csv_path}' not found.")
     else:
         # Output in the same folder as input CSV, named after parent folder
-        output_path = results / f"{csv_path.parent.name}-metrics_report.csv"
+        output_path = results / f"{csv_name.split('.')[0]}-metrics_report.csv"
         calculate_accuracy(csv_path, output_path)
