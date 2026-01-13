@@ -15,13 +15,13 @@ source("patch_aggregation_functions.R")
 
 
 ## set working directory to home folder
-setwd("../../")
+setwd("../")
 getwd()
 
 
 ## relative path to image patches 
-patches <- "imagery/labels/edge_cases"
-output <- "figs/Zooniverse_figs"
+patches <- "data/standard_patches"
+output <- "figs"
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -56,12 +56,12 @@ category_list <- c(
 
 
 ## create a single grid image
-single.category.image.grid(category = "RE_bush", n = 36, grid_dims = c(6, 6))
+single.category.image.grid(category = "RE_bush", n = 72, grid_dims = c(6, 12))
 
 
 ## Loop through each category in category_list and create all grid images
 for (category in category_list) {
-  create.image.grid(category = category, n = 36, grid_dims = c(6, 6))
+  create.image.grid(category = category, n = 36, grid_dims = c(3, 12))
 }
 ## END function invocation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
