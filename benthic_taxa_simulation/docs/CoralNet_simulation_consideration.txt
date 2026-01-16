@@ -1,0 +1,71 @@
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+## CoralNet simulation considerations and outline ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+
+
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+Broadly, the structure of the code will allow us to: 
+1. simulate "important" variables from CoralNet, where we want to explicitly control the mean and variance of key categories, 
+   via sampling from probability distribtions. The simulated response variables are metrics of percent-coverage from CoralNet.
+2. simulate "unimportant" variables, where we don't need to specify the mean and variance, but rather 
+   want to ensure the row sums to 50 (the number of data points per a CoralNet image). 
+3. simulate abundances for objects (e.g., bull kelp), again using a probability distribution w/ mean and variance
+4. have metadata from our real-world surveys such that the simulated data structure completely mirrors our real-world data - 
+   the simulated CoralNet and abundance data are to be simulated as to match the metadata. 
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+  
+
+
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+Possible important percent-cover variables include: 
+1. red algae (red) 
+2. sugar kelp (sugar) 
+3. ulva green algae (ulva)
+4. soft substrate (soft) 
+5. pebble, rock substrate (pebble)
+6. hard substrate (hard) 
+
+Possible important abundances include: 
+1. bull kelp (bull) 
+2. kelp crabs (crab) 
+
+Possible number of unimportant CoralNet variables to round our col_sum (column sum) to 50
+1. just use one column? 
+2. alternatively, use the same number of columns as the important variables (6, currently). 
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+
+
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+Possible simulation scenarios and anticipated hypotheses: 
+1. Null hypothesis: no signal; simulate uniform mean across all columns
+2. [_low red, high sugar, low ulva, high soft, high pebble, low rock_] 
+   simulated Magnolia: relatively low bull due to low substrate and competion from sugar. 
+3. [med red, low sugar, low ulva, low soft, low pebble, high rock_]
+   simulated Elliott Bay Marina riprap: high bull kelp along hard substrate
+4. [ ...red, ...sugar, ...ulva, ...soft, ...pebble, ...rock
+   simulated ...
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+
+
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+Possible spatial structure to the simulated data: (all with relatively homogenous transects). 
+1. Uniform signal - all sites and all transects have the same uniform mean (1st instantiation) 
+2. Split signal - site 1---4 have signal 1, sites 5---8 have signal 2
+3. Real-life adjacent - model Magnolia, EBM, Centennial Park, etc. 
+4. ... other? 
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+
+
+
