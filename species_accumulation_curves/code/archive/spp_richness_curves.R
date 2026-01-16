@@ -9,10 +9,26 @@
 ## startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
 
+
+## read in libraries 
 library(tidyverse)
 library(vegan)
 
-dat <- read.csv("species_richness_curves.csv")
+
+## set working directory
+setwd("../")
+getwd()
+
+
+## relative files paths 
+data <- "data"
+results <- "results"
+figs <- "figs"
+code <- "code"
+  
+
+## read in csv 
+dat <- read.csv(file.path(data, "species_richness_curves.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
