@@ -1,26 +1,7 @@
 # List of category folders
 category_list <- c(
-  "BR_sarg",
-  "KE_5rib",
-  "KE_sieve",
-  "KE_sugar",
-  "MS",
-  "SU_bould",
-  "SU_cob",
-  "SU_peb",
-  "SU_sand",
-  "SU_shell",
-  "SU_silt",
-  "unknown",
-  "KE_stipe",
-  "KE_holdfas",
-  "RE_CCA",
-  "RE_branch",
-  "RE_bush",
-  "RE_leaf",
-  "GR_ulva",
-  "RE_fil",
-  "SI_kelpBry"
+  "BR_filam",
+  "KE_bull"
 )
 
 
@@ -66,7 +47,7 @@ single.category.image.grid <- function(category, n = 36, grid_dims = c(6, 6), im
   # Resize all images and add black borders to create gaps
   padded_images <- lapply(images, function(img) {
     img <- image_resize(img, img_size)
-    img <- image_border(img, "black", "4x4")  # Adds black padding around each image
+    img <- image_border(img, "white", "4x4")  # Adds black padding around each image ; changed to white 1/14
     return(img)
   })
   
@@ -86,7 +67,7 @@ single.category.image.grid <- function(category, n = 36, grid_dims = c(6, 6), im
     image_annotate(text = title_text, size = 75, color = "white", gravity = "center")
   
   # Stack the title above the grid image
-  final_with_title <- image_append(c(title_image, final_image), stack = TRUE)
+#  final_with_title <- image_append(c(title_image, final_image), stack = TRUE)
   
   # Ensure output directory exists
   if (!dir.exists(output)) dir.create(output, recursive = TRUE)
@@ -95,9 +76,9 @@ single.category.image.grid <- function(category, n = 36, grid_dims = c(6, 6), im
   png_file <- file.path(output, paste0(folder_name, ".png"))
   pdf_file <- file.path(output, paste0(folder_name, ".pdf"))
   
-  image_write(final_with_title, path = png_file, format = "png")
+  image_write(final_image, path = png_file, format = "png") # changed variable from 'final_with_title'
   pdf(pdf_file, width = grid_dims[2] * 2, height = (grid_dims[1] * 2) + 1)
-  plot(final_with_title)  
+  plot(final_image)  # changed variable from 'final_with_title'
   dev.off()
   
   print(paste("Image grid saved as:", png_file, "and", pdf_file))
@@ -106,8 +87,27 @@ single.category.image.grid <- function(category, n = 36, grid_dims = c(6, 6), im
 
 
 
+# Function to draw a red center dot with crosshatch (added 1/14)
+draw_center_marker <- function(img) {
+  info <- image_info(img)
+  cx <- info$width / 2
+  cy <- info$height / 2
+  
+  # Scale marker relative to image size (mirrors Python logic)
+  arm <- max(4, min(as.integer(info$width * 0.10), 18))
+  dot_radius <- max(2, min(as.integer(info$width * 0.04), 6))
+  
+  img <- image_draw(img)
+  graphics::segments(cx - arm, cy, cx + arm, cy, col = "red", lwd = 2)
+  graphics::segments(cx, cy - arm, cx, cy + arm, col = "red", lwd = 2)
+  graphics::points(cx, cy, pch = 16, col = "red", cex = dot_radius / 3)
+  dev.off()
+  
+  img
+}
+
 # Function to create and save image grids for multiple categories
-create.image.grid <- function(category, n = 36, grid_dims = c(6, 6), img_size = "224x224") {
+create.image.grid <- function(category, n = 36, grid_dims = c(6, 6), img_size = "224x224") { 
   
   image_folder <- file.path(patches, category)
   folder_name <- basename(image_folder)  
@@ -120,30 +120,31 @@ create.image.grid <- function(category, n = 36, grid_dims = c(6, 6), img_size = 
   selected_images <- sample(image_files, n)
   images <- lapply(selected_images, image_read)
   
-  # Resize and add black borders to create gaps
+  # Resize, draw center marker, and add white borders
   padded_images <- lapply(images, function(img) {
     img <- image_resize(img, img_size)
-    img <- image_border(img, "black", "4x4")  # Adds black padding around each image
+    img <- draw_center_marker(img)     # ← center dot + crosshairs added
+    img <- image_border(img, "white", "4x4")
     return(img)
   })
   
   # Arrange images into rows
   rows <- split(padded_images, rep(1:grid_dims[1], each = grid_dims[2]))
-  row_images <- lapply(rows, function(row) image_append(image_join(row), stack = FALSE))  # Horizontally align
+  row_images <- lapply(rows, function(row) image_append(image_join(row), stack = FALSE))
   
   # Stack rows vertically to form a grid
-  final_image <- image_append(image_join(row_images), stack = TRUE)  # Stack rows vertically
+  final_image <- image_append(image_join(row_images), stack = TRUE)
   
   # Retrieve the correct title name from title.names
-  title_text <- ifelse(category %in% names(title.names), title.names[category], category)
+    title_text <- ifelse(category %in% names(title.names), title.names[category], category)
   
   # Create a title image with black background and white text
-  title_height <- 100
-  title_image <- image_blank(width = image_info(final_image)$width, height = title_height, color = "black") %>%
-    image_annotate(text = title_text, size = 75, color = "white", gravity = "center")
+    title_height <- 100
+    title_image <- image_blank(width = image_info(final_image)$width, height = title_height, color = "black") %>%
+      image_annotate(text = title_text, size = 75, color = "white", gravity = "center")
   
   # Stack the title above the grid image
-  final_with_title <- image_append(c(title_image, final_image), stack = TRUE)
+#    final_with_title <- image_append(c(title_image, final_image), stack = TRUE)
   
   # Ensure output directory exists
   if (!dir.exists(output)) dir.create(output, recursive = TRUE)
@@ -152,9 +153,9 @@ create.image.grid <- function(category, n = 36, grid_dims = c(6, 6), img_size = 
   png_file <- file.path(output, paste0(folder_name, ".png"))
   pdf_file <- file.path(output, paste0(folder_name, ".pdf"))
   
-  image_write(final_with_title, path = png_file, format = "png")
+  image_write(final_image, path = png_file, format = "png") # changed variable from 'final_with_title'
   pdf(pdf_file, width = grid_dims[2] * 2, height = (grid_dims[1] * 2) + 1)
-  plot(final_with_title)  
+  plot(final_image)  # changed variable from 'final_with_title'
   dev.off()
   
   print(paste("Image grid saved as:", png_file, "and", pdf_file))

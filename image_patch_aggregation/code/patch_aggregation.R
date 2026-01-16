@@ -20,7 +20,7 @@ getwd()
 
 
 ## relative path to image patches 
-patches <- "data/standard_patches"
+patches <- "../data/standard_patches"
 output <- "figs"
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -31,6 +31,9 @@ output <- "figs"
 ## invoke functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## use the following names to create individual plots with the first function
 category_list <- c(
+  "BR_encrust",
+  "BR_fucus",
+  "SI",
   "BR_sarg",
   "KE_5rib",
   "KE_sieve",
@@ -61,7 +64,7 @@ single.category.image.grid(category = "RE_bush", n = 72, grid_dims = c(6, 12))
 
 ## Loop through each category in category_list and create all grid images
 for (category in category_list) {
-  create.image.grid(category = category, n = 36, grid_dims = c(3, 12))
+  create.image.grid(category = category, n = 24, grid_dims = c(2, 12))
 }
 ## END function invocation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
