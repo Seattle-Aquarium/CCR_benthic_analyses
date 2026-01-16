@@ -6,9 +6,9 @@ This repository contains code and files necessary to work with our ROV survey im
 Most R scripts that involve longer workflows include a separate script that we `source()`. For example, the main `NMDS.R` script we use to perform multivariate analyses invokes `source(NMDS_functions.R)` to run. These `..._functions.R` scripts are not noted separately below, but can be found within `..\code` alongside all other scripts. 
 
 <p float="center">
- <img src="image_patch_aggregation/figs/KE_holdfas.png" width="250" height="270" />&nbsp;&nbsp;&nbsp;
- <img src="image_patch_aggregation/figs/GR_ulva.png" width="250" height="270" />&nbsp;&nbsp;&nbsp;
- <img src="image_patch_aggregation/figs/RE_branch.png" width="250" height="270" />
+ <img src="image_patch_aggregation/figs/six_by_six_patch_grids/KE_holdfas.png" width="250" height="270" />&nbsp;&nbsp;&nbsp;
+ <img src="image_patch_aggregation/figs/six_by_six_patch_grids/GR_ulva.png" width="250" height="270" />&nbsp;&nbsp;&nbsp;
+ <img src="image_patch_aggregation/figs/six_by_six_patch_grids/RE_branch.png" width="250" height="270" />
 </p>
 
 ### Machine learning (ML) processing of survey imagery  
