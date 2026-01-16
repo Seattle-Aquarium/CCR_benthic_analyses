@@ -1,4 +1,5 @@
-# Takes original csv file located in *data* folder as input -- does not operate with nested or "-cleaned.csv" files
+# Takes original Toolbox dataset csv file located in 'data' as input
+# **Make sure to remove your files from any nested folders after running 'clean_dataset.py'
 
 from pathlib import Path
 import pandas as pd
