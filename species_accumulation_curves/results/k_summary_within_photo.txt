@@ -1,0 +1,7 @@
+K-threshold summary across sites and transects
+======================================
+
+# A tibble: 1 × 4
+  k90_median k90_range k95_median k95_range
+       <dbl> <chr>          <dbl> <chr>    
+1       35.5 31–42             41 39–46    

@@ -1,0 +1,46 @@
+Richness fraction output
+========================
+
+# A tibble: 40 × 5
+   site       transect n_points   med frac_of_50
+   <fct>      <fct>       <int> <dbl>      <dbl>
+ 1 Centennial 1              10  4.39      0.549
+ 2 Centennial 1              20  5.83      0.729
+ 3 Centennial 1              30  6.81      0.851
+ 4 Centennial 1              40  7.51      0.939
+ 5 Centennial 1              50  8         1    
+ 6 Centennial 2              10  3.45      0.575
+ 7 Centennial 2              20  4.60      0.766
+ 8 Centennial 2              30  5.26      0.877
+ 9 Centennial 2              40  5.75      0.959
+10 Centennial 2              50  6         1    
+11 Centennial 4              10  4.51      0.564
+12 Centennial 4              20  6.13      0.766
+13 Centennial 4              30  7.03      0.878
+14 Centennial 4              40  7.68      0.960
+15 Centennial 4              50  8         1    
+16 Centennial 5              10  4.60      0.511
+17 Centennial 5              20  6.33      0.703
+18 Centennial 5              30  7.43      0.825
+19 Centennial 5              40  8.10      0.899
+20 Centennial 5              50  9         1    
+21 Centennial 6              10  5.15      0.515
+22 Centennial 6              20  7.04      0.704
+23 Centennial 6              30  8.23      0.823
+24 Centennial 6              40  9.25      0.925
+25 Centennial 6              50 10         1    
+26 EBM        1              10  3.13      0.522
+27 EBM        1              20  4.05      0.675
+28 EBM        1              30  4.72      0.786
+29 EBM        1              40  5.31      0.885
+30 EBM        1              50  6         1    
+31 EBM        2              10  2.86      0.572
+32 EBM        2              20  3.77      0.755
+33 EBM        2              30  4.28      0.855
+34 EBM        2              40  4.77      0.954
+35 EBM        2              50  5         1    
+36 EBM        5              10  4.33      0.541
+37 EBM        5              20  5.98      0.748
+38 EBM        5              30  7.16      0.894
+39 EBM        5              40  7.67      0.958
+40 EBM        5              50  8         1    

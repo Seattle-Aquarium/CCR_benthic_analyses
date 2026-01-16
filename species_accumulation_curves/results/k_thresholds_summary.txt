@@ -1,0 +1,14 @@
+K-threshold summary by site and transect
+======================================
+
+# A tibble: 8 × 5
+  site       transect  k_90  k_95   R50
+  <fct>      <fct>    <int> <int> <dbl>
+1 Centennial 1           36    42     8
+2 Centennial 2           32    39     6
+3 Centennial 4           33    39     8
+4 Centennial 5           41    45     9
+5 Centennial 6           37    44    10
+6 EBM        1           42    46     6
+7 EBM        2           35    40     5
+8 EBM        5           31    39     8
