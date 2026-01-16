@@ -1,3 +1,7 @@
+# Takes folder containing original dataset csv files exported by CoralNet-Toolbox as input
+# **All target files must be placed within a separate folder in 'data' whether combining multiple files or not
+
+import os
 from pathlib import Path
 import pandas as pd
 
@@ -9,7 +13,7 @@ def format_header(column_name):
 def reformat_csv(file_path, site, transect):
     df = pd.read_csv(file_path)
 
-    # Clean header names
+    # Call function to clean header names
     df.columns = [format_header(col) for col in df.columns]
 
     # Build label frequency table per image
@@ -20,9 +24,9 @@ def reformat_csv(file_path, site, transect):
     )
 
     pivot = counts.pivot_table(
-        index="name",
-        columns="label",
-        values="count",
+        index="name", 
+        columns="label", 
+        values="count", 
         fill_value=0
     )
 
@@ -32,39 +36,18 @@ def reformat_csv(file_path, site, transect):
     # Clean header names in new table
     pivot.columns = [format_header(col) for col in pivot.columns]
 
-    pivot = pivot.reset_index()
-
-    # Build site / transect mapping from input CSV
-    meta = (
-        df[["name", "site_name", "transect_number"]]
-        .drop_duplicates()
-        .rename(
-            columns={
-                "site_name": "site",
-                "transect_number": "transect"
-            }
-        )
-    )
-
-    # Merge metadata into pivot table
-    pivot = pivot.merge(meta, on="name", how="left")
-
-    # Override with user input if provided
-    if site:
-        pivot["site"] = site
-
-    if transect:
-        pivot["transect"] = transect
+    # Add metadata
+    pivot["site"] = site
+    pivot["transect"] = transect
 
     # Reorder so site/transect/name come first
-    cols = (
-        ["name", "site", "transect"]
-        + [c for c in pivot.columns if c not in ["name", "site", "transect"]]
-    )
-    pivot = pivot[cols]
+    cols = ["name", "site", "transect"] + [
+        col for col in pivot.columns 
+        if col not in ["site", "transect", "name"]
+    ]
+    pivot = pivot.reset_index()[cols]
 
     return pivot
-
 
 def main():
     # Define relative paths
@@ -73,9 +56,9 @@ def main():
 
     data = root / "data"
     results = root / "results"
-
+    
     # Takes multiple inputs from an input folder
-    folder_name = input("Enter name of folder containing CSV files: ").strip()
+    folder_name = input("Enter name to folder containing CSV files: ").strip()
     folder_path = data / folder_name
     if not folder_path.is_dir():
         print(f"Error: Folder '{folder_path}' not found.")
@@ -86,21 +69,19 @@ def main():
     for filename in folder_path.iterdir():
         if filename.suffix.lower() == ".csv":
 
-            site = input("Enter site name for this dataset (leave blank to auto-fill): ").strip()
-            transect = input("Enter transect ID for this dataset (leave blank to auto-fill): ").strip()
+            site = input(f"Enter site name for {os.path.basename(filename)}: ").strip()
+            transect = input(f"Enter transect ID for {os.path.basename(filename)}: ").strip()
 
             df = reformat_csv(filename, site, transect)
             all_dataframes.append(df)
 
     if all_dataframes:
-        results.mkdir(exist_ok=True)
         save_path = results / f"{folder_path.name}-cleaned.csv"
         combined_df = pd.concat(all_dataframes, ignore_index=True)
         combined_df.to_csv(save_path, index=False)
         print(f"\nCombined CSV saved to: {save_path}")
     else:
         print("No CSV files found in the given folder.")
-
 
 if __name__ == "__main__":
     main()

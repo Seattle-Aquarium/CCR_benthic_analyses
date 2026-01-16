@@ -15,7 +15,6 @@ def main():
     csv_filename = input("Enter CSV file name: ").strip()
     csv_path = data / csv_filename
 
-"""
     if not csv_path.is_file():
         print(f"Error: File '{csv_path}' not found.")
         return
@@ -52,7 +51,6 @@ def main():
     plt.close()
 
     print(f"Confusion matrix saved to: {output_path}")
-"""
 
 if __name__ == "__main__":
     main()
