@@ -33,12 +33,12 @@ Usage:
         --output-dir   /path/to/patches/ \\
         --metadata-csv /path/to/patches/metadata.csv
 
-    # Larger crops (3× the Toolbox patch size):
+    # Larger crops (3.5× the Toolbox patch size):
     python toolbox_to_subjects.py \\
         --dataset-csv dataset.csv \\
         --output-dir  patches/ \\
         --metadata-csv patches/metadata.csv \\
-        --scale 3
+        --scale 3.5
 
     # Dry run — validate inputs and count rows without writing any files:
     python toolbox_to_subjects.py \\
@@ -87,7 +87,7 @@ def parse_args():
                    help="Directory where cropped patch images will be saved")
     p.add_argument("--metadata-csv", required=True,
                    help="Output path for metadata.csv (consumed by import_subjects.py)")
-    p.add_argument("--scale",        type=float, default=2.0,
+    p.add_argument("--scale",        type=float, default=3.5,
                    help="Crop size multiplier relative to Toolbox Patch Size (must be ≥ 1.0)")
     p.add_argument("--jpeg-quality", type=int, default=95,
                    help="JPEG output quality 1–100")
