@@ -24,7 +24,7 @@ zooniverse-project/
 
 ```
 CoralNet-Toolbox
-    dataset.csv
+    annotations.csv
         │
         ▼
  toolbox_to_subjects.py
@@ -77,7 +77,7 @@ ZOONIVERSE_PROJECT_ID=24397
 
 ### `toolbox_to_subjects.py` — Extract patches from CoralNet-Toolbox
 
-Reads a `dataset.csv` exported from CoralNet-Toolbox and produces a folder of cropped patch images ready for Zooniverse, plus a `metadata.csv` for the import script.
+Reads a `annotations.csv` exported from CoralNet-Toolbox and produces a folder of cropped patch images ready for Zooniverse, plus a `metadata.csv` for the import script.
 
 Each output image is a larger crop centred on the annotation point with three overlays burned in:
 - A **green rectangle** marking the original Toolbox patch boundary
@@ -88,7 +88,7 @@ Each output image is a larger crop centred on the annotation point with three ov
 
 | Argument | Required | Default | Description |
 |---|---|---|---|
-| `--dataset-csv` | ✅ | — | Path to `dataset.csv` from CoralNet-Toolbox |
+| `--annotations-csv` | ✅ | — | Path to `annotation.csv` from CoralNet-Toolbox |
 | `--output-dir` | ✅ | — | Folder where patch images will be saved |
 | `--metadata-csv` | ✅ | — | Output path for `metadata.csv` |
 | `--scale` | | `3.5` | Crop size multiplier relative to Toolbox patch size |
@@ -100,22 +100,22 @@ Each output image is a larger crop centred on the annotation point with three ov
 ```bash
 # Standard run
 python scripts/toolbox_to_subjects.py \
-    --dataset-csv  /data/T-006/dataset.csv \
-    --output-dir   /data/T-006/patches/ \
-    --metadata-csv /data/T-006/patches/metadata.csv
+    --annotations-csv  /transects/T1/annotations.csv \
+    --output-dir   /transects/T1/patches/ \
+    --metadata-csv /transects/T1/patches/metadata.csv
 
 # Larger crops and smaller file size
 python scripts/toolbox_to_subjects.py \
-    --dataset-csv  /data/T-006/dataset.csv \
-    --output-dir   /data/T-006/patches/ \
-    --metadata-csv /data/T-006/patches/metadata.csv \
-    --scale 3.5 --jpeg-quality 80
+    --annotations-csv  /transects/T1/annotations.csv \
+    --output-dir   /transects/T1/patches/ \
+    --metadata-csv /transects/T1/patches/metadata.csv \
+    --scale 4 --jpeg-quality 80
 
 # Check everything looks right before committing
 python scripts/toolbox_to_subjects.py \
-    --dataset-csv /data/T-006/dataset.csv \
-    --output-dir  /data/T-006/patches/ \
-    --metadata-csv /data/T-006/patches/metadata.csv \
+    --annotations-csv /transects/T1/annotations.csv \
+    --output-dir  /transects/T1/patches/ \
+    --metadata-csv /transects/T1/patches/metadata.csv \
     --dry-run
 ```
 
@@ -135,7 +135,7 @@ Reads the patch images and `metadata.csv` produced by the previous step and uplo
 
 | Argument | Required | Default | Description |
 |---|---|---|---|
-| `--transect-id` | ✅ | — | Internal transect ID, e.g. `T-006` |
+| `--transect-id` | ✅ | — | Internal transect ID, e.g. `EBM_W25_T1` |
 | `--image-dir` | ✅ | — | Folder containing patch images and `metadata.csv` |
 | `--subject-set-name` | ✅ * | — | Name for a **new** subject set to create |
 | `--subject-set-id` | ✅ * | — | ID of an **existing** subject set to add into |
