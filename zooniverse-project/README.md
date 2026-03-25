@@ -13,7 +13,7 @@ zooniverse-project/
 ├── scripts/
 │   ├── toolbox_to_subjects.py          ← Step 1: extract patches from Toolbox annotations
 │   ├── import_subjects.py              ← Step 2: upload patches to Zooniverse
-│   ├── export_classifications.py       ← Step 3: download volunteer classifications
+│   ├── export_subjectset.py            ← Step 3: export classifications for one subject set
 │   ├── analyse_classifications.py      ← Step 4: generate Excel summary report
 │   └── config.example.env             ← credentials template
 └── exports/                            ← downloaded classification CSVs (git-ignored)
@@ -38,8 +38,8 @@ CoralNet-Toolbox
    (volunteers classify)
         │
         ▼
- export_classifications.py
-        │  downloads & flattens results
+ export_subjectset.py
+     │  downloads classifications export for one subject set
         ▼
    exports/  *.csv
      │
@@ -193,41 +193,26 @@ python scripts/import_subjects.py \
 
 ---
 
-### `export_classifications.py` — Download volunteer classifications
+### `export_subjectset.py` — Export classifications for one subject set
 
-Downloads the classification export for a workflow and saves a flattened CSV.
+Requests a classifications export for a single subject set and saves the CSV to the path you choose.
 
-**Arguments**
+Current script behavior uses a GUI form for inputs.
 
-| Argument | Required | Default | Description |
-|---|---|---|---|
-| `--workflow-id` | ✅ | — | Zooniverse workflow ID |
-| `--subject-set-id` | | — | Filter export to a specific subject set |
-| `--output-dir` | | `exports/` | Folder to save the output CSV |
-| `--generate-new` | | off | Request a fresh export from Zooniverse (can take several minutes) |
+**GUI inputs**
+
+- Subject set ID (required)
+- Save CSV path (required)
 
 **Example**
 
 ```bash
-# Download the most recent export for a workflow
-python scripts/export_classifications.py \
-    --workflow-id 9876 \
-    --output-dir  exports/
-
-# Filter to one subject set and request a fresh export
-python scripts/export_classifications.py \
-    --workflow-id    9876 \
-    --subject-set-id 135054 \
-    --output-dir     exports/ \
-    --generate-new
+python scripts/export_subjectset.py
 ```
 
 **Output files**
 
-- `exports/workflow<id>_ss<id>_<YYYYMMDD>_classifications.csv` — flattened classifications
-- `export_log.txt` — run log
-
-> **Customise the flattening:** `flatten_annotations()` in the script extracts task answers into columns. Edit it to match your workflow's specific question/task structure.
+- CSV at the path selected in the GUI (subject set classifications export)
 
 After export: add a row to the **Export Log** sheet in `tracker.xlsx` and set the transect status to `Complete`.
 
@@ -250,7 +235,7 @@ Current script behavior uses a GUI form for inputs.
 
 - `reports/classification_report_<timestamp>.xlsx` (filename includes selected filters)
 
-Use this as the analysis step after running `export_classifications.py`.
+Use this as the analysis step after running `export_subjectset.py`.
 
 ---
 
@@ -284,25 +269,3 @@ https://www.zooniverse.org/lab/24397/subject-sets/135054
 | `Complete` | Exported and saved |
 | `On Hold` | Paused |
 
----
-
-## Git Tips
-
-Tag script releases so the version column in `tracker.xlsx` links to real code:
-
-```bash
-git tag toolbox-v1.0
-git tag import-v2.0
-git tag export-v1.0
-git push --tags
-```
-
-Update the tracker after every upload or export, then commit:
-
-```bash
-git add tracker.xlsx
-git commit -m "Tracker: T-006 uploaded, subject set 135054"
-git push
-```
-
-Export CSVs are git-ignored (large, re-downloadable from Zooniverse). Only `tracker.xlsx` and scripts are tracked.

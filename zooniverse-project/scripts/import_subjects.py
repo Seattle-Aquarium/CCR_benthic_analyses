@@ -1,6 +1,5 @@
 """
 import_subjects.py  —  Upload images to a Zooniverse subject set
-Version: 2.0
 
 What's new in v2.0:
   - Reads metadata.csv from the image directory (all columns become subject metadata)

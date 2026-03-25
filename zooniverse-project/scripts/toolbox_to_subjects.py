@@ -3,7 +3,6 @@
 
 """
 toolbox_to_subjects.py  —  CoralNet-Toolbox → Zooniverse patch extractor
-Version: 1.0
 
 This script sits UPSTREAM of import_subjects.py in the workflow:
 
