@@ -1,0 +1,27 @@
+# Credentials — NEVER commit these
+scripts/.env
+*.env
+
+# Classification exports (can be large; re-downloadable from Zooniverse)
+exports/*.csv
+exports/*.zip
+
+# Local image directories
+images/
+raw/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+import_log.txt
+export_log.txt
