@@ -7,13 +7,13 @@ Version: 1.0
 
 This script sits UPSTREAM of import_subjects.py in the workflow:
 
-    dataset.csv  →  [this script]  →  patches/ + metadata.csv
+    annotation.csv  →  [this script]  →  patches/ + metadata.csv
                                             ↓
                                    [import_subjects.py]
                                             ↓
                                        Zooniverse
 
-For each annotation row in dataset.csv this script:
+For each annotation row in annotation.csv this script:
     - Computes the original small patch bounds (Patch Size around Row/Column)
     - Extracts a LARGER crop centered on the same point (--scale × Patch Size)
     - Overlays a rectangle showing the original small patch area
@@ -21,31 +21,23 @@ For each annotation row in dataset.csv this script:
     - Burns the Toolbox model prediction label onto the image
     - Saves the large crop as:  <source_image>_r<row>_c<col>.jpg
     - Writes metadata.csv ready for import_subjects.py:
-        filename, source_image, row, column, model_pred_code, model_pred_name
+        filename, source_image, row, column, model_pred_code, model_pred_name,
+        site_name, survey_date, transect_number
 
 NOTE:
     source_image is the original image name WITHOUT the file extension so
     Zooniverse does not mistake it for another media file to upload.
 
 Usage:
-    python toolbox_to_subjects.py \\
-        --dataset-csv  /path/to/dataset.csv \\
-        --output-dir   /path/to/patches/ \\
-        --metadata-csv /path/to/patches/metadata.csv
+    python toolbox_to_subjects.py
 
-    # Larger crops (3.5× the Toolbox patch size):
-    python toolbox_to_subjects.py \\
-        --dataset-csv dataset.csv \\
-        --output-dir  patches/ \\
-        --metadata-csv patches/metadata.csv \\
-        --scale 3.5
-
-    # Dry run — validate inputs and count rows without writing any files:
-    python toolbox_to_subjects.py \\
-        --dataset-csv dataset.csv \\
-        --output-dir  patches/ \\
-        --metadata-csv patches/metadata.csv \\
-        --dry-run
+    A window will open asking you to select:
+      1. The annotation.csv exported from CoralNet-Toolbox
+      2. The output folder where patch images will be saved
+      3. The path for the output metadata.csv
+            4. Site name, survey date, and transect number
+            5. The scale factor (default 3.5)
+            6. Whether to do a dry run only
 
 Requirements:
     pip install opencv-python-headless pandas tqdm
@@ -53,8 +45,10 @@ Requirements:
 
 import os
 import sys
-import argparse
+import types
 import logging
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
 
 import cv2
@@ -74,38 +68,215 @@ log = logging.getLogger(__name__)
 
 
 # ============================================================
-# CLI
+# GUI INPUT FORM
 # ============================================================
-def parse_args():
-    p = argparse.ArgumentParser(
-        description="Extract Zooniverse-ready patches from CoralNet-Toolbox annotations",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+def get_args_via_gui():
+    """Open a friendly GUI form to collect all run parameters."""
+    result = {}
+
+    root = tk.Tk()
+    root.title("CoralNet-Toolbox → Zooniverse Patch Extractor")
+    root.resizable(False, False)
+
+    pad = {"padx": 10, "pady": 5}
+
+    # ── Header ────────────────────────────────────────────────────────────
+    ttk.Label(root,
+              text="CoralNet-Toolbox  →  Zooniverse Patch Extractor",
+              font=("Helvetica", 13, "bold")
+              ).grid(row=0, column=0, columnspan=3, pady=(14, 4), padx=14)
+    ttk.Label(root,
+              text="Fill in the fields below, then click Run.",
+              foreground="grey"
+              ).grid(row=1, column=0, columnspan=3, pady=(0, 4))
+    ttk.Separator(root, orient="horizontal").grid(
+        row=2, column=0, columnspan=3, sticky="ew", padx=10, pady=4)
+
+    # ── annotation CSV ───────────────────────────────────────────────────────
+    ttk.Label(root, text="Annotation CSV:").grid(row=3, column=0, sticky="e", **pad)
+    annotation_var = tk.StringVar()
+    ttk.Entry(root, textvariable=annotation_var, width=55).grid(row=3, column=1, **pad)
+
+    def browse_annotation():
+        path = filedialog.askopenfilename(
+            title="Select the annotation.csv exported from CoralNet-Toolbox",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+        )
+        if path:
+            annotation_var.set(path)
+            _auto_fill_metadata()
+
+    ttk.Button(root, text="Browse…", command=browse_annotation).grid(row=3, column=2, **pad)
+
+    # ── Output Directory ──────────────────────────────────────────────────
+    ttk.Label(root, text="Output folder:").grid(row=4, column=0, sticky="e", **pad)
+    outdir_var = tk.StringVar()
+    ttk.Entry(root, textvariable=outdir_var, width=55).grid(row=4, column=1, **pad)
+
+    def browse_outdir():
+        path = filedialog.askdirectory(
+            title="Select (or create) the folder where patch images will be saved")
+        if path:
+            outdir_var.set(path)
+            _auto_fill_metadata()
+
+    ttk.Button(root, text="Browse…", command=browse_outdir).grid(row=4, column=2, **pad)
+
+    # ── Metadata CSV ──────────────────────────────────────────────────────
+    ttk.Label(root, text="Metadata CSV output:").grid(row=5, column=0, sticky="e", **pad)
+    meta_var = tk.StringVar()
+    ttk.Entry(root, textvariable=meta_var, width=55).grid(row=5, column=1, **pad)
+
+    def browse_meta():
+        path = filedialog.asksaveasfilename(
+            title="Save metadata CSV as…",
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+        )
+        if path:
+            meta_var.set(path)
+
+    ttk.Button(root, text="Browse…", command=browse_meta).grid(row=5, column=2, **pad)
+
+    def _auto_fill_metadata():
+        """Auto-suggest metadata.csv path inside the chosen output folder."""
+        if outdir_var.get() and not meta_var.get():
+            meta_var.set(str(Path(outdir_var.get()) / "metadata.csv"))
+
+    ttk.Separator(root, orient="horizontal").grid(
+        row=6, column=0, columnspan=3, sticky="ew", padx=10, pady=4)
+
+    # ── Survey metadata (written to every metadata.csv row) ─────────────
+    ttk.Label(root, text="Site name:").grid(row=7, column=0, sticky="e", **pad)
+    site_name_var = tk.StringVar()
+    ttk.Entry(root, textvariable=site_name_var, width=55).grid(row=7, column=1, **pad)
+
+    ttk.Label(root, text="Survey date (YYYY-MM-DD):").grid(row=8, column=0, sticky="e", **pad)
+    survey_date_var = tk.StringVar()
+    ttk.Entry(root, textvariable=survey_date_var, width=55).grid(row=8, column=1, **pad)
+
+    ttk.Label(root, text="Transect number:").grid(row=9, column=0, sticky="e", **pad)
+    transect_number_var = tk.StringVar()
+    ttk.Entry(root, textvariable=transect_number_var, width=55).grid(row=9, column=1, **pad)
+
+    # ── Scale factor ──────────────────────────────────────────────────────
+    ttk.Label(root, text="Scale factor:").grid(row=10, column=0, sticky="e", **pad)
+    scale_var = tk.StringVar(value="3.5")
+    sf = ttk.Frame(root)
+    sf.grid(row=10, column=1, sticky="w", **pad)
+    ttk.Entry(sf, textvariable=scale_var, width=8).pack(side="left")
+    ttk.Label(sf, text="  ×  patch size   (e.g. 3.5 = crop 3.5× the Toolbox patch)",
+              foreground="grey").pack(side="left")
+
+    # ── JPEG quality ──────────────────────────────────────────────────────
+    ttk.Label(root, text="JPEG quality:").grid(row=11, column=0, sticky="e", **pad)
+    quality_var = tk.StringVar(value="95")
+    qf = ttk.Frame(root)
+    qf.grid(row=11, column=1, sticky="w", **pad)
+    ttk.Entry(qf, textvariable=quality_var, width=8).pack(side="left")
+    ttk.Label(qf, text="  1–100   (95 is a good default)",
+              foreground="grey").pack(side="left")
+
+    # ── Dry run ───────────────────────────────────────────────────────────
+    dry_run_var = tk.BooleanVar(value=False)
+    df = ttk.Frame(root)
+    df.grid(row=12, column=0, columnspan=3, sticky="w", padx=18, pady=4)
+    ttk.Checkbutton(
+        df,
+        text="Dry run  (validate inputs and count patches without writing any files)",
+        variable=dry_run_var,
+    ).pack(side="left")
+
+    ttk.Separator(root, orient="horizontal").grid(
+        row=13, column=0, columnspan=3, sticky="ew", padx=10, pady=6)
+
+    # ── Run / Cancel buttons ──────────────────────────────────────────────
+    btn_frame = ttk.Frame(root)
+    btn_frame.grid(row=14, column=0, columnspan=3, pady=(0, 14))
+
+    def on_run():
+        if not annotation_var.get():
+            messagebox.showerror("Missing input", "Please select a annotation CSV file.")
+            return
+        if not Path(annotation_var.get()).is_file():
+            messagebox.showerror("File not found",
+                                 f"annotation CSV not found:\n{annotation_var.get()}")
+            return
+        if not outdir_var.get():
+            messagebox.showerror("Missing input", "Please select an output folder.")
+            return
+        if not meta_var.get():
+            messagebox.showerror("Missing input",
+                                 "Please specify a path for the metadata CSV output.")
+            return
+        site_name = site_name_var.get().strip()
+        survey_date = survey_date_var.get().strip()
+        transect_number = transect_number_var.get().strip()
+        if not site_name:
+            messagebox.showerror("Missing input", "Please enter a site name.")
+            return
+        if not survey_date:
+            messagebox.showerror("Missing input", "Please enter a survey date.")
+            return
+        if not transect_number:
+            messagebox.showerror("Missing input", "Please enter a transect number.")
+            return
+        try:
+            scale = float(scale_var.get())
+            if scale < 1.0:
+                messagebox.showwarning("Scale clamped",
+                    "Scale factor is less than 1.0 — it will be set to 1.0.")
+                scale = 1.0
+        except ValueError:
+            messagebox.showerror("Invalid scale",
+                                 "Scale factor must be a number (e.g. 3.5).")
+            return
+        try:
+            quality = int(quality_var.get())
+            if not (1 <= quality <= 100):
+                messagebox.showwarning("Quality clamped",
+                    "JPEG quality must be 1–100. It will be set to 95.")
+                quality = 95
+        except ValueError:
+            messagebox.showerror("Invalid quality",
+                                 "JPEG quality must be a whole number (e.g. 95).")
+            return
+
+        result["annotation_csv"]  = annotation_var.get()
+        result["output_dir"]   = outdir_var.get()
+        result["metadata_csv"] = meta_var.get()
+        result["site_name"] = site_name
+        result["survey_date"] = survey_date
+        result["transect_number"] = transect_number
+        result["scale"]        = scale
+        result["jpeg_quality"] = quality
+        result["dry_run"]      = dry_run_var.get()
+        result["submitted"]    = True
+        root.destroy()
+
+    def on_cancel():
+        root.destroy()
+
+    ttk.Button(btn_frame, text="  Run  ", command=on_run).pack(side="left", padx=8)
+    ttk.Button(btn_frame, text="Cancel",  command=on_cancel).pack(side="left", padx=8)
+
+    root.mainloop()
+
+    if not result.get("submitted"):
+        print("Cancelled by user.")
+        sys.exit(0)
+
+    return types.SimpleNamespace(
+        annotation_csv  = result["annotation_csv"],
+        output_dir   = result["output_dir"],
+        metadata_csv = result["metadata_csv"],
+        site_name    = result["site_name"],
+        survey_date  = result["survey_date"],
+        transect_number = result["transect_number"],
+        scale        = result["scale"],
+        jpeg_quality = result["jpeg_quality"],
+        dry_run      = result["dry_run"],
     )
-    p.add_argument("--dataset-csv",  required=True,
-                   help="Path to the dataset.csv exported from CoralNet-Toolbox")
-    p.add_argument("--output-dir",   required=True,
-                   help="Directory where cropped patch images will be saved")
-    p.add_argument("--metadata-csv", required=True,
-                   help="Output path for metadata.csv (consumed by import_subjects.py)")
-    p.add_argument("--scale",        type=float, default=3.5,
-                   help="Crop size multiplier relative to Toolbox Patch Size (must be ≥ 1.0)")
-    p.add_argument("--jpeg-quality", type=int, default=95,
-                   help="JPEG output quality 1–100")
-    p.add_argument("--dry-run",      action="store_true",
-                   help="Validate inputs and count rows without writing any files")
-    return p.parse_args()
-
-
-def validate_args(args):
-    if not Path(args.dataset_csv).is_file():
-        log.error(f"dataset.csv not found: {args.dataset_csv}")
-        sys.exit(1)
-    if args.scale < 1.0:
-        log.warning(f"--scale {args.scale} is less than 1.0; clamping to 1.0")
-        args.scale = 1.0
-    if not (1 <= args.jpeg_quality <= 100):
-        log.warning(f"--jpeg-quality {args.jpeg_quality} out of range; clamping to 95")
-        args.jpeg_quality = 95
 
 
 # ============================================================
@@ -239,7 +410,8 @@ def unique_filename(output_dir: str, filename: str) -> str:
 # ============================================================
 # CORE EXTRACTION
 # ============================================================
-def extract_patches(dataset_csv: str, output_dir: str, metadata_csv: str,
+def extract_patches(annotation_csv: str, output_dir: str, metadata_csv: str,
+                    site_name: str, survey_date: str, transect_number: str,
                     scale_factor: float, jpeg_quality: int,
                     dry_run: bool = False) -> int:
     """
@@ -247,7 +419,7 @@ def extract_patches(dataset_csv: str, output_dir: str, metadata_csv: str,
     Returns the number of patches successfully written (or that would be written
     in dry-run mode).
     """
-    df = pd.read_csv(dataset_csv)
+    df = pd.read_csv(annotation_csv)
 
     # Keep only Patch-type annotations if the column exists
     if "Annotation Type" in df.columns:
@@ -368,6 +540,9 @@ def extract_patches(dataset_csv: str, output_dir: str, metadata_csv: str,
             "column":          c,
             "model_pred_code": model_pred_code,
             "model_pred_name": model_pred_name,
+            "site_name":       site_name,
+            "survey_date":     survey_date,
+            "transect_number": transect_number,
         })
 
     # ── Write metadata.csv ────────────────────────────────────────────────────
@@ -388,22 +563,27 @@ def extract_patches(dataset_csv: str, output_dir: str, metadata_csv: str,
 # ENTRY POINT
 # ============================================================
 def main():
-    args = parse_args()
-    validate_args(args)
+    args = get_args_via_gui()
 
     log.info("CoralNet-Toolbox → Zooniverse patch extractor")
-    log.info(f"  dataset CSV  : {args.dataset_csv}")
+    log.info(f"  annotation CSV  : {args.annotation_csv}")
     log.info(f"  output dir   : {args.output_dir}")
     log.info(f"  metadata CSV : {args.metadata_csv}")
+    log.info(f"  site name    : {args.site_name}")
+    log.info(f"  survey date  : {args.survey_date}")
+    log.info(f"  transect no. : {args.transect_number}")
     log.info(f"  scale factor : {args.scale}×")
     log.info(f"  JPEG quality : {args.jpeg_quality}")
     if args.dry_run:
         log.info("  mode         : DRY RUN")
 
     n = extract_patches(
-        dataset_csv  = args.dataset_csv,
+        annotation_csv  = args.annotation_csv,
         output_dir   = args.output_dir,
         metadata_csv = args.metadata_csv,
+        site_name    = args.site_name,
+        survey_date  = args.survey_date,
+        transect_number = args.transect_number,
         scale_factor = args.scale,
         jpeg_quality = args.jpeg_quality,
         dry_run      = args.dry_run,

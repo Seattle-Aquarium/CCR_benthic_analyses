@@ -11,23 +11,12 @@ What's new in v2.0:
   - .env credentials + argparse CLI (no hardcoded settings)
 
 Usage:
-    python import_subjects.py \
-        --transect-id T-006 \
-        --subject-set-name "WestLagoon_Jan2026" \
-        --image-dir /path/to/images/T-006/
+    python import_subjects.py
 
-    # Upload into an existing subject set instead of creating a new one:
-    python import_subjects.py \
-        --transect-id T-006 \
-        --subject-set-id 135054 \
-        --image-dir /path/to/images/T-006/
-
-    # Test with first 10 images only, no actual upload:
-    python import_subjects.py \
-        --transect-id T-006 \
-        --subject-set-name "Test" \
-        --image-dir /path/to/images/ \
-        --dry-run --limit 10
+    A window opens and asks for required fields:
+      1. Transect ID
+      2. Image directory (must contain images and optional metadata.csv)
+      3. Subject set target (new name or existing ID)
 
 Requirements:
     pip install panoptes-client python-dotenv tqdm pandas
@@ -42,13 +31,16 @@ Credentials:
 import os
 import sys
 import time
-import argparse
+import types
 import logging
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
 from tqdm import tqdm
+from requests.exceptions import RequestException
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
 
 # ── Constants ────────────────────────────────────────────────────────────────
@@ -69,50 +61,276 @@ log = logging.getLogger(__name__)
 
 
 # ============================================================
-# CLI
+# GUI INPUT FORM
 # ============================================================
-def parse_args():
-    p = argparse.ArgumentParser(
-        description="Upload images + metadata to a Zooniverse subject set",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+def get_args_via_gui():
+    """Open a GUI form for required fields and return args namespace."""
+    result = {}
+
+    root = tk.Tk()
+    root.title("Import Subjects to Zooniverse")
+    root.resizable(False, False)
+
+    pad = {"padx": 10, "pady": 5}
+
+    ttk.Label(
+        root,
+        text="Zooniverse Subject Import",
+        font=("Helvetica", 13, "bold"),
+    ).grid(row=0, column=0, columnspan=3, pady=(14, 4), padx=14)
+    ttk.Label(
+        root,
+        text="Enter required fields, then click Run.",
+        foreground="grey",
+    ).grid(row=1, column=0, columnspan=3, pady=(0, 4))
+    ttk.Separator(root, orient="horizontal").grid(
+        row=2, column=0, columnspan=3, sticky="ew", padx=10, pady=4
     )
 
-    # Required
-    p.add_argument("--transect-id",  required=True,
-                   help="Your internal transect ID, e.g. T-006")
-    p.add_argument("--image-dir",    required=True,
-                   help="Directory containing images AND metadata.csv")
+    ttk.Label(root, text="Transect ID:").grid(row=3, column=0, sticky="e", **pad)
+    transect_var = tk.StringVar()
+    ttk.Entry(root, textvariable=transect_var, width=55).grid(row=3, column=1, **pad)
 
-    # Subject set — provide one of these two
-    ss = p.add_mutually_exclusive_group(required=True)
-    ss.add_argument("--subject-set-name", default=None,
-                    help="Name for a NEW subject set to create")
-    ss.add_argument("--subject-set-id",   default=None,
-                    help="Existing subject set ID to add images into")
+    ttk.Label(root, text="Image folder:").grid(row=4, column=0, sticky="e", **pad)
+    image_dir_var = tk.StringVar()
+    ttk.Entry(root, textvariable=image_dir_var, width=55).grid(row=4, column=1, **pad)
 
-    # Optional
-    p.add_argument("--filename-column",  default="filename",
-                   help="Column name in metadata.csv that holds the image filename")
-    p.add_argument("--upload-log",       default=None,
-                   help="CSV to record successfully uploaded subjects "
-                        "(default: <image-dir>/upload_log.csv)")
-    p.add_argument("--fail-log",         default=None,
-                   help="CSV to record skipped/failed subjects "
-                        "(default: <image-dir>/fail_log.csv)")
-    p.add_argument("--checkpoint-every", type=int, default=100,
-                   help="Flush subjects to the set every N uploads")
-    p.add_argument("--sleep",            type=float, default=0.1,
-                   help="Seconds to sleep between subject saves (reduces API pressure)")
-    p.add_argument("--limit",            type=int, default=None,
-                   help="Only process the first N rows (useful for testing)")
-    p.add_argument("--check-server-duplicates", action="store_true",
-                   help="Also check Zooniverse server for duplicates (slow)")
-    p.add_argument("--skip-missing",     action="store_true", default=True,
-                   help="Skip rows where the image file is not found instead of crashing")
-    p.add_argument("--dry-run",          action="store_true",
-                   help="Validate inputs and list images without uploading anything")
+    def browse_image_dir():
+        path = filedialog.askdirectory(
+            title="Select folder containing images and optional metadata.csv"
+        )
+        if path:
+            image_dir_var.set(path)
 
-    return p.parse_args()
+    ttk.Button(root, text="Browse...", command=browse_image_dir).grid(
+        row=4, column=2, **pad
+    )
+
+    ttk.Separator(root, orient="horizontal").grid(
+        row=5, column=0, columnspan=3, sticky="ew", padx=10, pady=4
+    )
+
+    ttk.Label(root, text="Subject set:").grid(row=6, column=0, sticky="ne", **pad)
+    subject_mode_var = tk.StringVar(value="name")
+    subject_frame = ttk.Frame(root)
+    subject_frame.grid(row=6, column=1, sticky="w", **pad)
+
+    ttk.Radiobutton(
+        subject_frame,
+        text="Create new",
+        variable=subject_mode_var,
+        value="name",
+    ).grid(row=0, column=0, sticky="w")
+    ttk.Radiobutton(
+        subject_frame,
+        text="Use existing ID",
+        variable=subject_mode_var,
+        value="id",
+    ).grid(row=1, column=0, sticky="w")
+
+    new_name_var = tk.StringVar()
+    existing_id_var = tk.StringVar()
+
+    ttk.Label(subject_frame, text="New subject set name:").grid(
+        row=0, column=1, sticky="e", padx=(10, 6)
+    )
+    ttk.Entry(subject_frame, textvariable=new_name_var, width=32).grid(
+        row=0, column=2, sticky="w"
+    )
+
+    ttk.Label(subject_frame, text="Existing subject set ID:").grid(
+        row=1, column=1, sticky="e", padx=(10, 6)
+    )
+    ttk.Entry(subject_frame, textvariable=existing_id_var, width=32).grid(
+        row=1, column=2, sticky="w"
+    )
+
+    dry_run_var = tk.BooleanVar(value=False)
+    ttk.Checkbutton(
+        root,
+        text="Dry run (validate files only; no upload)",
+        variable=dry_run_var,
+    ).grid(row=7, column=0, columnspan=3, sticky="w", padx=18, pady=4)
+
+    advanced_frame = ttk.LabelFrame(root, text="Advanced options (optional)")
+    advanced_frame.grid(row=8, column=0, columnspan=3, sticky="ew", padx=10, pady=(2, 6))
+
+    ttk.Label(advanced_frame, text="Filename column:").grid(
+        row=0, column=0, sticky="e", padx=10, pady=4
+    )
+    filename_column_var = tk.StringVar(value="filename")
+    ttk.Entry(advanced_frame, textvariable=filename_column_var, width=20).grid(
+        row=0, column=1, sticky="w", padx=(0, 12), pady=4
+    )
+
+    ttk.Label(advanced_frame, text="Checkpoint every:").grid(
+        row=0, column=2, sticky="e", padx=(0, 6), pady=4
+    )
+    checkpoint_every_var = tk.StringVar(value="100")
+    ttk.Entry(advanced_frame, textvariable=checkpoint_every_var, width=10).grid(
+        row=0, column=3, sticky="w", pady=4
+    )
+    ttk.Label(advanced_frame, text="rows", foreground="grey").grid(
+        row=0, column=4, sticky="w", padx=(6, 10), pady=4
+    )
+
+    ttk.Label(advanced_frame, text="Sleep between uploads:").grid(
+        row=1, column=0, sticky="e", padx=10, pady=4
+    )
+    sleep_var = tk.StringVar(value="0.1")
+    ttk.Entry(advanced_frame, textvariable=sleep_var, width=10).grid(
+        row=1, column=1, sticky="w", pady=4
+    )
+    ttk.Label(advanced_frame, text="seconds", foreground="grey").grid(
+        row=1, column=2, sticky="w", padx=(6, 10), pady=4
+    )
+
+    ttk.Label(advanced_frame, text="Limit rows:").grid(
+        row=1, column=3, sticky="e", padx=(0, 6), pady=4
+    )
+    limit_var = tk.StringVar(value="")
+    ttk.Entry(advanced_frame, textvariable=limit_var, width=10).grid(
+        row=1, column=4, sticky="w", pady=4
+    )
+
+    check_server_dupes_var = tk.BooleanVar(value=False)
+    skip_missing_var = tk.BooleanVar(value=True)
+    ttk.Checkbutton(
+        advanced_frame,
+        text="Check server for duplicates (slow)",
+        variable=check_server_dupes_var,
+    ).grid(row=2, column=0, columnspan=3, sticky="w", padx=10, pady=(2, 6))
+    ttk.Checkbutton(
+        advanced_frame,
+        text="Skip missing files",
+        variable=skip_missing_var,
+    ).grid(row=2, column=3, columnspan=2, sticky="w", padx=10, pady=(2, 6))
+
+    ttk.Separator(root, orient="horizontal").grid(
+        row=9, column=0, columnspan=3, sticky="ew", padx=10, pady=6
+    )
+
+    btn_frame = ttk.Frame(root)
+    btn_frame.grid(row=10, column=0, columnspan=3, pady=(0, 14))
+
+    def on_run():
+        transect_id = transect_var.get().strip()
+        image_dir = image_dir_var.get().strip()
+        mode = subject_mode_var.get()
+        subject_set_name = new_name_var.get().strip()
+        subject_set_id = existing_id_var.get().strip()
+        filename_column = filename_column_var.get().strip()
+
+        if not transect_id:
+            messagebox.showerror("Missing input", "Please enter a transect ID.")
+            return
+
+        if not image_dir:
+            messagebox.showerror("Missing input", "Please select an image folder.")
+            return
+        if not Path(image_dir).is_dir():
+            messagebox.showerror("Folder not found", f"Image folder not found:\n{image_dir}")
+            return
+
+        if mode == "name":
+            if not subject_set_name:
+                messagebox.showerror(
+                    "Missing input",
+                    "Enter a new subject set name or switch to existing ID.",
+                )
+                return
+            subject_set_id = None
+        else:
+            if not subject_set_id:
+                messagebox.showerror(
+                    "Missing input",
+                    "Enter an existing subject set ID or switch to new name.",
+                )
+                return
+            subject_set_name = None
+
+        if not filename_column:
+            messagebox.showerror("Invalid input", "Filename column cannot be empty.")
+            return
+
+        try:
+            checkpoint_every = int(checkpoint_every_var.get().strip())
+            if checkpoint_every < 1:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror(
+                "Invalid input",
+                "Checkpoint every must be a whole number >= 1.",
+            )
+            return
+
+        try:
+            sleep_seconds = float(sleep_var.get().strip())
+            if sleep_seconds < 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror(
+                "Invalid input",
+                "Sleep must be a number >= 0 (for example 0.1).",
+            )
+            return
+
+        limit_text = limit_var.get().strip()
+        if limit_text:
+            try:
+                limit_value = int(limit_text)
+                if limit_value < 1:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror(
+                    "Invalid input",
+                    "Limit rows must be blank or a whole number >= 1.",
+                )
+                return
+        else:
+            limit_value = None
+
+        result["transect_id"] = transect_id
+        result["image_dir"] = image_dir
+        result["subject_set_name"] = subject_set_name
+        result["subject_set_id"] = subject_set_id
+        result["filename_column"] = filename_column
+        result["checkpoint_every"] = checkpoint_every
+        result["sleep"] = sleep_seconds
+        result["limit"] = limit_value
+        result["check_server_duplicates"] = check_server_dupes_var.get()
+        result["skip_missing"] = skip_missing_var.get()
+        result["dry_run"] = dry_run_var.get()
+        result["submitted"] = True
+        root.destroy()
+
+    def on_cancel():
+        root.destroy()
+
+    ttk.Button(btn_frame, text="  Run  ", command=on_run).pack(side="left", padx=8)
+    ttk.Button(btn_frame, text="Cancel", command=on_cancel).pack(side="left", padx=8)
+
+    root.mainloop()
+
+    if not result.get("submitted"):
+        print("Cancelled by user.")
+        sys.exit(0)
+
+    return types.SimpleNamespace(
+        transect_id=result["transect_id"],
+        image_dir=result["image_dir"],
+        subject_set_name=result["subject_set_name"],
+        subject_set_id=result["subject_set_id"],
+        filename_column=result["filename_column"],
+        upload_log=None,
+        fail_log=None,
+        checkpoint_every=result["checkpoint_every"],
+        sleep=result["sleep"],
+        limit=result["limit"],
+        check_server_duplicates=result["check_server_duplicates"],
+        skip_missing=result["skip_missing"],
+        dry_run=result["dry_run"],
+    )
 
 
 # ============================================================
@@ -187,12 +405,71 @@ def append_rows(csv_path: Path, rows: list[dict]) -> None:
 # ZOONIVERSE HELPERS
 # ============================================================
 def connect_to_zooniverse() -> str:
-    """Authenticate from .env; return project_id string."""
-    load_dotenv(Path(__file__).parent / ".env")
-    username   = os.environ["ZOONIVERSE_USERNAME"]
-    password   = os.environ["ZOONIVERSE_PASSWORD"]
-    project_id = os.environ["ZOONIVERSE_PROJECT_ID"]
-    Panoptes.connect(username=username, password=password)
+    """Authenticate from env file(s); return project_id string."""
+    script_dir = Path(__file__).parent
+    env_candidates = [
+        script_dir / ".env",
+        script_dir / "config.env",
+        script_dir / "config.example.env",
+        Path.cwd() / ".env",
+    ]
+
+    loaded_paths = []
+    for env_path in env_candidates:
+        if env_path.exists():
+            load_dotenv(env_path, override=False)
+            loaded_paths.append(str(env_path))
+
+    if loaded_paths:
+        log.info("Loaded env settings from: " + "; ".join(loaded_paths))
+
+    username = os.environ.get("ZOONIVERSE_USERNAME", "").strip()
+    password = os.environ.get("ZOONIVERSE_PASSWORD", "").strip()
+    project_id = os.environ.get("ZOONIVERSE_PROJECT_ID", "").strip()
+
+    missing = []
+    if not username:
+        missing.append("ZOONIVERSE_USERNAME")
+    if not password:
+        missing.append("ZOONIVERSE_PASSWORD")
+    if not project_id:
+        missing.append("ZOONIVERSE_PROJECT_ID")
+    if missing:
+        checked = "\n  - ".join(str(p) for p in env_candidates)
+        raise ValueError(
+            "Missing required Zooniverse credential(s): "
+            + ", ".join(missing)
+            + "\nChecked env files:\n  - "
+            + checked
+            + "\nFix: add these keys to scripts/.env (recommended) or scripts/config.example.env."
+        )
+
+    max_attempts = 3
+    last_error = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            if attempt > 1:
+                log.info(f"Retrying Zooniverse connection ({attempt}/{max_attempts})...")
+            Panoptes.connect(username=username, password=password)
+            break
+        except RequestException as exc:
+            last_error = exc
+            if attempt == max_attempts:
+                raise ConnectionError(
+                    "Could not connect to Zooniverse after 3 attempts. "
+                    "The server closed the network connection during login. "
+                    "Common causes are a temporary Zooniverse outage, a corporate proxy/firewall, "
+                    "VPN filtering, or SSL inspection on the network. "
+                    "Try again in a few minutes, or test from a different network/browser."
+                ) from exc
+            time.sleep(attempt * 2)
+        except Exception as exc:
+            last_error = exc
+            raise
+
+    if last_error and not getattr(Panoptes._local, "panoptes_client", None):
+        raise last_error
+
     log.info(f"Authenticated as {username} (project {project_id})")
     return project_id
 
@@ -432,7 +709,7 @@ def upload_images(image_dir: Path,
 # ENTRY POINT
 # ============================================================
 def main():
-    args      = parse_args()
+    args      = get_args_via_gui()
     image_dir = Path(args.image_dir)
 
     if not image_dir.is_dir():

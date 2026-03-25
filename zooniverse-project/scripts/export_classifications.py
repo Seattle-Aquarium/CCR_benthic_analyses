@@ -3,10 +3,13 @@ export_classifications.py  —  Download & flatten Zooniverse classification exp
 Version: 1.0
 
 Usage:
-    python export_classifications.py \
-        --workflow-id 9876 \
-        --subject-set-id 12349 \
-        --output-dir exports/
+    python export_classifications.py
+
+    A window opens and asks for:
+      1. Workflow ID
+      2. Optional subject set ID filter
+      3. Output folder
+      4. Whether to request a fresh export
 
 Requirements:
     pip install panoptes-client python-dotenv pandas tqdm
@@ -15,16 +18,20 @@ Credentials:
     Copy config.example.env → .env and fill in your details.
 """
 
+import io
 import os
 import sys
 import time
-import argparse
+import types
 import logging
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
 from datetime import datetime
 
 import pandas as pd
 from dotenv import load_dotenv
+from requests.exceptions import RequestException
 from panoptes_client import Panoptes, Project
 
 # ── Logging ──────────────────────────────────────────────────────────────────
@@ -39,22 +46,168 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def parse_args():
-    p = argparse.ArgumentParser(description="Download Zooniverse classification export")
-    p.add_argument("--workflow-id",      required=True, help="Zooniverse workflow ID")
-    p.add_argument("--subject-set-id",   default=None,  help="Filter to a specific subject set ID")
-    p.add_argument("--output-dir",       default="exports/", help="Where to save CSVs (default: exports/)")
-    p.add_argument("--generate-new",     action="store_true",
-                   help="Request a fresh export from Zooniverse (may take several minutes)")
-    return p.parse_args()
+def get_args_via_gui():
+    """Open a simple GUI form to collect export parameters."""
+    result = {}
+
+    root = tk.Tk()
+    root.title("Export Zooniverse Classifications")
+    root.resizable(False, False)
+
+    pad = {"padx": 10, "pady": 5}
+
+    ttk.Label(
+        root,
+        text="Zooniverse Classification Export",
+        font=("Helvetica", 13, "bold"),
+    ).grid(row=0, column=0, columnspan=3, pady=(14, 4), padx=14)
+    ttk.Label(
+        root,
+        text="Enter the export settings below, then click Run.",
+        foreground="grey",
+    ).grid(row=1, column=0, columnspan=3, pady=(0, 4))
+    ttk.Separator(root, orient="horizontal").grid(
+        row=2, column=0, columnspan=3, sticky="ew", padx=10, pady=4
+    )
+
+    ttk.Label(root, text="Workflow ID:").grid(row=3, column=0, sticky="e", **pad)
+    workflow_id_var = tk.StringVar()
+    ttk.Entry(root, textvariable=workflow_id_var, width=40).grid(row=3, column=1, **pad)
+
+    ttk.Label(root, text="Subject set ID:").grid(row=4, column=0, sticky="e", **pad)
+    subject_set_id_var = tk.StringVar()
+    sf = ttk.Frame(root)
+    sf.grid(row=4, column=1, sticky="w", **pad)
+    ttk.Entry(sf, textvariable=subject_set_id_var, width=20).pack(side="left")
+    ttk.Label(sf, text="  optional filter", foreground="grey").pack(side="left")
+
+    ttk.Label(root, text="Output folder:").grid(row=5, column=0, sticky="e", **pad)
+    output_dir_var = tk.StringVar(value=str(Path(__file__).resolve().parent.parent / "exports"))
+    ttk.Entry(root, textvariable=output_dir_var, width=55).grid(row=5, column=1, **pad)
+
+    def browse_output_dir():
+        path = filedialog.askdirectory(title="Select folder for exported CSV files")
+        if path:
+            output_dir_var.set(path)
+
+    ttk.Button(root, text="Browse...", command=browse_output_dir).grid(
+        row=5, column=2, **pad
+    )
+
+    generate_new_var = tk.BooleanVar(value=False)
+    ttk.Checkbutton(
+        root,
+        text="Request a fresh export from Zooniverse (can take several minutes)",
+        variable=generate_new_var,
+    ).grid(row=6, column=0, columnspan=3, sticky="w", padx=18, pady=4)
+
+    ttk.Separator(root, orient="horizontal").grid(
+        row=7, column=0, columnspan=3, sticky="ew", padx=10, pady=6
+    )
+
+    btn_frame = ttk.Frame(root)
+    btn_frame.grid(row=8, column=0, columnspan=3, pady=(0, 14))
+
+    def on_run():
+        workflow_id = workflow_id_var.get().strip()
+        subject_set_id = subject_set_id_var.get().strip()
+        output_dir = output_dir_var.get().strip()
+
+        if not workflow_id:
+            messagebox.showerror("Missing input", "Please enter a workflow ID.")
+            return
+        if not output_dir:
+            messagebox.showerror("Missing input", "Please select an output folder.")
+            return
+
+        result["workflow_id"] = workflow_id
+        result["subject_set_id"] = subject_set_id or None
+        result["output_dir"] = output_dir
+        result["generate_new"] = generate_new_var.get()
+        result["submitted"] = True
+        root.destroy()
+
+    def on_cancel():
+        root.destroy()
+
+    ttk.Button(btn_frame, text="  Run  ", command=on_run).pack(side="left", padx=8)
+    ttk.Button(btn_frame, text="Cancel", command=on_cancel).pack(side="left", padx=8)
+
+    root.mainloop()
+
+    if not result.get("submitted"):
+        print("Cancelled by user.")
+        sys.exit(0)
+
+    return types.SimpleNamespace(
+        workflow_id=result["workflow_id"],
+        subject_set_id=result["subject_set_id"],
+        output_dir=result["output_dir"],
+        generate_new=result["generate_new"],
+    )
 
 
 def connect_to_zooniverse() -> str:
-    load_dotenv(Path(__file__).parent / ".env")
-    username   = os.environ["ZOONIVERSE_USERNAME"]
-    password   = os.environ["ZOONIVERSE_PASSWORD"]
-    project_id = os.environ["ZOONIVERSE_PROJECT_ID"]
-    Panoptes.connect(username=username, password=password)
+    script_dir = Path(__file__).parent
+    env_candidates = [
+        script_dir / ".env",
+        script_dir / "config.env",
+        script_dir / "config.example.env",
+        Path.cwd() / ".env",
+    ]
+
+    loaded_paths = []
+    for env_path in env_candidates:
+        if env_path.exists():
+            load_dotenv(env_path, override=False)
+            loaded_paths.append(str(env_path))
+
+    if loaded_paths:
+        log.info("Loaded env settings from: " + "; ".join(loaded_paths))
+
+    username = os.environ.get("ZOONIVERSE_USERNAME", "").strip()
+    password = os.environ.get("ZOONIVERSE_PASSWORD", "").strip()
+    project_id = os.environ.get("ZOONIVERSE_PROJECT_ID", "").strip()
+
+    missing = []
+    if not username:
+        missing.append("ZOONIVERSE_USERNAME")
+    if not password:
+        missing.append("ZOONIVERSE_PASSWORD")
+    if not project_id:
+        missing.append("ZOONIVERSE_PROJECT_ID")
+    if missing:
+        checked = "\n  - ".join(str(p) for p in env_candidates)
+        raise ValueError(
+            "Missing required Zooniverse credential(s): "
+            + ", ".join(missing)
+            + "\nChecked env files:\n  - "
+            + checked
+            + "\nFix: add these keys to scripts/.env (recommended) or scripts/config.example.env."
+        )
+
+    max_attempts = 3
+    last_error = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            if attempt > 1:
+                log.info(f"Retrying Zooniverse connection ({attempt}/{max_attempts})...")
+            Panoptes.connect(username=username, password=password)
+            break
+        except RequestException as exc:
+            last_error = exc
+            if attempt == max_attempts:
+                raise ConnectionError(
+                    "Could not connect to Zooniverse after 3 attempts. "
+                    "The server closed the network connection during login. "
+                    "Common causes are a temporary Zooniverse outage, a corporate proxy/firewall, "
+                    "VPN filtering, or SSL inspection on the network. "
+                    "Try again in a few minutes, or test from a different network."
+                ) from exc
+            time.sleep(attempt * 2)
+        except Exception:
+            raise
+
     log.info(f"Authenticated as {username}")
     return project_id
 
@@ -82,7 +235,7 @@ def request_export(project_id: str, workflow_id: str, generate_new: bool) -> pd.
         log.info("Fetching most recent export (use --generate-new for a fresh one)…")
         export = project.get_export("classifications", generate=False)
 
-    df = pd.read_csv(export.content, low_memory=False)
+    df = pd.read_csv(io.BytesIO(export.content), low_memory=False)
     log.info(f"Downloaded {len(df):,} raw classification rows")
     return df
 
@@ -154,7 +307,7 @@ def save_output(df: pd.DataFrame, output_dir: Path, workflow_id: str,
 
 
 def main():
-    args       = parse_args()
+    args       = get_args_via_gui()
     output_dir = Path(args.output_dir)
 
     project_id = connect_to_zooniverse()

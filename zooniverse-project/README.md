@@ -14,6 +14,7 @@ zooniverse-project/
 │   ├── toolbox_to_subjects.py          ← Step 1: extract patches from Toolbox annotations
 │   ├── import_subjects.py              ← Step 2: upload patches to Zooniverse
 │   ├── export_classifications.py       ← Step 3: download volunteer classifications
+│   ├── analyse_classifications.py      ← Step 4: generate Excel summary report
 │   └── config.example.env             ← credentials template
 └── exports/                            ← downloaded classification CSVs (git-ignored)
 ```
@@ -41,6 +42,12 @@ CoralNet-Toolbox
         │  downloads & flattens results
         ▼
    exports/  *.csv
+     │
+     ▼
+ analyse_classifications.py
+     │  builds multi-sheet Excel summary report
+     ▼
+   reports/  *.xlsx
 ```
 
 ---
@@ -50,7 +57,7 @@ CoralNet-Toolbox
 ### 1. Install dependencies
 
 ```bash
-pip install panoptes-client python-dotenv pandas tqdm opencv-python-headless
+pip install panoptes-client python-dotenv pandas tqdm opencv-python-headless openpyxl
 ```
 
 ### 2. Configure credentials
@@ -223,6 +230,27 @@ python scripts/export_classifications.py \
 > **Customise the flattening:** `flatten_annotations()` in the script extracts task answers into columns. Edit it to match your workflow's specific question/task structure.
 
 After export: add a row to the **Export Log** sheet in `tracker.xlsx` and set the transect status to `Complete`.
+
+---
+
+### `analyse_classifications.py` — Build an Excel summary report
+
+Reads a raw or flattened Zooniverse classification export CSV and produces a formatted multi-sheet Excel report (overview, workflow summary, subject summary, user summary, answer breakdown, source image summary, and time stats).
+
+Current script behavior uses a GUI form for inputs.
+
+**GUI inputs**
+
+- Export CSV (required)
+- Output folder
+- Optional workflow ID filter
+- Optional source image filter
+
+**Output files**
+
+- `reports/classification_report_<timestamp>.xlsx` (filename includes selected filters)
+
+Use this as the analysis step after running `export_classifications.py`.
 
 ---
 
