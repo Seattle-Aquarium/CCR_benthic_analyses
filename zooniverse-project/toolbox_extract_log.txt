@@ -1,0 +1,278 @@
+2026-03-25 08:14:43,977 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/beta-testing/toolbox_annotations.csv
+2026-03-25 08:14:43,978 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/beta-testing/code_test
+2026-03-25 08:14:43,978 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\machine_learning\Zooniverse\beta-testing\code_test\metadata.csv
+2026-03-25 08:14:43,978 [INFO]   scale factor : 3.5×
+2026-03-25 08:14:43,979 [INFO]   JPEG quality : 100
+2026-03-25 08:14:43,979 [INFO]   mode         : DRY RUN
+2026-03-25 08:14:43,998 [INFO] Filtered to Patch annotations: 160 of 160 rows
+2026-03-25 08:14:43,998 [INFO] DRY RUN — 160 patches would be extracted. No files written.
+2026-03-25 08:14:44,002 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_09_25_11-30-08.jpg
+2026-03-25 08:14:44,003 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_09_25_11-30-08.jpg
+2026-03-25 08:14:44,003 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-23-15.jpg
+2026-03-25 08:14:44,004 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-23-15.jpg
+2026-03-25 08:14:44,004 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-30-57.jpg
+2026-03-25 08:14:44,004 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-30-57.jpg
+2026-03-25 08:14:44,005 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-30-57.jpg
+2026-03-25 08:14:44,005 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-30-57.jpg
+2026-03-25 08:14:44,006 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-32.jpg
+2026-03-25 08:14:44,006 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-32.jpg
+2026-03-25 08:14:44,006 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-32.jpg
+2026-03-25 08:14:44,007 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-32.jpg
+2026-03-25 08:14:44,007 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-32.jpg
+2026-03-25 08:14:44,007 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-32.jpg
+2026-03-25 08:14:44,008 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-32.jpg
+2026-03-25 08:14:44,008 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-32.jpg
+2026-03-25 08:14:44,009 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-41.jpg
+2026-03-25 08:14:44,009 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-38-36.jpg
+2026-03-25 08:14:44,010 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-38-36.jpg
+2026-03-25 08:14:44,010 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-38-36.jpg
+2026-03-25 08:14:44,011 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-38-36.jpg
+2026-03-25 08:14:44,011 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-39-21.jpg
+2026-03-25 08:14:44,011 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-39-21.jpg
+2026-03-25 08:14:44,012 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-39-21.jpg
+2026-03-25 08:14:44,013 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-40-54.jpg
+2026-03-25 08:14:44,013 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-40-57.jpg
+2026-03-25 08:14:44,014 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-40-57.jpg
+2026-03-25 08:14:44,014 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-46-51.jpg
+2026-03-25 08:14:44,014 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-02-49.jpg
+2026-03-25 08:14:44,015 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-02-49.jpg
+2026-03-25 08:14:44,016 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-03-01.jpg
+2026-03-25 08:14:44,017 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-03-01.jpg
+2026-03-25 08:14:44,017 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-05-10.jpg
+2026-03-25 08:14:44,017 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_12-12-11.jpg
+2026-03-25 08:14:44,018 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_12-12-11.jpg
+2026-03-25 08:14:44,018 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_12-12-11.jpg
+2026-03-25 08:14:44,019 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_12-12-11.jpg
+2026-03-25 08:14:44,019 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_21_09-48-08.jpg
+2026-03-25 08:14:44,020 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_21_09-48-08.jpg
+2026-03-25 08:14:44,020 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_21_09-48-08.jpg
+2026-03-25 08:14:44,020 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/img_5.jpg
+2026-03-25 08:14:44,021 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/img_5.jpg
+2026-03-25 08:14:44,022 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/img_5.jpg
+2026-03-25 08:14:44,022 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/img_6.jpg
+2026-03-25 08:14:44,023 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/img_6.jpg
+2026-03-25 08:14:44,023 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/site_1.jpg
+2026-03-25 08:14:44,024 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/site_1.jpg
+2026-03-25 08:14:44,024 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/site_1.jpg
+2026-03-25 08:14:44,024 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/site_1.jpg
+2026-03-25 08:14:44,025 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/site_1.jpg
+2026-03-25 08:14:44,025 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_09_25_11-20-35.jpg
+2026-03-25 08:14:44,026 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_09_25_11-20-35.jpg
+2026-03-25 08:14:44,026 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_09_25_11-20-35.jpg
+2026-03-25 08:14:44,026 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_09_25_11-30-08.jpg
+2026-03-25 08:14:44,027 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_07_10-05-44.jpg
+2026-03-25 08:14:44,027 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_07_10-05-44.jpg
+2026-03-25 08:14:44,028 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-28-51.jpg
+2026-03-25 08:14:44,028 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-31-21.jpg
+2026-03-25 08:14:44,029 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-31-21.jpg
+2026-03-25 08:14:44,030 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-56-52.jpg
+2026-03-25 08:14:44,030 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-56-52.jpg
+2026-03-25 08:14:44,030 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-02-43.jpg
+2026-03-25 08:14:44,031 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-02-43.jpg
+2026-03-25 08:14:44,031 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-02-43.jpg
+2026-03-25 08:14:44,032 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-25-00.jpg
+2026-03-25 08:14:44,032 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-25-00.jpg
+2026-03-25 08:14:44,033 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-26-12.jpg
+2026-03-25 08:14:44,033 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-21.jpg
+2026-03-25 08:14:44,034 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-30.jpg
+2026-03-25 08:14:44,034 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-30.jpg
+2026-03-25 08:14:44,034 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-39.jpg
+2026-03-25 08:14:44,035 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-39.jpg
+2026-03-25 08:14:44,035 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-39.jpg
+2026-03-25 08:14:44,036 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-39.jpg
+2026-03-25 08:14:44,036 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-37-24.jpg
+2026-03-25 08:14:44,036 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-37-24.jpg
+2026-03-25 08:14:44,037 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-37-24.jpg
+2026-03-25 08:14:44,037 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-38-39.jpg
+2026-03-25 08:14:44,038 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-38-39.jpg
+2026-03-25 08:14:44,038 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-38-39.jpg
+2026-03-25 08:14:44,039 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-38-39.jpg
+2026-03-25 08:14:44,039 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-38-39.jpg
+2026-03-25 08:14:44,040 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-38-39.jpg
+2026-03-25 08:14:44,040 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-41-06.jpg
+2026-03-25 08:14:44,041 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-58-55.jpg
+2026-03-25 08:14:44,041 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_06_13-55-59.jpg
+2026-03-25 08:14:44,041 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_06_13-55-59.jpg
+2026-03-25 08:14:44,042 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_06_13-55-59.jpg
+2026-03-25 08:14:44,042 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-03-11.jpg
+2026-03-25 08:14:44,043 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-03-11.jpg
+2026-03-25 08:14:44,043 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-05-59.jpg
+2026-03-25 08:14:44,044 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-13-45.jpg
+2026-03-25 08:14:44,044 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-15-42.jpg
+2026-03-25 08:14:44,045 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_08_13_13-26-32.jpg
+2026-03-25 08:14:44,045 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_08_13_13-26-32.jpg
+2026-03-25 08:14:44,045 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_08_13_13-26-32.jpg
+2026-03-25 08:14:44,046 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/sugar_kelp.jpg
+2026-03-25 08:14:44,046 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/red_bushy_algae.jpg
+2026-03-25 08:14:44,047 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/img_8.jpg
+2026-03-25 08:14:44,047 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_21_09-48-08.jpg
+2026-03-25 08:14:44,047 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-23-15.jpg
+2026-03-25 08:14:44,048 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-28-51.jpg
+2026-03-25 08:14:44,048 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-28-51.jpg
+2026-03-25 08:14:44,048 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-32.jpg
+2026-03-25 08:14:44,049 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-33-41.jpg
+2026-03-25 08:14:44,049 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-40-57.jpg
+2026-03-25 08:14:44,049 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-46-51.jpg
+2026-03-25 08:14:44,050 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-56-52.jpg
+2026-03-25 08:14:44,050 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-02-49.jpg
+2026-03-25 08:14:44,051 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-03-01.jpg
+2026-03-25 08:14:44,051 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-03-01.jpg
+2026-03-25 08:14:44,051 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-26-12.jpg
+2026-03-25 08:14:44,052 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-26-12.jpg
+2026-03-25 08:14:44,052 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-26-12.jpg
+2026-03-25 08:14:44,053 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-26-12.jpg
+2026-03-25 08:14:44,053 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-21.jpg
+2026-03-25 08:14:44,053 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-21.jpg
+2026-03-25 08:14:44,054 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-30.jpg
+2026-03-25 08:14:44,054 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-39.jpg
+2026-03-25 08:14:44,055 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-39.jpg
+2026-03-25 08:14:44,055 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-38-39.jpg
+2026-03-25 08:14:44,055 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_06_13-55-59.jpg
+2026-03-25 08:14:44,056 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-03-11.jpg
+2026-03-25 08:14:44,056 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-05-59.jpg
+2026-03-25 08:14:44,056 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/img_8.jpg
+2026-03-25 08:14:44,057 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/img_8.jpg
+2026-03-25 08:14:44,057 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/site_1.jpg
+2026-03-25 08:14:44,058 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/sugar_kelp.jpg
+2026-03-25 08:14:44,058 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-40-54.jpg
+2026-03-25 08:14:44,059 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-02-43.jpg
+2026-03-25 08:14:44,059 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/img_5.jpg
+2026-03-25 08:14:44,060 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-46-51.jpg
+2026-03-25 08:14:44,060 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-03-01.jpg
+2026-03-25 08:14:44,061 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-05-10.jpg
+2026-03-25 08:14:44,061 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_09_25_11-30-08.jpg
+2026-03-25 08:14:44,062 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_10-23-15.jpg
+2026-03-25 08:14:44,062 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-03-01.jpg
+2026-03-25 08:14:44,062 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-03-01.jpg
+2026-03-25 08:14:44,063 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-15-42.jpg
+2026-03-25 08:14:44,063 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-15-42.jpg
+2026-03-25 08:14:44,064 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/red_bushy_algae.jpg
+2026-03-25 08:14:44,064 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/red_bushy_algae.jpg
+2026-03-25 08:14:44,065 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/sugar_kelp.jpg
+2026-03-25 08:14:44,065 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/sugar_kelp.jpg
+2026-03-25 08:14:44,065 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-13-45.jpg
+2026-03-25 08:14:44,066 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-41-06.jpg
+2026-03-25 08:14:44,066 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_09_10-32-30.jpg
+2026-03-25 08:14:44,067 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_12-03-01.jpg
+2026-03-25 08:14:44,067 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-38-39.jpg
+2026-03-25 08:14:44,068 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-05-59.jpg
+2026-03-25 08:14:44,068 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_08_12-05-59.jpg
+2026-03-25 08:14:44,068 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_21_09-48-08.jpg
+2026-03-25 08:14:44,069 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_21_09-48-08.jpg
+2026-03-25 08:14:44,069 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_21_09-48-08.jpg
+2026-03-25 08:14:44,070 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_08_13_13-26-32.jpg
+2026-03-25 08:14:44,070 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_06_13-55-59.jpg
+2026-03-25 08:14:44,070 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2025_01_06_13-55-59.jpg
+2026-03-25 08:14:44,071 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_11_13-41-06.jpg
+2026-03-25 08:14:44,072 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/2024_10_08_11-39-21.jpg
+2026-03-25 08:14:44,072 [WARNING]   MISSING source image: C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/AI_teacher_beta-testing/images/img_8.jpg
+2026-03-25 08:14:44,073 [WARNING] 160 source image(s) not found.
+2026-03-25 08:18:02,738 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/beta-testing/toolbox_annotations.csv
+2026-03-25 08:18:02,739 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/beta-testing/code_test
+2026-03-25 08:18:02,739 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\machine_learning\Zooniverse\beta-testing\code_test\metadata.csv
+2026-03-25 08:18:02,740 [INFO]   scale factor : 3.5×
+2026-03-25 08:18:02,740 [INFO]   JPEG quality : 100
+2026-03-25 08:18:02,741 [INFO]   mode         : DRY RUN
+2026-03-25 08:18:02,753 [INFO] Filtered to Patch annotations: 160 of 160 rows
+2026-03-25 08:18:02,754 [INFO] DRY RUN — 160 patches would be extracted. No files written.
+2026-03-25 08:18:27,081 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/beta-testing/toolbox_annotations.csv
+2026-03-25 08:18:27,081 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/beta-testing/code_test
+2026-03-25 08:18:27,081 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\machine_learning\Zooniverse\beta-testing\code_test\metadata.csv
+2026-03-25 08:18:27,082 [INFO]   scale factor : 3.5×
+2026-03-25 08:18:27,082 [INFO]   JPEG quality : 100
+2026-03-25 08:18:27,093 [INFO] Filtered to Patch annotations: 160 of 160 rows
+2026-03-25 08:19:03,959 [INFO] Wrote 160 rows to C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\machine_learning\Zooniverse\beta-testing\code_test\metadata.csv
+2026-03-25 08:19:03,967 [INFO] ============================================================
+2026-03-25 08:19:03,970 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/beta-testing/code_test
+2026-03-25 08:19:03,970 [INFO] ============================================================
+2026-03-25 09:23:36,680 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/beta-testing/toolbox_annotations.csv
+2026-03-25 09:23:36,681 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/beta-testing/code_test
+2026-03-25 09:23:36,682 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\machine_learning\Zooniverse\beta-testing\code_test\metadata.csv
+2026-03-25 09:23:36,683 [INFO]   site name    : patch test
+2026-03-25 09:23:36,684 [INFO]   survey date  : 2026-03-25
+2026-03-25 09:23:36,686 [INFO]   transect no. : 1
+2026-03-25 09:23:36,687 [INFO]   scale factor : 3.5×
+2026-03-25 09:23:36,688 [INFO]   JPEG quality : 95
+2026-03-25 09:23:36,707 [INFO] Filtered to Patch annotations: 160 of 160 rows
+2026-03-25 09:24:14,231 [INFO] Wrote 160 rows to C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\machine_learning\Zooniverse\beta-testing\code_test\metadata.csv
+2026-03-25 09:24:14,237 [INFO] ============================================================
+2026-03-25 09:24:14,241 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Zooniverse/beta-testing/code_test
+2026-03-25 09:24:14,242 [INFO] ============================================================
+2026-04-03 14:50:46,540 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T5_shallow/edited/2025_01_28_EBM_T5_toolbox_annotations.csv
+2026-04-03 14:50:46,541 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T5_shallow/edited/patches
+2026-04-03 14:50:46,541 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\HSIL\2025\2025_01_28_EBM\downward\HERO1\transects\T5_shallow\edited\patches\metadata.csv
+2026-04-03 14:50:46,541 [INFO]   site name    : EBM
+2026-04-03 14:50:46,542 [INFO]   survey date  : 2025-01-28
+2026-04-03 14:50:46,542 [INFO]   transect no. : 5
+2026-04-03 14:50:46,542 [INFO]   scale factor : 3.5×
+2026-04-03 14:50:46,542 [INFO]   JPEG quality : 95
+2026-04-03 14:50:46,559 [INFO] Filtered to Patch annotations: 2800 of 2800 rows
+2026-04-03 14:56:51,968 [INFO] Wrote 2800 rows to C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\HSIL\2025\2025_01_28_EBM\downward\HERO1\transects\T5_shallow\edited\patches\metadata.csv
+2026-04-03 14:56:51,974 [INFO] ============================================================
+2026-04-03 14:56:51,977 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T5_shallow/edited/patches
+2026-04-03 14:56:51,977 [INFO] ============================================================
+2026-04-04 09:27:37,860 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_27_Centennial/downward/HERO1/transects/T5_shallow/edited/2025_01_27_Centennial_T5_toolbox_annotations.csv
+2026-04-04 09:27:37,861 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_27_Centennial/downward/HERO1/transects/T5_shallow/edited/patches
+2026-04-04 09:27:37,861 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\HSIL\2025\2025_01_27_Centennial\downward\HERO1\transects\T5_shallow\edited\patches\metadata.csv
+2026-04-04 09:27:37,861 [INFO]   site name    : Centennial
+2026-04-04 09:27:37,861 [INFO]   survey date  : 2025-01-27
+2026-04-04 09:27:37,861 [INFO]   transect no. : 5
+2026-04-04 09:27:37,862 [INFO]   scale factor : 3.5×
+2026-04-04 09:27:37,862 [INFO]   JPEG quality : 95
+2026-04-04 09:27:37,883 [INFO] Filtered to Patch annotations: 3300 of 3300 rows
+2026-04-04 09:35:09,321 [INFO] Wrote 3300 rows to C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\HSIL\2025\2025_01_27_Centennial\downward\HERO1\transects\T5_shallow\edited\patches\metadata.csv
+2026-04-04 09:35:09,324 [INFO] ============================================================
+2026-04-04 09:35:09,326 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_27_Centennial/downward/HERO1/transects/T5_shallow/edited/patches
+2026-04-04 09:35:09,326 [INFO] ============================================================
+2026-04-06 10:32:55,964 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_27_Centennial/downward/HERO1/transects/T2_deep/edited/2025_01_27_Centennial_T2.csv
+2026-04-06 10:32:55,965 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_27_Centennial/downward/HERO1/transects/T2_deep/edited/patches
+2026-04-06 10:32:55,966 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\HSIL\2025\2025_01_27_Centennial\downward\HERO1\transects\T2_deep\edited\patches\metadata.csv
+2026-04-06 10:32:55,967 [INFO]   site name    : Centennial
+2026-04-06 10:32:55,968 [INFO]   survey date  : 2025-01-27
+2026-04-06 10:32:55,968 [INFO]   transect no. : 2
+2026-04-06 10:32:55,970 [INFO]   scale factor : 3.5×
+2026-04-06 10:32:55,971 [INFO]   JPEG quality : 95
+2026-04-06 10:32:56,022 [INFO] Filtered to Patch annotations: 3000 of 3000 rows
+2026-04-06 10:43:05,447 [INFO] Wrote 3000 rows to C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\HSIL\2025\2025_01_27_Centennial\downward\HERO1\transects\T2_deep\edited\patches\metadata.csv
+2026-04-06 10:43:05,453 [INFO] ============================================================
+2026-04-06 10:43:05,460 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_27_Centennial/downward/HERO1/transects/T2_deep/edited/patches
+2026-04-06 10:43:05,461 [INFO] ============================================================
+2026-04-06 10:45:14,029 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T2_deep/edited/2025_01_28_EBM_T2.csv
+2026-04-06 10:45:14,030 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T2_deep/edited/patches
+2026-04-06 10:45:14,031 [INFO]   metadata CSV : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T2_deep/edited/patches/metadata.csv
+2026-04-06 10:45:14,032 [INFO]   site name    : EBM
+2026-04-06 10:45:14,032 [INFO]   survey date  : 2025-01-28
+2026-04-06 10:45:14,033 [INFO]   transect no. : 2
+2026-04-06 10:45:14,034 [INFO]   scale factor : 3.5×
+2026-04-06 10:45:14,035 [INFO]   JPEG quality : 95
+2026-04-06 10:45:14,070 [INFO] Filtered to Patch annotations: 3000 of 3000 rows
+2026-04-06 10:53:33,287 [INFO] Wrote 3000 rows to C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T2_deep/edited/patches/metadata.csv
+2026-04-06 10:53:33,293 [INFO] ============================================================
+2026-04-06 10:53:33,300 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T2_deep/edited/patches
+2026-04-06 10:53:33,302 [INFO] ============================================================
+2026-04-20 08:49:17,676 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_27_Centennial/downward/HERO1/transects/T6_shallow/edited/2025_01_27_Cent_T6_toolbox_annotations.csv
+2026-04-20 08:49:17,676 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_27_Centennial/downward/HERO1/transects/T6_shallow/edited/patches
+2026-04-20 08:49:17,677 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\HSIL\2025\2025_01_27_Centennial\downward\HERO1\transects\T6_shallow\edited\patches\metadata.csv
+2026-04-20 08:49:17,677 [INFO]   site name    : Centennial
+2026-04-20 08:49:17,677 [INFO]   survey date  : 2025-01-27
+2026-04-20 08:49:17,678 [INFO]   transect no. : 6
+2026-04-20 08:49:17,678 [INFO]   scale factor : 3.5×
+2026-04-20 08:49:17,678 [INFO]   JPEG quality : 95
+2026-04-20 08:49:17,704 [INFO] Filtered to Patch annotations: 3200 of 3200 rows
+2026-04-20 08:56:48,572 [INFO] Wrote 3200 rows to C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\HSIL\2025\2025_01_27_Centennial\downward\HERO1\transects\T6_shallow\edited\patches\metadata.csv
+2026-04-20 08:56:48,574 [INFO] ============================================================
+2026-04-20 08:56:48,577 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_27_Centennial/downward/HERO1/transects/T6_shallow/edited/patches
+2026-04-20 08:56:48,578 [INFO] ============================================================
+2026-04-20 09:08:57,001 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T6_shallow/edited/2025_01_28_EBM_T6_toolbox_annotations.csv
+2026-04-20 09:08:57,002 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T6_shallow/edited/patches
+2026-04-20 09:08:57,002 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\HSIL\2025\2025_01_28_EBM\downward\HERO1\transects\T6_shallow\edited\patches\metadata.csv
+2026-04-20 09:08:57,003 [INFO]   site name    : EBM
+2026-04-20 09:08:57,003 [INFO]   survey date  : 2025-01-28
+2026-04-20 09:08:57,004 [INFO]   transect no. : 6
+2026-04-20 09:08:57,004 [INFO]   scale factor : 3.5×
+2026-04-20 09:08:57,004 [INFO]   JPEG quality : 95
+2026-04-20 09:08:57,029 [INFO] Filtered to Patch annotations: 2900 of 2900 rows
+2026-04-20 09:17:29,900 [INFO] Wrote 2900 rows to C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\HSIL\2025\2025_01_28_EBM\downward\HERO1\transects\T6_shallow\edited\patches\metadata.csv
+2026-04-20 09:17:29,903 [INFO] ============================================================
+2026-04-20 09:17:29,906 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2025/2025_01_28_EBM/downward/HERO1/transects/T6_shallow/edited/patches
+2026-04-20 09:17:29,907 [INFO] ============================================================

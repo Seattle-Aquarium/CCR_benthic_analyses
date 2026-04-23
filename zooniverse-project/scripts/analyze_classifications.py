@@ -1,15 +1,18 @@
 """
 analyse_classifications.py  —  Summarise a Zooniverse classification export
-Version: 1.0
+Version: 1.1
 
 Produces a multi-sheet Excel report covering:
-  - Overview          : file-level counts, date range, workflow list
-  - Workflow Summary  : per-workflow classification & subject stats
-  - Subject Summary   : per-subject retirement status, reason, vote counts
-    - User Summary      : per-user classification counts, non-logged-in flag, device mix
-  - Answer Breakdown  : vote distribution per answer option per workflow
-  - Source Image      : classifications rolled up by source transect image
-  - Time Stats        : classification duration statistics per workflow
+  - Overview            : file-level counts, date range, workflow list
+  - Workflow Summary    : per-workflow classification & subject stats
+  - Subject Summary     : per-subject retirement status, reason, vote counts
+  - User Summary        : per-user classification counts, non-logged-in flag, device mix
+  - Answer Breakdown    : vote distribution per answer option per workflow
+  - Source Image        : classifications rolled up by source transect image
+  - Time Stats          : classification duration statistics per workflow
+  - Transect Completion : per-transect (source_image) progress through the two-workflow pipeline
+      Yes/No workflows (30787, 31534): subjects confirmed (yes) or denied (no/not sure)
+      Multi workflows  (30752, 31535): subjects denied in yes/no are classified here
 
 Works on the raw Zooniverse export CSV (no prior flattening needed).
 
@@ -69,6 +72,12 @@ GREEN_PALE = "D5F5E3"
 RED_PALE   = "FADBD8"
 WHITE      = "FFFFFF"
 GREY_H     = "F2F3F4"
+
+# ── Workflow IDs ──────────────────────────────────────────────────────────────
+YESNO_WORKFLOW_IDS        = {30787, 31534}   # confirm/deny workflows
+YESNO_EXPERT_WORKFLOW_IDS = {31534}          # expert confirm/deny
+MULTI_WORKFLOW_IDS        = {30752, 31535}   # multiple-choice classification workflows
+MULTI_EXPERT_WORKFLOW_IDS = {31535}          # expert multiple-choice
 
 
 # ============================================================
@@ -139,25 +148,47 @@ def get_args_via_gui():
     source_image_var = tk.StringVar()
     ttk.Entry(root, textvariable=source_image_var, width=55).grid(row=7, column=1, **pad)
 
+    ttk.Label(root, text="Transect ID (optional):").grid(row=8, column=0, sticky="e", **pad)
+    transect_id_var = tk.StringVar()
+    ttk.Entry(root, textvariable=transect_id_var, width=55).grid(row=8, column=1, **pad)
+    ttk.Label(root, text="Comma-separated for multiple, e.g. T01, T02, T03",
+              foreground="grey").grid(row=8, column=2, sticky="w")
+
+    # Date range filter
+    date_frame = ttk.Frame(root)
+    date_frame.grid(row=9, column=0, columnspan=3, sticky="w", padx=10, pady=2)
+    ttk.Label(date_frame, text="Classification date (optional):").grid(
+        row=0, column=0, sticky="e", padx=(0, 6))
+    date_from_var = tk.StringVar()
+    ttk.Entry(date_frame, textvariable=date_from_var, width=14).grid(row=0, column=1, sticky="w")
+    ttk.Label(date_frame, text="to").grid(row=0, column=2, padx=6)
+    date_to_var = tk.StringVar()
+    ttk.Entry(date_frame, textvariable=date_to_var, width=14).grid(row=0, column=3, sticky="w")
+    ttk.Label(date_frame, text="(YYYY-MM-DD)", foreground="grey").grid(
+        row=0, column=4, sticky="w", padx=(8, 0))
+
     open_report_var = tk.BooleanVar(value=True)
     ttk.Checkbutton(
         root,
         text="Open report when done",
         variable=open_report_var,
-    ).grid(row=8, column=0, columnspan=3, sticky="w", padx=18, pady=4)
+    ).grid(row=10, column=0, columnspan=3, sticky="w", padx=18, pady=4)
 
     ttk.Separator(root, orient="horizontal").grid(
-        row=9, column=0, columnspan=3, sticky="ew", padx=10, pady=6
+        row=11, column=0, columnspan=3, sticky="ew", padx=10, pady=6
     )
 
     btn_frame = ttk.Frame(root)
-    btn_frame.grid(row=10, column=0, columnspan=3, pady=(0, 14))
+    btn_frame.grid(row=12, column=0, columnspan=3, pady=(0, 14))
 
     def on_run():
         export_csv = export_csv_var.get().strip()
         output_dir = output_dir_var.get().strip()
         workflow_id_text = workflow_id_var.get().strip()
         source_image = source_image_var.get().strip()
+        transect_id  = transect_id_var.get().strip()
+        date_from    = date_from_var.get().strip()
+        date_to      = date_to_var.get().strip()
 
         if not export_csv:
             messagebox.showerror("Missing input", "Please select an export CSV file.")
@@ -182,7 +213,10 @@ def get_args_via_gui():
         result["output_dir"] = output_dir
         result["workflow_id"] = workflow_id
         result["source_image"] = source_image or None
-        result["open_report"] = open_report_var.get()
+        result["transect_id"]  = transect_id or None
+        result["date_from"]    = date_from or None
+        result["date_to"]      = date_to or None
+        result["open_report"]  = open_report_var.get()
         result["submitted"] = True
         root.destroy()
 
@@ -203,6 +237,9 @@ def get_args_via_gui():
         output_dir=result["output_dir"],
         workflow_id=result["workflow_id"],
         source_image=result["source_image"],
+        transect_id=result["transect_id"],
+        date_from=result["date_from"],
+        date_to=result["date_to"],
         open_report=result["open_report"],
     )
 
@@ -256,7 +293,7 @@ def parse_subject_data(series: pd.Series) -> pd.DataFrame:
     Flatten subject_data JSON into one row per classification.
     Extracts: subject_id, retired (bool), retirement_reason,
               classifications_count_at_retirement, source_image,
-              filename, model_pred_code, model_pred_name.
+              transect_id, filename, model_pred_code, model_pred_name.
     """
     rows = []
     for val in series:
@@ -267,6 +304,7 @@ def parse_subject_data(series: pd.Series) -> pd.DataFrame:
             "classifications_count_at_retire":  None,
             "retired_at":                       None,
             "source_image":                     None,
+            "transect_id":                      None,
             "filename":                         None,
             "model_pred_code":                  None,
             "model_pred_name":                  None,
@@ -282,6 +320,7 @@ def parse_subject_data(series: pd.Series) -> pd.DataFrame:
                     rec["classifications_count_at_retire"] = r.get("classifications_count")
                     rec["retired_at"]                      = r.get("retired_at")
                 rec["source_image"]     = meta.get("source_image")
+                rec["transect_id"]      = meta.get("transect_id")
                 rec["filename"]         = meta.get("filename")
                 rec["model_pred_code"]  = meta.get("model_pred_code")
                 rec["model_pred_name"]  = meta.get("model_pred_name")
@@ -311,7 +350,10 @@ def parse_annotations(series: pd.Series) -> pd.Series:
 # ============================================================
 def load_and_flatten(csv_path: str,
                      workflow_id: int | None,
-                     source_image_filter: str | None) -> pd.DataFrame:
+                     source_image_filter: str | None,
+                     transect_id_filter: str | None = None,
+                     date_from: str | None = None,
+                     date_to: str | None = None) -> pd.DataFrame:
     """
     Load the raw export CSV and join all parsed columns into a single flat table.
     Applies --workflow-id and --source-image filters if provided.
@@ -356,6 +398,38 @@ def load_and_flatten(csv_path: str,
             log.error(f"No rows matched source_image='{source_image_filter}'.")
             sys.exit(1)
 
+    # Transect ID filter — accepts comma-separated list
+    if transect_id_filter is not None:
+        transect_ids = [t.strip() for t in transect_id_filter.split(",") if t.strip()]
+        flat = flat[flat["transect_id"].isin(transect_ids)].copy()
+        log.info(f"After transect_id filter ({transect_ids}): {len(flat):,} rows")
+        if flat.empty:
+            log.error(f"No rows matched transect_id in {transect_ids}.")
+            sys.exit(1)
+
+    # Date range filter on classification created_at
+    if date_from is not None:
+        try:
+            dt_from = pd.Timestamp(date_from, tz="UTC")
+            flat = flat[flat["created_at"] >= dt_from].copy()
+            log.info(f"After date_from filter (>= {date_from}): {len(flat):,} rows")
+        except Exception:
+            log.error(f"Invalid date_from value: '{date_from}'. Use YYYY-MM-DD.")
+            sys.exit(1)
+
+    if date_to is not None:
+        try:
+            dt_to = pd.Timestamp(date_to, tz="UTC") + pd.Timedelta(days=1)
+            flat = flat[flat["created_at"] < dt_to].copy()
+            log.info(f"After date_to filter (<= {date_to}): {len(flat):,} rows")
+        except Exception:
+            log.error(f"Invalid date_to value: '{date_to}'. Use YYYY-MM-DD.")
+            sys.exit(1)
+
+    if (date_from or date_to) and flat.empty:
+        log.error("No rows remain after date filter.")
+        sys.exit(1)
+
     log.info(f"Flat table: {len(flat):,} rows, {len(flat.columns)} columns")
     return flat
 
@@ -383,6 +457,7 @@ def build_overview(flat: pd.DataFrame, filters: dict) -> pd.DataFrame:
         ("Workflows in this file",      ", ".join(wf_list)),
         ("— filter: workflow_id",       str(filters.get("workflow_id") or "all")),
         ("— filter: source_image",      str(filters.get("source_image") or "all")),
+        ("— filter: transect_id",       str(filters.get("transect_id") or "all")),
         ("Report generated",            datetime.now().strftime("%Y-%m-%d %H:%M")),
     ]
     return pd.DataFrame(rows, columns=["Metric", "Value"])
@@ -425,28 +500,22 @@ def build_subject_summary(flat: pd.DataFrame) -> pd.DataFrame:
         r      = g.iloc[0]
         retired = r["is_retired"]
 
-        # Vote tally per answer
-        vote_counts = g["answer"].value_counts().to_dict()
-        top_answer  = g["answer"].mode().iloc[0] if not g["answer"].empty else ""
-        n_answers   = g["answer"].nunique()
+        top_answer = g["answer"].mode().iloc[0] if not g["answer"].empty else ""
 
         rows.append({
             "Subject ID":                       subj_id,
             "Filename":                         r["filename"],
             "Source Image":                     r["source_image"],
+            "Transect ID":                      r["transect_id"],
             "Model Prediction Code":            r["model_pred_code"],
             "Model Prediction Name":            r["model_pred_name"],
             "Total Classifications":            len(g),
-            "Unique Answer Options Seen":       n_answers,
             "Top Answer (most votes)":          top_answer,
             "Is Retired":                       retired,
             "Retirement Reason":                r["retirement_reason"] if retired else "—",
             "Classifications at Retirement":    r["classifications_count_at_retire"] if retired else "—",
             "Retired At":                       str(r["retired_at"])[:19] if retired and r["retired_at"] else "—",
-            "Non-logged-in Classifications":    g["is_anonymous"].sum(),
-            "Named User Classifications":       (~g["is_anonymous"]).sum(),
             "Workflow(s)":                      ", ".join(g["workflow_id"].astype(str).unique()),
-            **{f"Votes — {k}": v for k, v in vote_counts.items()},
         })
     df = pd.DataFrame(rows)
     # Sort: retired first, then by total classifications desc
@@ -535,6 +604,142 @@ def build_time_stats(flat: pd.DataFrame) -> pd.DataFrame:
             "> 60 s":               (d > 60).sum(),
         })
     return pd.DataFrame(rows)
+
+
+def build_transect_completion(flat: pd.DataFrame) -> pd.DataFrame:
+    """
+    One row per transect showing pipeline completion.
+
+    Groups by transect_id when present in subject metadata (stamped by
+    import_subjects.py / patch_subject_metadata.py). Falls back to
+    source_image for older subjects that pre-date that field.
+
+    A subject is considered *done* when:
+      - Retired in a yes/no workflow with a Yes consensus  → confirmed_yn
+      - Retired in a multi workflow (was denied in yes/no) → multi_done
+
+    Subjects denied in yes/no but not yet retired in multi are *pending*.
+    Subjects not yet retired in yes/no are also *pending*.
+    """
+    # Resolve the grouping key per subject: prefer transect_id, fall back to source_image
+    flat = flat.copy()
+    flat["_transect_key"] = flat["transect_id"].where(
+        flat["transect_id"].notna() & (flat["transect_id"].astype(str).str.strip() != ""),
+        other=flat["source_image"]
+    )
+
+    yn_flat    = flat[flat["workflow_id"].isin(YESNO_WORKFLOW_IDS)]
+    multi_flat = flat[flat["workflow_id"].isin(MULTI_WORKFLOW_IDS)]
+
+    # Sets of subject_ids that appeared in expert workflows
+    yn_expert_subjects    = set(flat.loc[flat["workflow_id"].isin(YESNO_EXPERT_WORKFLOW_IDS), "subject_ids"])
+    multi_expert_subjects = set(flat.loc[flat["workflow_id"].isin(MULTI_EXPERT_WORKFLOW_IDS), "subject_ids"])
+
+    # Build per-subject lookup for yes/no workflow
+    subj_yn: dict = {}
+    for subj_id, g in yn_flat.groupby("subject_ids"):
+        r        = g.iloc[0]
+        top_ans  = g["answer"].mode().iloc[0] if not g["answer"].empty else ""
+        subj_yn[subj_id] = {
+            "transect_key":    r["_transect_key"],
+            "retired":         bool(r["is_retired"]),
+            "top_answer":      top_ans,
+            "is_yes":          "yes" in str(top_ans).lower(),
+            "n_classifications": len(g),
+        }
+
+    # Build per-subject lookup for multi workflow
+    subj_multi: dict = {}
+    for subj_id, g in multi_flat.groupby("subject_ids"):
+        r = g.iloc[0]
+        subj_multi[subj_id] = {
+            "transect_key":    r["_transect_key"],
+            "retired":         bool(r["is_retired"]),
+            "n_classifications": len(g),
+        }
+
+    all_transects = flat["_transect_key"].dropna().unique()
+    rows = []
+
+    for src in sorted(all_transects):
+        yn_src    = {sid: v for sid, v in subj_yn.items()    if v["transect_key"] == src}
+        multi_src = {sid: v for sid, v in subj_multi.items() if v["transect_key"] == src}
+        all_ids   = set(yn_src) | set(multi_src)
+
+        confirmed_yn          = 0  # retired in yn, yes consensus
+        denied_yn_multi_done  = 0  # denied in yn, then retired in multi
+        denied_yn_multi_pend  = 0  # denied in yn, in multi but not yet retired
+        denied_yn_awaiting    = 0  # denied in yn, not yet seen in multi
+        pending_yn            = 0  # in yn but not yet retired
+        multi_only_done       = 0  # only in multi, retired
+        multi_only_pend       = 0  # only in multi, not yet retired
+        sent_to_yn_expert     = 0  # appeared in expert yes/no workflow
+        sent_to_multi_expert  = 0  # appeared in expert multi workflow
+
+        for sid in all_ids:
+            if sid in yn_expert_subjects:
+                sent_to_yn_expert += 1
+            if sid in multi_expert_subjects:
+                sent_to_multi_expert += 1
+
+            in_yn    = sid in yn_src
+            in_multi = sid in multi_src
+
+            if in_yn and not in_multi:
+                info = yn_src[sid]
+                if info["retired"]:
+                    if info["is_yes"]:
+                        confirmed_yn += 1
+                    else:
+                        denied_yn_awaiting += 1
+                else:
+                    pending_yn += 1
+            elif in_yn and in_multi:
+                if multi_src[sid]["retired"]:
+                    denied_yn_multi_done += 1
+                else:
+                    denied_yn_multi_pend += 1
+            else:  # multi only
+                if multi_src[sid]["retired"]:
+                    multi_only_done += 1
+                else:
+                    multi_only_pend += 1
+
+        total   = len(all_ids)
+        done    = confirmed_yn + denied_yn_multi_done + multi_only_done
+        pending = total - done
+        pct     = done / total * 100 if total > 0 else 0.0
+        status  = "Complete" if done == total else "In Progress"
+
+        rows.append({
+            "Transect":                         src,
+            "Status":                           status,
+            "Completion %":                     round(pct, 1),
+            "Total Subjects":                   total,
+            "Done":                             done,
+            "Pending":                          pending,
+            # ── Yes/No breakdown ──────────────────────────────
+            "YesNo — Subjects":                 len(yn_src),
+            "YesNo — Confirmed Yes (retired)":  confirmed_yn,
+            "YesNo — Denied, sent to Multi":    denied_yn_awaiting + denied_yn_multi_done + denied_yn_multi_pend,
+            "YesNo — Pending (not retired)":    pending_yn,
+            # ── Multi breakdown ───────────────────────────────
+            "Multi — Subjects":                 len(multi_src),
+            "Multi — Retired (done)":           denied_yn_multi_done + multi_only_done,
+            "Multi — Pending (not retired)":    denied_yn_multi_pend + multi_only_pend,
+            # ── Expert review ─────────────────────────────────
+            "Sent to Expert Yes/No":            sent_to_yn_expert,
+            "Sent to Expert Multi-choice":      sent_to_multi_expert,
+        })
+
+    df = pd.DataFrame(rows)
+    # Sort: In Progress first, then Complete; within each group by completion % desc
+    status_order = {"In Progress": 0, "Complete": 1}
+    df["_sort"] = df["Status"].map(status_order)
+    df = (df.sort_values(["_sort", "Completion %"], ascending=[True, False])
+            .drop(columns=["_sort"])
+            .reset_index(drop=True))
+    return df
 
 
 # ============================================================
@@ -634,13 +839,14 @@ def write_report(sheets: dict[str, pd.DataFrame], output_path: Path,
 
     colors = header_colors or {}
     titles = {
-        "Overview":         "📊  Classification Export — Overview",
-        "Workflow Summary":  "📋  Workflow Summary",
-        "Subject Summary":   "🔎  Subject Summary",
-        "User Summary":      "👤  User Summary",
-        "Answer Breakdown":  "✅  Answer Breakdown",
-        "Source Image":      "🗂️  Source Image Summary",
-        "Time Stats":        "⏱️  Classification Time Statistics",
+        "Overview":             "📊  Classification Export — Overview",
+        "Transect Completion":  "🌊  Transect Completion — Pipeline Progress",
+        "Workflow Summary":     "📋  Workflow Summary",
+        "Subject Summary":      "🔎  Subject Summary",
+        "User Summary":         "👤  User Summary",
+        "Answer Breakdown":     "✅  Answer Breakdown",
+        "Source Image":         "🗂️  Source Image Summary",
+        "Time Stats":           "⏱️  Classification Time Statistics",
     }
 
     for sheet_name, df in sheets.items():
@@ -670,42 +876,51 @@ def main():
     filters = {
         "workflow_id":  args.workflow_id,
         "source_image": args.source_image,
+        "transect_id":  args.transect_id,
+        "date_from":    args.date_from,
+        "date_to":      args.date_to,
     }
 
     flat = load_and_flatten(
         str(csv_path),
         workflow_id=args.workflow_id,
         source_image_filter=args.source_image,
+        transect_id_filter=args.transect_id,
+        date_from=args.date_from,
+        date_to=args.date_to,
     )
 
     log.info("Building summary sheets…")
     sheets = {
-        "Overview":         build_overview(flat, filters),
-        "Workflow Summary":  build_workflow_summary(flat),
-        "Subject Summary":   build_subject_summary(flat),
-        "User Summary":      build_user_summary(flat),
-        "Answer Breakdown":  build_answer_breakdown(flat),
-        "Source Image":      build_source_image_summary(flat),
-        "Time Stats":        build_time_stats(flat),
+        "Overview":             build_overview(flat, filters),
+        "Transect Completion":  build_transect_completion(flat),
+        "Workflow Summary":     build_workflow_summary(flat),
+        "Subject Summary":      build_subject_summary(flat),
+        "User Summary":         build_user_summary(flat),
+        "Answer Breakdown":     build_answer_breakdown(flat),
+        "Source Image":         build_source_image_summary(flat),
+        "Time Stats":           build_time_stats(flat),
     }
 
     sheet_colors = {
-        "Overview":         TEAL_DARK,
-        "Workflow Summary":  TEAL_MID,
-        "Subject Summary":   TEAL_MID,
-        "User Summary":      "5D6D7E",
-        "Answer Breakdown":  GREEN_DARK,
-        "Source Image":      ORANGE,
-        "Time Stats":        "7D3C98",
+        "Overview":             TEAL_DARK,
+        "Transect Completion":  GREEN_DARK,
+        "Workflow Summary":     TEAL_MID,
+        "Subject Summary":      TEAL_MID,
+        "User Summary":         "5D6D7E",
+        "Answer Breakdown":     GREEN_DARK,
+        "Source Image":         ORANGE,
+        "Time Stats":           "7D3C98",
     }
 
     # Build output filename
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     date_str   = datetime.now().strftime("%Y%m%d_%H%M")
-    wf_suffix  = f"_wf{args.workflow_id}" if args.workflow_id else ""
-    si_suffix  = f"_{args.source_image}"  if args.source_image else ""
-    out_path   = output_dir / f"classification_report{wf_suffix}{si_suffix}_{date_str}.xlsx"
+    wf_suffix  = f"_wf{args.workflow_id}"      if args.workflow_id  else ""
+    si_suffix  = f"_{args.source_image}"       if args.source_image else ""
+    ti_suffix  = f"_{args.transect_id}"        if args.transect_id  else ""
+    out_path   = output_dir / f"classification_report{wf_suffix}{si_suffix}{ti_suffix}_{date_str}.xlsx"
 
     write_report(sheets, out_path, header_colors=sheet_colors)
 
