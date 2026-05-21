@@ -16,15 +16,35 @@ dat$site <- as.factor(dat$site)
 dat$location <- as.factor(dat$location)
 dat$key <- as.factor(dat$key)
 dat$sugar <- dat$sugar_kelp/100
+dat$depth_c <- dat$depth - mean(dat$depth)
 null_sk <- glmer(sugar ~ (1|site) + (1|site:transect),
                  weights = rep(100, times = nrow(dat)), # 100 "trials"
                  data = dat, family = binomial)
 summary(null_sk)
-fit_sk <- glmer(sugar ~ depth + location + (1|site) + (1|site:transect), 
+fit_sk <- glmer(sugar ~ depth_c + location + (1|site) + (1|site:transect), 
                 weights = rep(100, times = nrow(dat)), # 100 "trials"
                 data = dat, family = binomial)
 summary(fit_sk)
 anova(null_sk, fit_sk)
+
+fit_sk_sq <- glmer(sugar ~ depth_c + I(depth_c^2) + location + (1|site) + (1|site:transect), 
+                weights = rep(100, times = nrow(dat)), # 100 "trials"
+                data = dat, family = binomial)
+summary(fit_sk_sq)
+
+# Visualize for Centennial Park
+cp <- dat %>% 
+  filter(location == "Centennial_Park")
+newdat <- data.frame(
+  depth_c = seq(min(cp$depth_c), max(cp$depth_c), length.out = 200),
+  location = rep(as.factor("Centennial_Park"), times = 200)
+)
+newdat$pred <- predict(fit_sk_sq, newdata = newdat, type = "response", re.form = NA)
+
+ggplot(cp, aes(depth_c, sugar)) +
+  geom_point() +
+  geom_line(data = newdat, aes(depth_c, pred), color = "green") +
+  geom_smooth(method = "loess", color = "blue")
 
 # Make sk predictions for points in TIF; project
 r <- rast('data/Extract_Cent_1.tif')
@@ -40,7 +60,8 @@ pts <- pts %>%
   rename(depth = Extract_Cent_1) %>%
   mutate(location = as.factor('Centennial_Park'))
 pts <- pts %>%
-  mutate(pred = predict(fit_sk, newdata = ., re.form = NA, type = "response"))
+  mutate(depth_c = depth - mean(depth)) %>% 
+  mutate(pred = predict(fit_sk_sq, newdata = ., re.form = NA, type = "response"))
 pts <- st_transform(pts, 32610) # project
 ggplot(pts, aes(col = pred)) +
   geom_sf() +
@@ -83,7 +104,7 @@ ggplot(pts) +
 # Compute overlap; krig
 pts_in_poly <- st_filter(pts, transects_poly)
 pts_in_poly_sp <- as(pts_in_poly, "Spatial")
-vgm_emp <- variogram(pred ~ 1, pts_in_poly_sp)
+vgm_emp <- variogram(pred ~ depth_c, pts_in_poly_sp)
 plot(vgm_emp)
 vgm_fit <- fit.variogram(
   vgm_emp,
@@ -93,7 +114,7 @@ plot(vgm_emp, vgm_fit)
 
 pts_sp <- as(pts, "Spatial")
 kriged <- krige(
-  formula  = pred ~ 1,
+  formula  = pred ~ depth_c,
   locations = pts_in_poly_sp,
   newdata   = pts_sp,
   model     = vgm_fit,
