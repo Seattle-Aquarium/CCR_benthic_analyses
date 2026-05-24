@@ -32,6 +32,9 @@ fit_sk_sq <- glmer(sugar ~ depth_c + I(depth_c^2) + location + (1|site) + (1|sit
                 data = dat, family = binomial)
 summary(fit_sk_sq)
 
+windows(12,12,record = T)
+
+
 # Visualize for Centennial Park
 cp <- dat %>% 
   filter(location == "Centennial_Park")
@@ -43,8 +46,15 @@ newdat$pred <- predict(fit_sk_sq, newdata = newdat, type = "response", re.form =
 
 ggplot(cp, aes(depth_c, sugar)) +
   geom_point() +
-  geom_line(data = newdat, aes(depth_c, pred), color = "green") +
-  geom_smooth(method = "loess", color = "blue") # note this line does not correspond to any of the above models
+  geom_line(data = newdat, aes(depth_c, pred), color = "darkgreen", linewidth=1.5) +
+  geom_smooth(method = "loess", color = "blue") + # note this line does not correspond to any of the above models
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 16),
+    axis.text  = element_text(size = 14)
+  ) +
+  xlab("mean centered depth") +
+  ylab("probability of sugar kelp")
 
 # Make sk predictions for points in TIF
 r <- rast('data/Extract_Cent_1.tif')
