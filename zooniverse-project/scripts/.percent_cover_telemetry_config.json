@@ -1,0 +1,5 @@
+{
+  "annotation": "C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Toolbox/annotations/HSIL/finalized_2024-2025_annotations/Centennial_Park_2024_T6.csv",
+  "telemetry": "C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL/2024/2024_10_08_diver-ROV_Centennial_Park/logs/transects/transects/2024_10_08_Centennial_Park_T6.csv",
+  "output": "C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/machine_learning/Toolbox/annotations/HSIL/finalized_2024-2025_annotations/telemetry_joined/Centennial_Park_2024_T6_percent_cover_telemetry.csv"
+}

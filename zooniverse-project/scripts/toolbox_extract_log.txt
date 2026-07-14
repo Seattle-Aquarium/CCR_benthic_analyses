@@ -1,0 +1,39 @@
+2026-05-27 10:17:13,766 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/Port_of_Seattle/2025/2025_10_08_Fishing_Pier/downward/photos/transects/T1/edited/FPR_S25_T1_toolbox_annotations.csv
+2026-05-27 10:17:13,767 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/Port_of_Seattle/2025/2025_10_08_Fishing_Pier/downward/photos/transects/T1/edited/patches
+2026-05-27 10:17:13,767 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\Port_of_Seattle\2025\2025_10_08_Fishing_Pier\downward\photos\transects\T1\edited\patches\metadata.csv
+2026-05-27 10:17:13,768 [INFO]   site name    : Fishing Pier
+2026-05-27 10:17:13,769 [INFO]   survey date  : 2025-10-08
+2026-05-27 10:17:13,769 [INFO]   transect no. : 1
+2026-05-27 10:17:13,769 [INFO]   scale factor : 3.5×
+2026-05-27 10:17:13,770 [INFO]   JPEG quality : 95
+2026-05-27 10:17:13,814 [INFO] Filtered to Patch annotations: 2800 of 2800 rows
+2026-05-27 10:22:47,731 [INFO] Wrote 2800 rows to C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\Port_of_Seattle\2025\2025_10_08_Fishing_Pier\downward\photos\transects\T1\edited\patches\metadata.csv
+2026-05-27 10:22:47,734 [INFO] ============================================================
+2026-05-27 10:22:47,737 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/Port_of_Seattle/2025/2025_10_08_Fishing_Pier/downward/photos/transects/T1/edited/patches
+2026-05-27 10:22:47,738 [INFO] ============================================================
+2026-05-27 11:07:47,838 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/Port_of_Seattle/2025/2025_10_08_Fishing_Pier/downward/photos/transects/T2/edited/FPR_S25_T2.csv
+2026-05-27 11:07:47,838 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/Port_of_Seattle/2025/2025_10_08_Fishing_Pier/downward/photos/transects/T2/edited/patches
+2026-05-27 11:07:47,839 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\Port_of_Seattle\2025\2025_10_08_Fishing_Pier\downward\photos\transects\T2\edited\patches\metadata.csv
+2026-05-27 11:07:47,839 [INFO]   site name    : Fishing Pier
+2026-05-27 11:07:47,839 [INFO]   survey date  : 2025-10-08
+2026-05-27 11:07:47,839 [INFO]   transect no. : 2
+2026-05-27 11:07:47,839 [INFO]   scale factor : 3.5×
+2026-05-27 11:07:47,839 [INFO]   JPEG quality : 95
+2026-05-27 11:07:47,866 [INFO] Filtered to Patch annotations: 3350 of 3350 rows
+2026-05-27 11:20:05,709 [INFO] Wrote 3350 rows to C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\Port_of_Seattle\2025\2025_10_08_Fishing_Pier\downward\photos\transects\T2\edited\patches\metadata.csv
+2026-05-27 11:20:05,717 [INFO] ============================================================
+2026-05-27 11:20:05,722 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/Port_of_Seattle/2025/2025_10_08_Fishing_Pier/downward/photos/transects/T2/edited/patches
+2026-05-27 11:20:05,722 [INFO] ============================================================
+2026-05-27 14:02:16,253 [INFO]   annotation CSV  : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/Port_of_Seattle/2025/2025_10_08_Fishing_Pier/downward/photos/transects/T3/edited/FPR_S25_T3.csv
+2026-05-27 14:02:16,253 [INFO]   output dir   : C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/Port_of_Seattle/2025/2025_10_08_Fishing_Pier/downward/photos/transects/T3/edited/patches
+2026-05-27 14:02:16,253 [INFO]   metadata CSV : C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\Port_of_Seattle\2025\2025_10_08_Fishing_Pier\downward\photos\transects\T3\edited\patches\metadata.csv
+2026-05-27 14:02:16,253 [INFO]   site name    : Fishing Pier
+2026-05-27 14:02:16,253 [INFO]   survey date  : 2025-10-08
+2026-05-27 14:02:16,253 [INFO]   transect no. : 3
+2026-05-27 14:02:16,254 [INFO]   scale factor : 3.5×
+2026-05-27 14:02:16,254 [INFO]   JPEG quality : 95
+2026-05-27 14:02:16,281 [INFO] Filtered to Patch annotations: 4100 of 4100 rows
+2026-05-27 14:14:09,234 [INFO] Wrote 4100 rows to C:\Users\williamsm\Seattle Aquarium Dropbox\Coastal_Climate_Resilience\flights\Port_of_Seattle\2025\2025_10_08_Fishing_Pier\downward\photos\transects\T3\edited\patches\metadata.csv
+2026-05-27 14:14:09,236 [INFO] ============================================================
+2026-05-27 14:14:09,239 [INFO]     Next step: run import_subjects.py pointing at C:/Users/williamsm/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/Port_of_Seattle/2025/2025_10_08_Fishing_Pier/downward/photos/transects/T3/edited/patches
+2026-05-27 14:14:09,240 [INFO] ============================================================

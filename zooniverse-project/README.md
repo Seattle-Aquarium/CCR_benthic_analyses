@@ -15,6 +15,7 @@ zooniverse-project/
 │   ├── import_subjects.py              ← Step 2: upload patches to Zooniverse
 │   ├── export_subjectset.py            ← Step 3: export classifications for one subject set
 │   ├── analyse_classifications.py      ← Step 4: generate Excel summary report
+│   ├── zooni_to_toolbox_annot.py       ← Step 5: merge Zooniverse results back into Toolbox
 │   └── config.example.env             ← credentials template
 └── exports/                            ← downloaded classification CSVs (git-ignored)
 ```
@@ -48,6 +49,12 @@ CoralNet-Toolbox
      │  builds multi-sheet Excel summary report
      ▼
    reports/  *.xlsx
+     │
+     ▼
+ zooni_to_toolbox_annot.py
+     │  merges volunteer classifications back into Toolbox annotation files
+     ▼
+   toolbox_import.csv / toolbox_import_annotations.json
 ```
 
 ---
@@ -236,6 +243,103 @@ Current script behavior uses a GUI form for inputs.
 - `reports/classification_report_<timestamp>.xlsx` (filename includes selected filters)
 
 Use this as the analysis step after running `export_subjectset.py`.
+
+---
+
+### `zooni_to_toolbox_annot.py` — Merge Zooniverse classifications back into Toolbox
+
+Reads the raw Zooniverse classifications export alongside a CoralNet-Toolbox `annotation.csv` (and optionally the Toolbox annotation JSON) and writes updated annotation files with labels and verification status assigned from the volunteer and expert votes.
+
+Launches a GUI — no command-line arguments required. The GUI remembers the last-used file paths between runs.
+
+**GUI inputs**
+
+| Field | Required | Description |
+|---|---|---|
+| Toolbox annotation.csv | ✅ | Exported from CoralNet-Toolbox |
+| Zooniverse export CSV | ✅ | Full classifications export downloaded from Zooniverse |
+| Labelset JSON | ✅ | Toolbox labelset JSON (list of label objects with `short_label_code` / `long_label_code`) |
+| Toolbox annotation JSON | | Optional — if provided, an updated annotation JSON is also written |
+| Output directory | ✅ | Folder where output files will be saved |
+| Workflows to include | ✅ | Checkboxes for each of the four workflows (all on by default) |
+
+**Workflows**
+
+| ID | Name | Type |
+|---|---|---|
+| 30787 | Yes/No | Crowd confirm/deny |
+| 31534 | Yes/No Expert | Expert confirm/deny |
+| 30752 | Multi-choice | Crowd species classification |
+| 31535 | Multi-choice Expert | Expert species classification |
+
+**Label determination rules**
+
+All points start as `Label = "Review"`, `Verified = FALSE`. Rules are applied in priority order — the first rule that fires wins.
+
+1. **Multi expert consensus** (workflow 31535)
+   Threshold: n ≥ 1 classification, top label agreement ≥ 67%
+   → Label mapped from labelset. `Verified = TRUE`.
+   A single expert classification is sufficient.
+
+2. **Multi crowd consensus** (workflow 30752)
+   Threshold: n ≥ 3 classifications, top label agreement ≥ 67%
+   → Label mapped from labelset. `Verified = TRUE`.
+   Expert result (step 1) takes precedence if both reached consensus.
+   Both steps 1–2 override an expert yes/no denial.
+
+   *Label mapping for steps 1–2:*
+   - Zooniverse choice text is cleaned: image markdown (`![img](url) Label`) is reduced to the trailing text; if no text follows the image, the alt text is used instead.
+   - Cleaned text is looked up in the labelset JSON, then in a built-in expansions table (common alt-text shortcuts → short label codes).
+   - Ambiguous or project-specific mappings can be added to `manual_overrides` in `main()`.
+   - If the label cannot be mapped → `Review`, `Verified = FALSE`, `zoon_status = multi_consensus_unmapped` (reported in `unmapped_multi_consensus_labels.csv`).
+   - If the consensus label is a known "not sure" response (e.g. `"Not sure (needs expert review)"`) → `Review`, `Verified = FALSE`, `zoon_status = voted_review`.
+
+3. **Expert yes/no confirmed** (workflow 31534)
+   Threshold: n ≥ 1 classification, ≥ 75% voted Yes
+   → Original Toolbox label kept unchanged. `Verified = TRUE`.
+   Only applies when no multi consensus exists.
+
+4. **Crowd yes/no confirmed** (workflow 30787)
+   Threshold: n ≥ 5 classifications, ≥ 75% voted Yes
+   → Original Toolbox label kept unchanged. `Verified = TRUE`.
+   Only applies when no multi consensus exists AND expert did not deny.
+
+5. **Review (fallback)**
+   Point remains `Label = "Review"`, `Verified = FALSE` if:
+   - Expert denied (≥ 75% voted No, n ≥ 1), or
+   - Crowd denied (≥ 75% voted No, n ≥ 5), or
+   - Insufficient votes in all workflows, or
+   - Multi consensus label could not be mapped to the labelset, or
+   - Multi consensus label is a known "not sure" response.
+
+**Output files**
+
+| File | Description |
+|---|---|
+| `toolbox_import.csv` | Updated annotation CSV ready to import into CoralNet-Toolbox |
+| `toolbox_import_annotations.json` | Updated annotation JSON (only if input JSON was provided) |
+| `qaqc_classifications.csv` | Full QA/QC report with vote counts, agreement, status, and review reasons for every point |
+| `unmapped_multi_consensus_labels.csv` | Labels that reached multi consensus but could not be mapped to the labelset — add these to `expansions` or `manual_overrides` in the script |
+
+**Adding new label mappings**
+
+If the unmapped labels report shows labels that should map to a known Toolbox code, add them to the `expansions` dict inside `map_to_toolbox_codes()`. Keys must be the normalized form of the cleaned label text (lowercase, spaces and punctuation replaced by underscores):
+
+```python
+expansions = {
+    "brown_algae": "BR_sarg",   # "![img](url) Brown algae" → BR_sarg
+    "silt":        "SU_silt",   # "![img](url) Silt"        → SU_silt
+    # ...
+}
+```
+
+For labels that should always map to `"Review"` (e.g. volunteer "not sure" options), add them to `manual_overrides` in `main()`:
+
+```python
+manual_overrides: dict = {
+    "Not sure (needs expert review)": ("Review", "Review"),
+}
+```
 
 ---
 
