@@ -14,8 +14,7 @@ rm(list=ls())
 ## add libraries
 library(tidyverse)
 library(stringr)
-library(MASS)
-library(glmmTMB)
+
 
 ## set working directory one level up and verify 
 setwd("../")
@@ -23,9 +22,8 @@ getwd()
 
 
 ## relative file paths
-diver_results <- "results/diver"
-ROV_results <- "results/ROV"
-results <- "results"
+diver_output <- "data_output/diver"
+ROV_output <- "data_output/ROV"
 code <- "code"
 figs <- "figs"
 
@@ -46,11 +44,7 @@ diver_UPC_percentage <- read.csv(file.path(diver_output, "diver_UPC_percentage.c
 ROV_abundance <- read.csv(file.path(ROV_output, "ROV_invert_abundance.csv"))
 ROV_percent_cover_averaged <- read.csv(file.path(ROV_output, "ROV_percent-cover_averaged.csv"))
 ROV_percent_cover <- read.csv(file.path(ROV_output, "ROV_percent-cover.csv"))
-
-
-## read combined ROV-diver data
-inv_abund <- read.csv(file.path(results, "invert_abundances.csv"))
-  ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -86,19 +80,6 @@ exp(coefficients(crabmod))
 #                              colors = c("darkred", "darkgreen"),
 #                              axis_limit = 1)
 ## END basic visualizations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-zinb_model <- glmmTMB(ochre_mottled_star ~ site + observer + depth + (1|site:transect), 
-                      ziformula = ~ 1, 
-                      family = nbinom2, 
-                      data = inv_abund)
-
-summary(zinb_model)
 
 
 
-zinb_model_2 <- glmmTMB(cancer_crab ~ site + observer + depth + (1|site:transect), 
-                      ziformula = ~ 1, 
-                      family = nbinom2, 
-                      data = inv_abund)
-
-summary(zinb_model_2)
-## simple analyses of abundances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
