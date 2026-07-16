@@ -63,9 +63,12 @@ CoralNet-Toolbox
 
 ### 1. Install dependencies
 
+All Python dependencies for every script in `scripts/` are pinned in `requirements.txt`:
+
 ```bash
-pip install panoptes-client python-dotenv pandas tqdm opencv-python-headless openpyxl
+pip install -r requirements.txt
 ```
+
 
 ### 2. Configure credentials
 
