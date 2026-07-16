@@ -61,6 +61,8 @@ CoralNet-Toolbox
 
 ## Setup
 
+Requires **Python 3.10+** 
+
 ### 1. Install dependencies
 
 All Python dependencies for every script in `scripts/` are pinned in `requirements.txt`:
