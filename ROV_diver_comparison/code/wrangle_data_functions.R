@@ -4,6 +4,98 @@
 
 
 
+## function to rename columns 
+rename_columns <- function(df, name_map) {
+  
+  if (is.null(names(name_map)) || any(names(name_map) == "")) {
+    stop(
+      "'name_map' must be a named vector using ",
+      '"old_name" = "new_name".'
+    )
+  }
+  
+  old_names <- names(name_map)
+  new_names <- unname(name_map)
+  
+  # Only rename columns that actually occur in the dataframe
+  present <- old_names %in% names(df)
+  old_present <- old_names[present]
+  new_present <- new_names[present]
+  
+  # Prevent multiple existing columns from receiving the same name
+  if (anyDuplicated(new_present)) {
+    duplicate_names <- unique(new_present[duplicated(new_present)])
+    
+    stop(
+      "Multiple existing columns would be renamed to: ",
+      paste(duplicate_names, collapse = ", ")
+    )
+  }
+  
+  names(df)[match(old_present, names(df))] <- new_present
+  
+  df
+}
+
+
+## old and new Reef Check algae names
+algae_name_map <- c(
+  "Acid Weed"         = "acid_weed",
+  "Broad-Ribbed Kelp" = "broad-ribbed_kelp",
+  "Bull Kelp"         = "bull_kelp",
+  "Feather Boa Kelp"  = "feather_boa_kelp",
+  "Five-Ribbed Kelp"  = "kelp_five_rib",
+  "Giant Kelp"        = "giant_kelp",
+  "Sieve Kelp"        = "kelp_sieve",
+  "Sugar Kelp"        = "kelp_sugar",
+  "Three-Ribbed Kelp" = "kelp_three_rib",
+  "Torn Kelp"         = "torn_kelp",
+  "Winged Kelp"       = "winged_kelp",
+  "Wire Weed"         = "brown_algae_sargassum",
+  "Woody Kelp"        = "woody_kelp"
+)
+
+
+## old and new Reef Check column names 
+invert_name_map <- c(
+  "Rock Crab"                  = "cancer_crab",
+  "Kelp Crab"                  = "kelp_crab",
+  "Kelp Crab (Juvenile)"       = "kelp_crab_juv",
+  "Slender Crab"               = "slender_crab",
+  "Dungeness Crab"             = "dungeness_crab",
+  "Green Crab"                 = "green_crab",
+  "Leather Star"               = "leather_star",
+  "Flat Fish"                  = "flat_fish",
+  "Plumose Anemone"            = "plumose_anemone",
+  "Rock Scallop"               = "scallop",
+  "Orange Cucumber"            = "burrowing_sea_cucumber",
+  "California Sea Cucumber"    = "california_sea_cucumber",
+  "Large Anemone"              = "large_anemone",
+  "Gumboot Chiton"             = "gumboot_chiton",
+  "Blue Striped Star"          = "blue_striped_star",
+  "Hairy Triton"               = "hairy_triton",
+  "Short Spined Sea Star"      = "short_spined_star",
+  "Giant Spined Star"          = "giant_spined_star",
+  "Dawson sunstar"             = "dawson_star",
+  "Sunflower Star"             = "sunflower_star",
+  "Rainbow Star"               = "rainbow_star",
+  "Bat Star"                   = "bat_star",
+  "Blood Star"                 = "blood_star",
+  "Dawson's Sun Star"          = "dawson_sun_star",
+  "Red Urchin"                 = "red_urchin",
+  "Purple Urchin"              = "purple_urchin",
+  "Green/Pallid Urchin"        = "green_white_urchin",
+  "Piddock Clam"               = "clam_siphon",
+  "Giant Pacific Octopus"      = "giant_pacific_octopus",
+  "Short Spined Star"          = "short_spined_star",
+  "Blue Striped Sun Star"      = "blue_striped_sun_star",
+  "Pinto Abalone"              = "pinto_abalone"
+)
+
+standardize.invert.cols <- function(df) {
+  rename_columns(df, invert_name_map)
+}
+
 
 ## list of sites to retain
 sites_to_retain <- c("Sirens of Spring", 
@@ -13,20 +105,6 @@ sites_to_retain <- c("Sirens of Spring",
 ## rename specific entries in the 'site' column
 old_vals <- c("Sirens of Spring", "Centennial Park", "Elliott Bay Marina", "Elliot Bay Marina")
 new_vals <- c("Centennial_Park", "Centennial_Park", "Elliott_Bay_Marina", "Elliott_Bay_Marina")
-
-
-## list of Reef Check names to change 
-input_algae_list <- c("5-Ribbed Kelp", 
-                      "Sieve Kelp", 
-                      "Sugar Kelp", 
-                      "Wire Weed")
-
-
-## new names for algae 
-output_algae_list <- c("kelp_five_rib", 
-                       "kelp_sieve", 
-                       "kelp_sugar",
-                       "brown_algae_sargassum")
 
 
 ## define the filtering function
@@ -43,6 +121,14 @@ filter.and.sort <- function(df, sites_to_retain) {
     arrange(across(all_of(sort_cols)))
 }
 
+
+## function to remove summer 2025
+remove_summer_2025 <- function(df) {
+  dplyr::filter(
+    df,
+    !Date %in% c("2025-08-28", "2025-08-29")
+  )
+}
 
 ## function to rename factor 
 rename.factor <- function(df, col, old, new) {
@@ -70,12 +156,19 @@ rename.columns <- function(df, old_names, new_names) {
 }
 
 
-## long to wide form
+## Long to wide form
 compress.to.wide <- function(df, value_col, class_col) {
   df %>%
-    group_by(site, transect, !!sym(class_col)) %>%
-    summarise(Total = sum(.data[[value_col]], na.rm = TRUE), .groups = "drop") %>%
-    pivot_wider(names_from = all_of(class_col), values_from = Total, values_fill = 0)
+    group_by(Date, site, transect, !!sym(class_col)) %>%
+    summarise(
+      Total = sum(.data[[value_col]], na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    pivot_wider(
+      names_from = all_of(class_col),
+      values_from = Total,
+      values_fill = 0
+    )
 }
 
 
@@ -130,6 +223,34 @@ delete.cols <- function(df, cols_to_remove) {
 }
 
 
+## function to add depth column 
+add.depth <- function(df) {
+  df %>%
+    dplyr::mutate(
+      depth = dplyr::case_when(
+        transect %in% 1:3 ~ "deep",
+        transect %in% 4:6 ~ "shallow",
+        TRUE ~ NA_character_
+      ),
+      .after = transect
+    )
+}
+
+
+## function to add season column
+add.season <- function(df) {
+  df %>%
+    dplyr::mutate(
+      season = dplyr::case_when(
+        format(as.Date(Date), "%m") == "01" ~ "winter",
+        format(as.Date(Date), "%m") == "10" ~ "summer",
+        TRUE ~ NA_character_
+      ),
+      .after = Date
+    )
+}
+
+
 ## function to save.csv 
 save.csv <- function(df, path, filename){
   write.csv(x = df,
@@ -148,44 +269,42 @@ add.Reef.Check.inverts <- function(source_df, receiver_df) {
 }
 
 
-## standardize diver invert column names to match those of the ROV
-standardize.invert.cols <- function(df) {
-  name_map <- c(
-    "Rock Crab" = "cancer_crab",
-    "Kelp Crab" = "kelp_crab",
-    "Kelp Crab (juvenile)" = "kelp_crab_juv",
-    "Slender Crab" = "slender_crab",
-    "Dungeness Crab" = "dungeness_crab",
-    "Green Crab" = "green_crab",
-    "Leather Star" = "leather_star",
-    "Flat Fish" = "flat_fish",
-    "Plumose Anemone" = "plumose_anemone",
-    "Rock Scallop" = "scallop",
-    "Orange Cucumber" = "burrowing_sea_cucumber",
-    "California Sea Cucumber" = "california_sea_cucumber",
-    "Blood star" = "blood_star",
-    "Large Anemone" = "large_anemone",
-    "Gumboot Chiton" = "gumboot_chiton",
-    "Blue Striped Star" = "blue_striped_star",
-    "Hairy Triton" = "hairy_triton",
-    "Short Spined Sea Star" = "short_spined_star",
-    "Giant Spined Star" = "giant_spined_star",
-    "Dawson sunstar" = "dawson_star",
-    "Sunflower Star" = "sunflower_star",
-    "Rainbow Star" = "rainbow_star",
-    "Bat Star" = "bat_star",
-    "Red Urchin" = "red_urchin",
-    "Purple Urchin" = "purple_urchin",
-    "Green/Pallid Urchin" = "green_white_urchin",
-    "Piddock Clam" = "clam_siphon",
-    "Giant Pacific Octopus" = "giant_pacific_octopus",
-    "Pinto Abalone" = "pinto_abalone"
+## function to re-order cols by total 
+reorder.by.total <- function(df, start_col, end_col) {
+  
+  start_idx <- match(start_col, names(df))
+  end_idx   <- match(end_col, names(df))
+  
+  if (is.na(start_idx) || is.na(end_idx) || start_idx > end_idx) {
+    stop("Invalid start or end column names.")
+  }
+  
+  target_cols <- names(df)[start_idx:end_idx]
+  
+  column_totals <- colSums(
+    df[target_cols],
+    na.rm = TRUE
   )
   
-  flipped_map <- setNames(names(name_map), name_map)
-  df <- df %>% rename(any_of(flipped_map))
-  return(df)
+  ordered_cols <- names(
+    sort(column_totals, decreasing = TRUE)
+  )
+  
+  before_cols <- if (start_idx > 1) {
+    names(df)[seq_len(start_idx - 1)]
+  } else {
+    character(0)
+  }
+  
+  after_cols <- if (end_idx < ncol(df)) {
+    names(df)[(end_idx + 1):ncol(df)]
+  } else {
+    character(0)
+  }
+  
+  df[c(before_cols, ordered_cols, after_cols)]
 }
+
 
 
 ## ensure ROV column headers are consistent
@@ -227,104 +346,56 @@ consistent.labels <- function(df) {
 }
 
 
-## rename colums
-old_names <- c(
-  "Review",
-  "AN_large",
-  "AN_plumose",
-  "GA_gum",
-  "GA_abalone",
-  "CL_siphon",
-  "CL_scall",
-  "UR_purp",
-  "UR_red",
-  "UR_green",
-  "SS_ochre",
-  "SS_leather",
-  "SS_verm",
-  "SS_blood",
-  "SS_bat",
-  "SS_pycno",
-  "SS_rainbow",
-  "SS_sun",
-  "SS_stripe",
-  "CU_burrow",
-  "CU_cali",
-  "CR_cancer",
-  "CR_kelp",
-  "CR_helmet",
-  "CR_sharp",
-  "GR_kelp",
-  "GR_lingcod",
-  "GR_painted",
-  "GR_rock",
-  "GR_whitesp",
-  "SP_kelp",
-  "SP_pile",
-  "SP_shiner",
-  "SP_stripe",
-  "RF_black",
-  "RF_brown",
-  "RF_canary",
-  "RF_china",
-  "RF_copper",
-  "RF_ytail",
-  "RF_Yeye",
-  "fish_gunn",
-  "fish_cab",
-  "fish_sculp",
-  "fish_flat",
-  "fish_wolf"
+rov_invert_name_map <- c(
+  "Review"      = "review",
+  "AN_large"    = "large_anemone",
+  "AN_plumose"  = "plumose_anemone",
+  "GA_gum"      = "gumboot_chiton",
+  "GA_abalone"  = "abalone",
+  "CL_siphon"   = "clam_siphon",
+  "CL_scall"    = "scallop",
+  "UR_purp"     = "purple_urchin",
+  "UR_red"      = "red_urchin",
+  "UR_green"    = "green_white_urchin",
+  "SS_ochre"    = "ochre_mottled_star",
+  "SS_leather"  = "leather_star",
+  "SS_verm"     = "vermillion_star",
+  "SS_blood"    = "blood_star",
+  "SS_bat"      = "bat_seastar",
+  "SS_pycno"    = "sunflower_star",
+  "SS_rainbow"  = "rainbow_star",
+  "SS_sun"      = "dawsons_sun_star",
+  "SS_stripe"   = "striped_sun_star",
+  "CU_burrow"   = "burrowing_sea_cucumber",
+  "CU_cali"     = "california_sea_cucumber",
+  "CR_cancer"   = "cancer_crab",
+  "CR_kelp"     = "kelp_crab",
+  "CR_helmet"   = "helmet_crab",
+  "CR_sharp"    = "sharpnose_crab",
+  "GR_kelp"     = "kelp_greenling",
+  "GR_lingcod"  = "lingcod",
+  "GR_painted"  = "painted_greenling",
+  "GR_rock"     = "rock_greenling",
+  "GR_whitesp"  = "white_spotted_greenling",
+  "SP_kelp"     = "kelp_perch",
+  "SP_pile"     = "pile_perch",
+  "SP_shiner"   = "shiner_perch",
+  "SP_stripe"   = "striped_seaperch",
+  "RF_black"    = "black_deacon_rockfish",
+  "RF_brown"    = "brown_rockfish",
+  "RF_canary"   = "canary_rockfish",
+  "RF_china"    = "china_rockfish",
+  "RF_copper"   = "copper_rockfish",
+  "RF_ytail"    = "yellow_tail_rockfish",
+  "RF_Yeye"     = "yelloweye_rockfish",
+  "fish_gunn"   = "gunnel_fish",
+  "fish_cab"    = "cabezon_buffalo_sculpin",
+  "fish_sculp"  = "other_large_sculpin",
+  "fish_flat"   = "flat_fish",
+  "fish_wolf"   = "wolf_eel"
 )
-
-new_names <- c(
-  "Review",
-  "large_anemone",
-  "plumose_anemone",
-  "gumboot_chiton",
-  "abalone",
-  "clam_siphon",
-  "scallop",
-  "purple_urchin",
-  "red_urchin",
-  "green_white_urchin",
-  "ochre_mottled_star",
-  "leather_star",
-  "vermillion_star",
-  "blood_star",
-  "bat_seastar",
-  "sunflower_star",
-  "rainbow_star",
-  "Dawsons_sun_star",
-  "striped_sun_star",
-  "burrowing_sea_cucumber",
-  "california_sea_cucumber",
-  "cancer_crab",
-  "kelp_crab",
-  "helmet_crab",
-  "sharpnose_crab",
-  "kelp_greenling",
-  "lingcod",
-  "painted_greenling",
-  "rock_greenling",
-  "white_spotted_greenling",
-  "kelp_perch",
-  "pile_perch",
-  "shiner_perch",
-  "striped_seaperch",
-  "black_deacon_rockfish",
-  "brown_rockfish",
-  "canary_rockfish",
-  "china_rockfish",
-  "copper_rockfish",
-  "yellow_tail_rockfish",
-  "yelloweye_rockfish",
-  "gunnel_fish",
-  "cabezon_buffalo_sculpin",
-  "other_large_sculpin",
-  "flat_fish",
-  "wolf_eel"
-)
+# for use with ROV data: 
+#invert <- rename.columns(invert, rov_invert_name_map)
 
 
 ## function to stack dataframes and fill in the missing info with 0's

@@ -32,9 +32,9 @@ source(file.path(code, "wrangle_data_functions.R"))
 
 
 ## read DIVER data 
-original_diver_algae <- read.csv(file.path(diver_input, "Algae_Washington_raw_2024.csv"))
-original_diver_invert <- read.csv(file.path(diver_input, "Invert_Washington_raw_2024.csv"))
-original_diver_UPC <- read.csv(file.path(diver_input, "UPC_Washington_raw_2024.csv"))
+original_diver_algae <- read.csv(file.path(diver_input, "Algae_Washington_raw_2025.csv"))
+original_diver_invert <- read.csv(file.path(diver_input, "Invert_Washington_raw_2025.csv"))
+original_diver_UPC <- read.csv(file.path(diver_input, "UPC_Washington_raw_2025.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -48,6 +48,12 @@ invert <- filter.and.sort(original_diver_invert, sites_to_retain)
 UPC <- filter.and.sort(original_diver_UPC, sites_to_retain)
 
 
+## isolate to the core survey dates; remove summer 2025 
+algae <- remove_summer_2025(algae)
+invert <- remove_summer_2025(invert)
+UPC <- remove_summer_2025(UPC)
+
+
 ## remove the original dataframes
 remove(original_diver_algae, original_diver_invert, original_diver_UPC)
 
@@ -59,8 +65,8 @@ UPC <- rename.cells(UPC, "Site", old_vals, new_vals)
 
 
 ## rename site / transect to standardize with ROV data
-invert <- rename.metadata(invert)
 algae <- rename.metadata(algae)
+invert <- rename.metadata(invert)
 UPC <- rename.metadata(UPC)
 
 
@@ -77,12 +83,29 @@ UPC <- remove.chars(UPC, Category, 4)
 ## combine UPC names
 UPC <- combine.UPC.names(UPC)
 UPC$Percentage <- round(UPC$Percentage, 1)
+## END initial wrangling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
+
+
+
+## convert long -> short form and further transform ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## convert to short/wide form for algae, invert, and UPC data
-invert <- compress.to.wide(invert, class_col = "Classcode", value_col = "Amount")
 algae <- compress.to.wide(algae, class_col = "Classcode", value_col = "extrapolated")
+invert <- compress.to.wide(invert, class_col = "Classcode", value_col = "Amount")
 UPC <- compress.to.wide(UPC, class_col = "combined_name", value_col = "Percentage")
+
+
+## add depth column
+algae <- add.depth(algae) 
+invert <- add.depth(invert)
+UPC <- add.depth(UPC)
+
+
+## add season column
+algae <- add.season(algae)
+invert <- add.season(invert)
+UPC <- add.season(UPC)
 
 
 ## combine mottled and ochre stars for diver invert data; delete old cols
@@ -91,6 +114,7 @@ invert <- delete.cols(invert, c("Ochre Star", "Mottled Star"))
 
 
 ## standarize cols
+algae <- rename_columns(algae, algae_name_map)
 invert <- standardize.invert.cols(invert)
 
 
@@ -106,24 +130,25 @@ UPC <- combine.cols(UPC, c("Cover_Green Algae",
                     "combined_green_algae")
 
 
-## rename key Reef Check algae columns to align with ROV naming convention
-algae <- rename.columns(algae, 
-                        old_names = input_algae_list, 
-                        new_names = output_algae_list)
+
+## re-order algae and invert columns with the most dense at the beginning of the data frame
+algae <- reorder.by.total(algae, "acid_weed", "woody_kelp")
+invert <- reorder.by.total(invert, "bat_star", "ochre_mottled_star")
+
 
 
 ## calculate density for algae abundances
 algae_density <- calculate.density(df = algae, 
-                                   start_col = "3-Ribbed Kelp", 
-                                   end_col = "Woody Kelp", 
-                                   divisor = 900)
+                                   start_col = "kelp_sieve", 
+                                   end_col = "woody_kelp", 
+                                   divisor = 60)
 
 
 ## calculate density for invert abundances
 invert_density <- calculate.density(df = invert, 
-                                    start_col = "bat_star",
-                                    end_col = "ochre_mottled_star",
-                                    divisor = 900)
+                                    start_col = "ochre_mottled_star",
+                                    end_col = "sunflower_star",
+                                    divisor = 60)
 ## END diver data wrangling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
