@@ -10,14 +10,53 @@ Workflows:
   Multi           (30752): crowd species classification
   Multi Expert    (31535): expert species classification
 
-Label priority (highest first):
-  1. Multi consensus (30752 OR 31535) → label mapped from labelset
-  2. Yes confirmed   (30787 OR 31534) → keep original Toolbox label
-  3. Denied / needs more votes        → Review
+Label determination rules (applied in priority order):
 
-Consensus rules:
-  Yes/No workflows: n_classifications >= 5 AND agreement >= 0.75
-  Multi workflows:  n_classifications >= 3 AND agreement >= 0.67
+  All points start as Label = "Review", Verified = FALSE.
+
+  1. MULTI EXPERT CONSENSUS (workflow 31535)
+     Threshold: n >= 1 classification, top label agreement >= 67%
+     → Label and Long Label mapped from labelset via label code lookup.
+       Verified = TRUE.
+     A single expert classification is sufficient.
+
+  2. MULTI CROWD CONSENSUS (workflow 30752)
+     Threshold: n >= 3 classifications, top label agreement >= 67%
+     → Same mapping as above. Verified = TRUE.
+     Expert result (step 1) takes precedence if both reached consensus.
+
+     Label mapping for steps 1–2:
+       - Zooniverse choice text is cleaned: image markdown (![img](url) Label)
+         is reduced to the trailing text ("Label"); if no text follows the
+         image, the alt text is used instead.
+       - Cleaned text is looked up in the labelset JSON, then in a built-in
+         expansions table (common alt-text shortcuts → short label codes).
+       - Ambiguous or project-specific mappings can be added to
+         manual_overrides in main().
+       - If the label cannot be mapped → Label = "Review", Verified = FALSE,
+         zoon_status = "multi_consensus_unmapped" (reported separately).
+       - If the consensus label is a known "not sure" response (e.g.
+         "Not sure (needs expert review)") → Label = "Review",
+         Verified = FALSE, zoon_status = "voted_review".
+     Both steps 1–2 override an expert yes/no denial.
+
+  3. EXPERT YES/NO CONFIRMED (workflow 31534)
+     Threshold: n >= 1 classification, >= 75% voted Yes
+     → Original Toolbox label is kept unchanged. Verified = TRUE.
+     Only applies when no multi consensus exists (steps 1–2).
+
+  4. CROWD YES/NO CONFIRMED (workflow 30787)
+     Threshold: n >= 5 classifications, >= 75% voted Yes
+     → Original Toolbox label is kept unchanged. Verified = TRUE.
+     Only applies when no multi consensus exists AND expert did not deny.
+
+  5. REVIEW (fallback)
+     Point remains Label = "Review", Verified = FALSE if:
+       - Expert denied in yes/no (>= 75% voted No, n >= 1), or
+       - Crowd denied in yes/no (>= 75% voted No, n >= 5), or
+       - Insufficient votes in all workflows, or
+       - Multi consensus label could not be mapped to the labelset, or
+       - Multi consensus label is a known "not sure" response.
 
 Output headers (in this order):
   Name, Path, Row, Column, Patch Size,
@@ -62,17 +101,39 @@ YESNO_AGREE_MIN_FRAC = 0.75
 MULTI_AGREE_MIN_N    = 3
 MULTI_AGREE_MIN_FRAC = 0.67
 
+# Expert workflows: a single classification is sufficient
+EXPERT_MIN_N = 1
+
 REQUIRED_TOOLBOX_COLUMNS = [
     "Name", "Path", "Row", "Column", "Patch Size",
     "Annotation Type", "Label", "Long Label", "Verified",
     "Machine confidence 1", "Machine suggestion 1"
 ]
 
+# Path for persisting GUI state between runs
+_CONFIG_PATH = Path(__file__).parent / ".zooniverse_linker_config.json"
+
+def _load_gui_config() -> dict:
+    try:
+        with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _save_gui_config(cfg: dict) -> None:
+    try:
+        with open(_CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2)
+    except Exception:
+        pass
+
+
 # ============================================================
 # GUI
 # ============================================================
 def get_args_via_gui():
     result = {}
+    cfg = _load_gui_config()
 
     root = tk.Tk()
     root.title("Zooniverse → Toolbox Linker")
@@ -117,6 +178,13 @@ def get_args_via_gui():
                                    optional=True)
     outdir_var   = make_file_row(7, "Output directory:", [], is_dir=True)
 
+    # Restore last-used paths
+    dataset_var.set(cfg.get("dataset", ""))
+    zoo_var.set(cfg.get("zoo", ""))
+    labelset_var.set(cfg.get("labelset", ""))
+    annot_json_var.set(cfg.get("annot_json", ""))
+    outdir_var.set(cfg.get("outdir", ""))
+
     ttk.Separator(root, orient="horizontal").grid(
         row=8, column=0, columnspan=3, sticky="ew", padx=10, pady=4)
 
@@ -128,10 +196,10 @@ def get_args_via_gui():
     wf_frame = ttk.Frame(root)
     wf_frame.grid(row=10, column=0, columnspan=3, sticky="w", padx=18, pady=4)
 
-    use_yn_var     = tk.BooleanVar(value=True)
-    use_yn_exp_var = tk.BooleanVar(value=True)
-    use_m_var      = tk.BooleanVar(value=True)
-    use_m_exp_var  = tk.BooleanVar(value=True)
+    use_yn_var     = tk.BooleanVar(value=cfg.get("use_yn",        True))
+    use_yn_exp_var = tk.BooleanVar(value=cfg.get("use_yn_exp",    True))
+    use_m_var      = tk.BooleanVar(value=cfg.get("use_multi",     True))
+    use_m_exp_var  = tk.BooleanVar(value=cfg.get("use_multi_exp", True))
 
     ttk.Checkbutton(wf_frame, text=f"Yes/No crowd       ({WORKFLOW_YESNO})",
                     variable=use_yn_var).grid(row=0, column=0, sticky="w", padx=(0, 20))
@@ -191,6 +259,17 @@ def get_args_via_gui():
         result["use_multi"]     = use_m_var.get()
         result["use_multi_exp"] = use_m_exp_var.get()
         result["submitted"]     = True
+        _save_gui_config({
+            "dataset":       dataset,
+            "zoo":           zoo,
+            "labelset":      labelset,
+            "annot_json":    annot_json,
+            "outdir":        outdir,
+            "use_yn":        result["use_yn"],
+            "use_yn_exp":    result["use_yn_exp"],
+            "use_multi":     result["use_multi"],
+            "use_multi_exp": result["use_multi_exp"],
+        })
         root.destroy()
 
     def on_cancel():
@@ -233,9 +312,14 @@ def _norm_key(s: str) -> str:
 
 def clean_markdown_labels(label: str) -> str:
     cleaned = norm_str(label)
-    cleaned = re.sub(r'!\[.*?\]\(.*?\)', '', cleaned)
-    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-    return cleaned
+    # Strip the image markdown and keep any accompanying text (e.g. "![img](url) Silt" → "Silt")
+    text_only = re.sub(r'!\[.*?\]\(.*?\)', '', cleaned)
+    text_only = re.sub(r'\s+', ' ', text_only).strip()
+    if text_only:
+        return text_only
+    # No text outside the image — fall back to the alt text (e.g. "![red_algae](url)" → "red_algae")
+    alt_only = re.sub(r'!\[(.*?)\]\(.*?\)', r'\1', cleaned)
+    return re.sub(r'\s+', ' ', alt_only).strip()
 
 
 # ============================================================
@@ -272,6 +356,21 @@ def map_to_toolbox_codes(consensus_label: str, label_map: dict,
         "pebble":       "SU_peb",
         "bushy":        "RE_bush",
         "silt":         "SU_silt",
+        "brown_algae":  "BR_sarg",
+        "shell":        "SU_shell",
+        "unknown_cannot_be_determined_from_image": "unknown",
+        "sand":         "SU_sand",
+        "branching":    "RE_branch",
+        "sieve":         "KE_sieve",
+        "filamentous":   "RE_fil",
+        "sessile_invert": "SI",
+        "5-rib":           "KE_5rib",
+        "anthropogenic_debris": "SU_anth",
+        "bull":              "KE_bull",
+        "holdfast":          "KE_holdfas",
+        "mobile_species":     "MS",
+        "stipe":              "KE_stipe",
+
     }
     if k in expansions:
         kk = _norm_key(expansions[k])
@@ -584,6 +683,13 @@ def main():
     # ── Load labelset ─────────────────────────────────────────────────────────
     with open(args["labelset"], "r", encoding="utf-8") as f:
         labelset_raw = json.load(f)
+    if not isinstance(labelset_raw, list) or (labelset_raw and not isinstance(labelset_raw[0], dict)):
+        raise ValueError(
+            f"Labelset JSON does not look right — expected a list of label objects "
+            f"(each with 'short_label_code' / 'long_label_code').\n"
+            f"Got: {type(labelset_raw).__name__}. "
+            f"Did you accidentally select the annotation JSON instead?"
+        )
     label_map = {}
     for it in labelset_raw:
         short_c = norm_str(it.get("short_label_code", ""))
@@ -593,7 +699,10 @@ def main():
         if long_c:
             label_map[_norm_key(long_c)]  = (short_c or long_c, long_c)
 
-    manual_overrides: dict = {}
+    manual_overrides: dict = {
+        # Labels that intentionally mean "needs review" — not a mapping gap
+        "Not sure (needs expert review)": ("Review", "Review"),
+    }
 
     # ── Load input annotation JSON (optional) ─────────────────────────────────
     raw_json = None
@@ -650,41 +759,43 @@ def main():
             merged[c] = pd.to_numeric(merged[c], errors="coerce").fillna(0.0)
 
     # ── Consensus flags ───────────────────────────────────────────────────────
-    def _yn_confirm(n_col, yes_frac_col):
+    def _yn_confirm(n_col, yes_frac_col, min_n=YESNO_AGREE_MIN_N):
         if n_col not in merged.columns:
             return pd.Series(False, index=merged.index)
-        return ((merged[n_col] >= YESNO_AGREE_MIN_N) &
+        return ((merged[n_col] >= min_n) &
                 (merged[yes_frac_col] >= YESNO_AGREE_MIN_FRAC))
 
-    def _yn_deny(n_col, no_frac_col):
+    def _yn_deny(n_col, no_frac_col, min_n=YESNO_AGREE_MIN_N):
         if n_col not in merged.columns:
             return pd.Series(False, index=merged.index)
-        return ((merged[n_col] >= YESNO_AGREE_MIN_N) &
+        return ((merged[n_col] >= min_n) &
                 (merged[no_frac_col] >= YESNO_AGREE_MIN_FRAC))
 
-    def _multi_consensus(top_label_col, top_count_col, agree_col):
+    def _multi_consensus(top_label_col, top_count_col, agree_col, min_n=MULTI_AGREE_MIN_N):
         if top_label_col not in merged.columns:
             return pd.Series(False, index=merged.index)
         return (merged[top_label_col].notna() &
-                (merged[top_count_col] >= MULTI_AGREE_MIN_N) &
+                (merged[top_count_col] >= min_n) &
                 (merged[agree_col] >= MULTI_AGREE_MIN_FRAC))
 
     yn_confirm     = _yn_confirm("yn_n",     "yn_yes_frac")
-    yn_exp_confirm = _yn_confirm("yn_exp_n", "yn_exp_yes_frac")
+    yn_exp_confirm = _yn_confirm("yn_exp_n", "yn_exp_yes_frac", min_n=EXPERT_MIN_N)
     yn_deny        = _yn_deny("yn_n",     "yn_no_frac")
-    yn_exp_deny    = _yn_deny("yn_exp_n", "yn_exp_no_frac")
+    yn_exp_deny    = _yn_deny("yn_exp_n", "yn_exp_no_frac",    min_n=EXPERT_MIN_N)
 
     multi_consensus     = _multi_consensus("m_top_label",     "m_top_count",     "m_agreement")
-    multi_exp_consensus = _multi_consensus("m_exp_top_label", "m_exp_top_count", "m_exp_agreement")
+    multi_exp_consensus = _multi_consensus("m_exp_top_label", "m_exp_top_count", "m_exp_agreement", min_n=EXPERT_MIN_N)
 
     any_confirm = yn_confirm | yn_exp_confirm
     any_deny    = yn_deny    | yn_exp_deny
     any_multi_c = multi_consensus | multi_exp_consensus
 
-    # Status (for diagnostics — priority matches apply-updates order)
+    # Status (for diagnostics — priority matches apply-updates order).
+    # yn_confirm is masked by ~yn_exp_deny so that a crowd confirm does not
+    # report confirm_pred when an expert has already denied the subject.
     merged["zoon_status"] = np.select(
         [multi_exp_consensus, multi_consensus,
-         yn_exp_confirm, yn_confirm,
+         yn_exp_confirm, yn_confirm & ~yn_exp_deny,
          any_deny],
         ["multi_expert", "multi_consensus",
          "confirm_expert", "confirm_pred",
@@ -724,8 +835,16 @@ def main():
     merged.loc[unmapped, "Verified"]   = False
     merged.loc[unmapped, "zoon_status"] = "multi_consensus_unmapped"
 
-    # 2) Yes confirm (only where no multi consensus) → restore original Toolbox label
-    yn_confirm_only = any_confirm & (~any_multi_c)
+    # Rows explicitly voted "Review" via manual_overrides (e.g. "Not sure") —
+    # the multi loop set Verified=True so correct it back here.
+    voted_review = (any_multi_c &
+                    (merged["Label"] == "Review") &
+                    merged["zoon_status"].isin(["multi_expert", "multi_consensus"]))
+    merged.loc[voted_review, "Verified"]   = False
+    merged.loc[voted_review, "zoon_status"] = "voted_review"
+
+    # 2) Yes confirm (only where no multi consensus, and expert deny overrides crowd confirm)
+    yn_confirm_only = any_confirm & (~any_multi_c) & (~yn_exp_deny)
     if yn_confirm_only.any():
         orig = ds_keyed[key_cols + ["Label", "Long Label"]].copy()
         orig = orig.rename(columns={"Label": "_orig_Label",
@@ -814,7 +933,8 @@ def main():
         ]:
             n = row.get(f"{prefix}_n_votes", 0) or 0
             if n > 0:
-                min_n = YESNO_AGREE_MIN_N if "yesno" in prefix else MULTI_AGREE_MIN_N
+                is_expert = "expert" in prefix
+                min_n = EXPERT_MIN_N if is_expert else (YESNO_AGREE_MIN_N if "yesno" in prefix else MULTI_AGREE_MIN_N)
                 min_f = YESNO_AGREE_MIN_FRAC if "yesno" in prefix else MULTI_AGREE_MIN_FRAC
                 if n < min_n:
                     reasons.append(f"{label}: only {int(n)} vote(s) (need {min_n})")
@@ -838,6 +958,7 @@ def main():
         "confirm_pred":            "Confirmed by volunteer yes/no vote",
         "deny_pred":               "Review - denied in yes/no workflow",
         "multi_consensus_unmapped":"Review - multi-choice label not in labelset",
+        "voted_review":            "Review - volunteers voted 'not sure'",
         "needs_more_votes":        "Review - insufficient votes",
     }
     qa["label_source"] = qa["zoon_status"].map(label_source_map).fillna("Review - unknown")
@@ -848,10 +969,21 @@ def main():
     # ── Unmapped label report ─────────────────────────────────────────────────
     unmapped_rows = merged[merged["zoon_status"] == "multi_consensus_unmapped"].copy()
     if len(unmapped_rows) > 0:
-        raw_col = next((c for c in ["m_exp_top_label", "m_top_label"]
-                        if c in unmapped_rows.columns), None)
-        if raw_col:
-            vc = unmapped_rows[raw_col].astype(str).value_counts()
+        idx = unmapped_rows.index
+        raw_labels = pd.Series(np.nan, index=idx, dtype=object)
+
+        # Use expert top label for rows where expert multi reached consensus;
+        # fall back to crowd top label for the rest.
+        if "m_exp_top_label" in merged.columns:
+            exp_mask = multi_exp_consensus.reindex(idx, fill_value=False)
+            raw_labels[exp_mask] = merged.loc[idx[exp_mask], "m_exp_top_label"]
+        if "m_top_label" in merged.columns:
+            crowd_mask = raw_labels.isna()
+            raw_labels[crowd_mask] = merged.loc[idx[crowd_mask], "m_top_label"]
+
+        raw_labels = raw_labels.dropna().astype(str)
+        if len(raw_labels) > 0:
+            vc = raw_labels.value_counts()
             report = pd.DataFrame({"raw_label": vc.index, "count": vc.values})
             unmapped_path = os.path.join(args["outdir"],
                                          "unmapped_multi_consensus_labels.csv")
@@ -861,6 +993,8 @@ def main():
     print("\nDone.")
     print("Wrote QA/QC report:", qa_path)
     print(f"Rows kept: {len(merged)}")
+    n_review = (merged["Label"].astype(str) == "Review").sum()
+    print(f"Rows labeled Review: {n_review} / {len(merged)}")
     print("\nzoon_status counts:")
     print(merged["zoon_status"].value_counts(dropna=False))
     if len(unmapped_rows) > 0:

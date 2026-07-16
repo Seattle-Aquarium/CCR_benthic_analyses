@@ -43,8 +43,10 @@ Requirements:
 """
 
 import os
+import re
 import sys
 import types
+import getpass
 import logging
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -64,6 +66,25 @@ logging.basicConfig(
     ],
 )
 log = logging.getLogger(__name__)
+
+
+# ============================================================
+# PATH LOCALIZATION
+# ============================================================
+_USER_PATH_RE = re.compile(r"^([A-Za-z]:[\\/]Users[\\/])[^\\/]+([\\/].*)$")
+
+
+def localize_path(path: str) -> str:
+    """
+    Rewrite a Windows user-profile path so it points at the current user's
+    profile instead of whoever exported the annotation CSV. The shared
+    Dropbox tree under Users/<name>/ is identical across users, so only the
+    username segment needs to change.
+    """
+    match = _USER_PATH_RE.match(path)
+    if not match:
+        return path
+    return f"{match.group(1)}{getpass.getuser()}{match.group(2)}"
 
 
 # ============================================================
@@ -437,8 +458,9 @@ def extract_patches(annotation_csv: str, output_dir: str, metadata_csv: str,
         # Validate that source images actually exist
         missing = 0
         for _, row in df.iterrows():
-            if not os.path.isfile(str(row["Path"])):
-                log.warning(f"  MISSING source image: {row['Path']}")
+            image_path = localize_path(str(row["Path"]))
+            if not os.path.isfile(image_path):
+                log.warning(f"  MISSING source image: {image_path}")
                 missing += 1
         if missing:
             log.warning(f"{missing} source image(s) not found.")
@@ -453,7 +475,7 @@ def extract_patches(annotation_csv: str, output_dir: str, metadata_csv: str,
 
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Extracting patches", unit="patch"):
 
-        image_path = str(row["Path"])
+        image_path = localize_path(str(row["Path"]))
         image_name = str(row["Name"])
 
         img = cv2.imread(image_path)

@@ -25,3 +25,15 @@ Thumbs.db
 *.log
 import_log.txt
 export_log.txt
+toolbox_extract_log.txt
+
+# Per-user GUI "remember last inputs" caches — hardcoded to whoever ran the script
+.percent_cover_telemetry_config.json
+.zooniverse_linker_config.json
+
+# Generated reports and run caches (regenerable, not needed to run the workflow)
+reports/*.xlsx
+*_cache.csv
+
+# Claude Code personal settings (machine-specific overrides; settings.json stays shared)
+.claude/settings.local.json

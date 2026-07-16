@@ -39,9 +39,9 @@ import pandas as pd
 import numpy as np
 
 # ---------- Workflow IDs ----------
-WORKFLOW_YESNO        = 30787
+WORKFLOW_YESNO        = 32022
 WORKFLOW_YESNO_EXPERT = 31534
-WORKFLOW_MULTI        = 30752
+WORKFLOW_MULTI        = 32023
 WORKFLOW_MULTI_EXPERT = 31535
 
 # YES/NO workflow thresholds
