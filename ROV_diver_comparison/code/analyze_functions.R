@@ -1,9 +1,9 @@
-## script to contain functions for analyzing / visualizing data
+## script to contain functions for visualizing data
 
 
 
 
-## prefered graphing theme 
+## preferred graphing theme 
 my.theme = theme(panel.grid.major = element_blank(),
                  panel.grid.minor = element_blank(),
                  panel.background = element_blank(), 

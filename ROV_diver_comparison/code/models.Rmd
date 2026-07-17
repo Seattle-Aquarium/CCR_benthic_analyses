@@ -1,0 +1,87 @@
+---
+title: "ROV/diver models"
+author: "Rachael Aber"
+date: "07/17/2026"
+output: html_notebook
+---
+Set up; grab data:
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE,
+                      echo = T, warning = T, message = T, 
+                      fig.align = "center", fig.width = 6, fig.height = 3)
+library(tidyverse)
+library(lme4)
+
+div_upc <- read.csv("../results/diver/diver_UPC_percentage.csv")
+div_alg <- read.csv("../results/diver/diver_algae_abundance.csv")
+div_inv <- read.csv("../results/diver/diver_invert_abundance.csv")
+
+div <- div_upc %>%
+  left_join(div_alg, by = c('Date', 'season', 'site', 'transect', 'depth')) %>%
+  left_join(div_inv, by = c('Date', 'season', 'site', 'transect', 'depth')) %>%
+  mutate(type = 'diver')
+
+rm(div_upc, div_alg, div_inv) 
+
+rov_pc <- read.csv("../results/ROV/ROV_percent-cover_averaged.csv")
+rov_inv <- read.csv("../results/ROV/ROV_invert_abundance.csv")
+
+rov <-  rov_inv %>%
+  left_join(rov_pc, by = c('site', 'transect')) %>%
+  mutate(type = 'ROV')
+
+rm(rov_pc, rov_inv)
+
+# Need depth, season cols in ROV data! ***
+dat <- bind_rows(div %>% select(site, transect, type, ochre_mottled_star, cancer_crab, kelp_crab),
+                 rov %>% select(site, transect, type, ochre_mottled_star, cancer_crab, kelp_crab))
+```
+
+Create unique transect labels such that there are 12 transects instead of 6:
+```{r}
+dat <- dat %>%
+  mutate(transect_id = paste(transect, site))
+
+unique(dat$transect_id)
+```
+Abundance visualization:
+```{r}
+ggplot(dat, aes(x = transect_id, y = ochre_mottled_star, col = type)) +
+  geom_point() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+  )
+
+ggplot(dat, aes(x = transect_id, y = cancer_crab, col = type)) +
+  geom_point() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+  )
+
+ggplot(dat, aes(x = transect_id, y = kelp_crab, col = type)) +
+  geom_point()+
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+  )
+```
+
+Abundance models: ochre mottled star, cancer crab, kelp crab
+```{r}
+ochre_mod <- glmer(ochre_mottled_star ~ type + site + (1|transect_id), data = dat, 
+               family = poisson(link = "log"))
+summary(ochre_mod)
+
+ck_mod <- glmer(cancer_crab ~ type + site + (1|transect_id), data = dat, 
+               family = poisson(link = "log"))
+summary(ck_mod)
+
+kk_mod <- glmer(kelp_crab ~ type + site + (1|transect_id), data = dat, 
+               family = poisson(link = "log"))
+summary(kk_mod)
+# check nb, overdisp? ***
+```
+Percent-cover models: sugar kelp, sieve kelp, combined red algae 
+```{r}
+
+```
+

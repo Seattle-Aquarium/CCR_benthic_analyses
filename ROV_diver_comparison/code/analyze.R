@@ -1,5 +1,5 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## analyze / visualize data for ROV-diver comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## visualize data for ROV-diver comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -56,20 +56,6 @@ visualize.abundance.pairs(x_axis = ROV_abundance,
                           y_axis = diver_invert_abundance, 
                           colname = "cancer_crab",
                           axis_limit = 8)
-c1 <- diver_invert_abundance %>%
-  mutate(type = 'diver') %>%
-  select(site, transect, kelp_crab, type)
-c2 <- ROV_abundance %>%
-  mutate(type = 'ROV') %>%
-  select(site, transect, kelp_crab, type)
-datm <- rbind(c1, c2)
-
-crabmod <- glm(kelp_crab ~ type + site, data = datm, 
-               family = poisson(link = "log"))
-summary(crabmod)
-exp(coefficients(crabmod))
-# To-do: add depth, check nb, overdisp?
-
 
 ## need to add more ROV-derived percent-cover before we can visualize these
 ## visualize percent-cover 
