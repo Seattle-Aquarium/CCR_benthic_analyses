@@ -331,7 +331,24 @@ consistent.labels <- function(df) {
     "MS"          = "mobile_species",
     "KE_stipe"    = "kelp_stipe",
     "SI_kelpBry"  = "kelp_bryozoan",
-    "SU_anth"     = "anthropogenic"
+    "SU_anth"     = "anthropogenic",
+    ## additional categories introduced by the HSIL_percent_cover.csv export;
+    ## cross-checked against the Label/Long Label pairs in the raw Toolbox
+    ## exports (../Toolbox_classification_output/data/*.csv), which are the
+    ## ground truth for these codes. "KE_bull" (long label "kelp_bull_blade")
+    ## specifically denotes visible bull kelp *blade* cover, not the whole
+    ## organism -- don't treat it as directly comparable to diver "bull_kelp"
+    ## whole-plant counts. "RE_CCA" (crustose coralline algae) is distinct
+    ## from the more general "RE_encrust" encrusting-red-algae category.
+    "BR_encrust"  = "brown_algae_encrusting",
+    "BR_fucus"    = "brown_algae_fucus",
+    "GR_filam"    = "green_algae_filamentous",
+    "KE_bull"     = "kelp_bull_blade",
+    "KE_holdfas"  = "kelp_holdfast",
+    "RE_CCA"      = "red_algae_cca",
+    "RE_encrust"  = "red_algae_encrusting",
+    "SI"          = "sessile_invertebrates",
+    "SU_wood"     = "wood_debris"
   )
   
   # Rename columns using the map (if present in df)
@@ -491,7 +508,48 @@ average.by.site.transect <- function(df, start_col, end_col) {
 }
 
 
-## function to combine columns 
+## average by arbitrary grouping cols (e.g. site/transect/depth/season), rounded
+## to 3 decimal places; also reports how many rows (photos) went into each mean.
+## generalizes average.by.site.transect for datasets w/ more than one grouping
+## factor (e.g. HSIL data, which has repeat surveys of the same site/transect
+## across two seasons). Takes an explicit vector of column names (`cols`)
+## rather than a start/end range, since a start/end range silently breaks if
+## the columns were previously reordered (e.g. by reorder.by.total()).
+average.by.group <- function(df, group_cols, cols) {
+  missing_cols <- setdiff(cols, names(df))
+  if (length(missing_cols) > 0) {
+    stop(paste("Missing columns:", paste(missing_cols, collapse = ", ")))
+  }
+
+  df %>%
+    group_by(across(all_of(group_cols))) %>%
+    summarise(
+      n_photos = dplyr::n(),
+      across(all_of(cols), ~ round(mean(.x, na.rm = TRUE), 3)),
+      .groups = "drop"
+    )
+}
+
+
+## sum by arbitrary grouping cols; companion to average.by.group(), used e.g.
+## to sum per-photo point counts up to transect-level totals
+sum.by.group <- function(df, group_cols, cols) {
+  missing_cols <- setdiff(cols, names(df))
+  if (length(missing_cols) > 0) {
+    stop(paste("Missing columns:", paste(missing_cols, collapse = ", ")))
+  }
+
+  df %>%
+    group_by(across(all_of(group_cols))) %>%
+    summarise(
+      n_photos = dplyr::n(),
+      across(all_of(cols), ~ sum(.x, na.rm = TRUE)),
+      .groups = "drop"
+    )
+}
+
+
+## function to combine columns
 # Requires: dplyr, tidyr (and optionally forcats if you want factor handling)
 
 combine_with_zero_fill <- function(df_a, df_b, fill_value = 0) {
