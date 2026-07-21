@@ -341,14 +341,6 @@ consistent.labels <- function(df) {
     "KE_stipe"    = "kelp_stipe",
     "SI_kelpBry"  = "kelp_bryozoan",
     "SU_anth"     = "anthropogenic",
-    ## additional categories introduced by the HSIL_percent_cover.csv export;
-    ## cross-checked against the Label/Long Label pairs in the raw Toolbox
-    ## exports (../Toolbox_classification_output/data/*.csv), which are the
-    ## ground truth for these codes. "KE_bull" (long label "kelp_bull_blade")
-    ## specifically denotes visible bull kelp *blade* cover, not the whole
-    ## organism -- don't treat it as directly comparable to diver "bull_kelp"
-    ## whole-plant counts. "RE_CCA" (crustose coralline algae) is distinct
-    ## from the more general "RE_encrust" encrusting-red-algae category.
     "BR_encrust"  = "brown_algae_encrusting",
     "BR_fucus"    = "brown_algae_fucus",
     "GR_filam"    = "green_algae_filamentous",
