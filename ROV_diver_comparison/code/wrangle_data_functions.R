@@ -194,18 +194,27 @@ combine.UPC.names <- function(df) {
 }
 
 
-## calculate density:
-calculate.density <- function(df, start_col, end_col, divisor) {
-  start_idx <- which(names(df) == start_col)
-  end_idx <- which(names(df) == end_col)
-  
-  if (length(start_idx) == 0 || length(end_idx) == 0 || start_idx > end_idx) {
-    stop("Invalid start or end column names.")
+## calculate density. Prefer the `cols` argument (an explicit vector of column
+## names) over start_col/end_col where possible: a start/end range is looked
+## up by CURRENT column position, so if the df was previously reordered (e.g.
+## by reorder.by.total(), which sorts columns by total value) the range can
+## silently span the wrong columns -- it'll only "happen" to be correct if the
+## intended start/end columns still rank highest/lowest by total.
+calculate.density <- function(df, start_col = NULL, end_col = NULL, divisor, cols = NULL) {
+  if (is.null(cols)) {
+    start_idx <- which(names(df) == start_col)
+    end_idx <- which(names(df) == end_col)
+
+    if (length(start_idx) == 0 || length(end_idx) == 0 || start_idx > end_idx) {
+      stop("Invalid start or end column names.")
+    }
+
+    cols <- names(df)[start_idx:end_idx]
   }
-  
+
   # Compute density
-  df[start_idx:end_idx] <- round(df[start_idx:end_idx] / divisor, 2)
-  
+  df[cols] <- round(df[cols] / divisor, 2)
+
   return(df)
 }
 
