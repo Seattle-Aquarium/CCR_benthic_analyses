@@ -1,4 +1,4 @@
-## script to contain functions for analyzing / visualizing data
+## script to contain functions for visualizing data
 
 
 
@@ -25,7 +25,7 @@ visualize.abundance.pairs <- function(x_axis, y_axis, colname, axis_limit = 10,
     x = x_axis[[colname]],
     y = y_axis[[colname]]
   )
-  
+
   ggplot(combined_df, aes(x = x, y = y)) +
     geom_point(color = "black", size=2) +
     geom_abline(slope = 1, intercept = 0, color = "gray40", linetype = "solid") +
@@ -37,11 +37,11 @@ visualize.abundance.pairs <- function(x_axis, y_axis, colname, axis_limit = 10,
 
 ## build the long-form ROV-diver head-to-head comparison data ~~~~~~~~~~~~~~~~~
 ## `pairs` is a data frame with one row per head-to-head comparison (see
-## head_to_head_pairs in analyze.R), giving the display category label, the
-## matching ROV column name, and the matching diver column name. Each pair is
-## joined on site/transect/season independently (rather than one big join
-## across all pairs at once) so that columns which happen to share a name
-## across the ROV and diver dataframes -- e.g. both have their own
+## head_to_head_pairs in data_visualization.R), giving the display category
+## label, the matching ROV column name, and the matching diver column name.
+## Each pair is joined on site/transect/season independently (rather than one
+## big join across all pairs at once) so that columns which happen to share a
+## name across the ROV and diver dataframes -- e.g. both have their own
 ## "combined_red_algae" -- never collide or get silently suffixed.
 ## `rov_scale` rescales the ROV values (stored as 0-1 proportions) up to the
 ## same 0-100 percentage scale as the diver UPC data, so the two axes and the
@@ -115,4 +115,49 @@ visualize.head.to.head <- function(data, colors, axis_limit = 100,
   }
 
   p
+}
+
+
+## compute each photo's approximate distance (m) from its transect's first
+## captured photo, using a local equirectangular approximation of GPS
+## coordinates (adequate given transects span only ~30m; not appropriate at
+## larger scales). Two ROV passes are run per 30m transect -- an outbound
+## pass down one side of the meter tape and a return pass down the other --
+## so ordering all photos (both passes) by this distance naturally
+## interleaves them by physical position along the tape (roughly two points
+## per meter mark) rather than needing to explicitly stitch the two passes
+## together.
+add.transect.distance <- function(df, group_cols = c("site", "transect", "season")) {
+  df %>%
+    group_by(across(all_of(group_cols))) %>%
+    arrange(Time, .by_group = TRUE) %>%
+    mutate(
+      lat0 = dplyr::first(Latitude),
+      lon0 = dplyr::first(Longitude),
+      dx = (Longitude - lon0) * 111320 * cos(lat0 * pi / 180),
+      dy = (Latitude - lat0) * 111320,
+      distance_m = sqrt(dx^2 + dy^2)
+    ) %>%
+    ungroup() %>%
+    select(-lat0, -lon0, -dx, -dy)
+}
+
+
+## visualize a single percent-cover category across photos/space (both ROV
+## passes interleaved by distance along the transect) for one site x season,
+## faceted by transect in the given order
+visualize.photo.level <- function(data, category, transect_order,
+                                  color = "black", ncol = 3,
+                                  x_label = "distance along transect (m)",
+                                  y_label = category) {
+  plot_data <- data %>%
+    mutate(transect = factor(transect, levels = transect_order)) %>%
+    arrange(transect, distance_m)
+
+  ggplot(plot_data, aes(x = distance_m, y = .data[[category]])) +
+    geom_line(color = color) +
+    geom_point(color = color, size = 2) +
+    facet_wrap(~ transect, ncol = ncol) +
+    labs(x = x_label, y = y_label) +
+    my.theme
 }

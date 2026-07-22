@@ -1,5 +1,6 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## analyze / visualize data for ROV-diver comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## visualize data for ROV-diver comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## (formal statistical analyses live in data_analyses.R instead) ~~~~~~~~~~~~~~~
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -31,7 +32,7 @@ figs <- "figs"
 
 ## source functions
 source(file.path(code, "wrangle_data_functions.R"))
-source(file.path(code, "analyze_functions.R"))
+source(file.path(code, "data_visualization_functions.R"))
 
 
 ## read diver data
@@ -39,15 +40,13 @@ source(file.path(code, "analyze_functions.R"))
 ## column names through make.names(), which mangles the parentheses/hyphens
 ## in names like "substrate_rock_(15-25cm-wa)" into "substrate_rock_.15.25cm.wa.".
 ## read_csv() preserves them as-is, matching the header actually written to disk.
-diver_algae_abundance <- read_csv(file.path(diver_output, "diver_algae_abundance.csv"))
-diver_algae_density <- read_csv(file.path(diver_output, "diver_algae_density.csv"))
 diver_invert_abundance <- read_csv(file.path(diver_output, "diver_invert_abundance.csv"))
-diver_invert_density <- read_csv(file.path(diver_output, "diver_invert_density.csv"))
 diver_UPC_percentage <- read_csv(file.path(diver_output, "diver_UPC_percentage.csv"))
 
 
 ## read ROV data
 ROV_percent_cover_averaged <- read_csv(file.path(ROV_output, "HSIL_percent-cover_transect-averaged.csv"))
+ROV_percent_cover_photo_level <- read_csv(file.path(ROV_output, "HSIL_percent-cover_photo-level.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -133,30 +132,61 @@ ggsave(file.path(figs, "ROV_diver_head_to_head.png"),
 
 
 
+## ROV photo-level spatial visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## full-resolution (not transect-averaged) ROV percent-cover, visualized across
+## individual, sequential photos rather than compared against diver data.
+##
+## Two ROV passes are run per 30m transect -- an outbound pass down one side
+## of the meter tape, and a return pass down the other -- so raw photo/capture
+## order doesn't map cleanly onto "meters along the transect" (a naive
+## sequential x-axis would run the outbound leg 0->30m and then the return
+## leg would also run roughly 0->30m, appended after it). Instead,
+## add.transect.distance() estimates each photo's GPS distance (m) from its
+## transect's first-captured photo, so ordering ALL photos (both passes) by
+## that distance interleaves them by physical position along the tape --
+## roughly two points per meter mark, one from each pass.
+centennial_summer_photos <- ROV_percent_cover_photo_level %>%
+  filter(site == "Centennial_Park", season == "summer", transect %in% 1:6) %>%
+  add.transect.distance()
+
+
+## reuse the kelp - Sugar color from the Zooniverse labelset for consistency
+## with the head-to-head figures above
+kelp_sugar_rgb <- get.zooniverse.rgb(file.path(ROV_input, "labelset_toolbox_zooniverse.json"))
+kelp_sugar_color <- rgb(kelp_sugar_rgb["KE_sugar", 1], kelp_sugar_rgb["KE_sugar", 2],
+                        kelp_sugar_rgb["KE_sugar", 3], maxColorValue = 255)
+
+
+## shallow transects (4,5,6) on top, deep transects (1,2,3) on bottom
+kelp_sugar_plot <- visualize.photo.level(
+  data = centennial_summer_photos,
+  category = "kelp_sugar",
+  transect_order = c(4, 5, 6, 1, 2, 3),
+  color = kelp_sugar_color,
+  ncol = 3,
+  y_label = "proportion sugar kelp"
+) +
+  labs(title = "Centennial Park, summer -- sugar kelp")
+kelp_sugar_plot
+
+ggsave(file.path(figs, "ROV_photo-level_kelp_sugar_Centennial_summer.png"),
+      kelp_sugar_plot, width = 12, height = 8, dpi = 300)
+## END ROV photo-level spatial visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
 ## visualize abundances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## NOTE: ROV_invert_abundance.csv doesn't exist yet -- new VIAME-derived
 ## abundance data is forthcoming (wrangle_ROV_abundance_data.R will need to
 ## be re-run once it lands); this block will error out until then, so it's
-## placed after the percent-cover work above rather than in startup
+## placed last rather than in startup
 ROV_abundance <- read_csv(file.path(ROV_output, "ROV_invert_abundance.csv"))
 
 visualize.abundance.pairs(x_axis = ROV_abundance,
                           y_axis = diver_invert_abundance,
                           colname = "cancer_crab",
                           axis_limit = 8)
-c1 <- diver_invert_abundance %>%
-  mutate(type = 'diver') %>%
-  select(site, transect, kelp_crab, type)
-c2 <- ROV_abundance %>%
-  mutate(type = 'ROV') %>%
-  select(site, transect, kelp_crab, type)
-datm <- rbind(c1, c2)
-
-crabmod <- glm(kelp_crab ~ type + site, data = datm,
-               family = poisson(link = "log"))
-summary(crabmod)
-exp(coefficients(crabmod))
-# To-do: add depth, check nb, overdisp?
 ## END abundance visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
