@@ -130,15 +130,27 @@ invert_cols <- setdiff(names(invert), meta_cols)
 
 
 ## combine red algae categories
-UPC <- combine.cols(UPC, c("Cover_Red Algae", 
-                           "Superlayer Red Algae"), 
+UPC <- combine.cols(UPC, c("cover_red_algae",
+                           "superlayer_red_algae"),
                     "combined_red_algae")
 
 
 ## combine green categories
-UPC <- combine.cols(UPC, c("Cover_Green Algae", 
-                           "Superlayer Green Algae"), 
+UPC <- combine.cols(UPC, c("cover_green_algae",
+                           "superlayer_green_algae"),
                     "combined_green_algae")
+
+
+## combine substrate boulder categories
+UPC <- combine.cols(UPC, c("substrate_large_boulder_(50cm-1m-wa)",
+                           "substrate_reef"),
+                    "combined_substrate_boulder")
+
+
+## combine substrate pebble/cobble categories
+UPC <- combine.cols(UPC, c("substrate_pebble_(0.5-5cm-wa)",
+                           "substrate_cobble_(5-15cm-wa)"),
+                    "combined_substrate_pebble")
 
 
 

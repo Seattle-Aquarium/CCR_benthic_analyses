@@ -190,7 +190,8 @@ extrapolate.abundance <- function(df, amount_col, distance_col) {
 combine.UPC.names <- function(df) {
   df %>% mutate(combined_name = ifelse(grepl("^Superlayer", Classcode),
                                        Classcode, paste(Category, Classcode, sep = "_")
-  ))
+  )) %>%
+    mutate(combined_name = str_replace_all(tolower(combined_name), " ", "_"))
 }
 
 
