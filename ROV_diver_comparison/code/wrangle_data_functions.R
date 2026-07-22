@@ -190,7 +190,8 @@ extrapolate.abundance <- function(df, amount_col, distance_col) {
 combine.UPC.names <- function(df) {
   df %>% mutate(combined_name = ifelse(grepl("^Superlayer", Classcode),
                                        Classcode, paste(Category, Classcode, sep = "_")
-  ))
+  )) %>%
+    mutate(combined_name = str_replace_all(tolower(combined_name), " ", "_"))
 }
 
 
@@ -316,42 +317,51 @@ reorder.by.total <- function(df, start_col, end_col) {
 
 
 
+## raw Zooniverse short_label_code -> descriptive ROV column name, cross-checked
+## against the Label/Long Label pairs in the raw Toolbox exports. Kept at
+## top level (rather than local to consistent.labels()) so other scripts
+## (e.g. analyze_functions.R, for pulling category colors out of the
+## Zooniverse labelset JSON by short_label_code) can reuse the same mapping
+## instead of maintaining a second, drift-prone copy.
+rov_code_map <- c(
+  "BR_filam"    = "brown_algae_filamentous",
+  "GR_fil"      = "green_algae_filamentous",
+  "BR_sarg"     = "brown_algae_sargassum",
+  "GR_ulva"     = "green_algae_ulva",
+  "RE_bush"     = "red_algae_bushy",
+  "RE_fil"      = "red_algae_filamentous",
+  "RE_leaf"     = "red_algae_flat_leaf",
+  "SU_bould"    = "boulder",
+  "SU_cob"      = "cobble",
+  "SU_peb"      = "pebble",
+  "SU_silt"     = "silt",
+  "KE_sugar"    = "kelp_sugar",
+  "RE_branch"   = "red_algae_branching",
+  "SU_sand"     = "sand_fine_shell",
+  "unknown"     = "unknown_area",
+  "KE_sieve"    = "kelp_sieve",
+  "KE_5rib"     = "kelp_five_rib",
+  "SU_shell"    = "shell_hash",
+  "MS"          = "mobile_species",
+  "KE_stipe"    = "kelp_stipe",
+  "SI_kelpBry"  = "kelp_bryozoan",
+  "SU_anth"     = "anthropogenic",
+  "BR_encrust"  = "brown_algae_encrusting",
+  "BR_fucus"    = "brown_algae_fucus",
+  "GR_filam"    = "green_algae_filamentous",
+  "KE_bull"     = "kelp_bull_blade",
+  "KE_holdfas"  = "kelp_holdfast",
+  "RE_CCA"      = "red_algae_cca",
+  "RE_encrust"  = "red_algae_encrusting",
+  "SI"          = "sessile_invertebrates",
+  "SU_wood"     = "wood_debris"
+)
+
+
 ## ensure ROV column headers are consistent
 consistent.labels <- function(df) {
-  names_map <- c(
-    "BR_filam"    = "brown_algae_filamentous",
-    "GR_fil"      = "green_algae_filamentous",
-    "BR_sarg"     = "brown_algae_sargassum",
-    "GR_ulva"     = "green_algae_ulva",
-    "RE_bush"     = "red_algae_bushy",
-    "RE_fil"      = "red_algae_filamentous",
-    "RE_leaf"     = "red_algae_flat_leaf",
-    "SU_bould"    = "boulder",
-    "SU_cob"      = "cobble",
-    "SU_peb"      = "pebble",
-    "SU_silt"     = "silt",
-    "KE_sugar"    = "kelp_sugar",
-    "RE_branch"   = "red_algae_branching",
-    "SU_sand"     = "sand_fine_shell",
-    "unknown"     = "unknown_area",
-    "KE_sieve"    = "kelp_sieve",
-    "KE_5rib"     = "kelp_five_rib",
-    "SU_shell"    = "shell_hash",
-    "MS"          = "mobile_species",
-    "KE_stipe"    = "kelp_stipe",
-    "SI_kelpBry"  = "kelp_bryozoan",
-    "SU_anth"     = "anthropogenic",
-    "BR_encrust"  = "brown_algae_encrusting",
-    "BR_fucus"    = "brown_algae_fucus",
-    "GR_filam"    = "green_algae_filamentous",
-    "KE_bull"     = "kelp_bull_blade",
-    "KE_holdfas"  = "kelp_holdfast",
-    "RE_CCA"      = "red_algae_cca",
-    "RE_encrust"  = "red_algae_encrusting",
-    "SI"          = "sessile_invertebrates",
-    "SU_wood"     = "wood_debris"
-  )
-  
+  names_map <- rov_code_map
+
   # Rename columns using the map (if present in df)
   renamed_df <- df
   for (old_name in names(names_map)) {
@@ -359,7 +369,7 @@ consistent.labels <- function(df) {
       colnames(renamed_df)[colnames(renamed_df) == old_name] <- names_map[[old_name]]
     }
   }
-  
+
   return(renamed_df)
 }
 
