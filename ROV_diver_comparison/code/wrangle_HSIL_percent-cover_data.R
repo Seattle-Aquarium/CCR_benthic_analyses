@@ -5,8 +5,8 @@
 ## Source: data/ROV/HSIL_percent_cover.csv -- one row per ROV photo, with
 ## x33 metadata columns (navigation/telemetry + survey ID) followed by x30
 ## percent-cover category columns (x2 sites, x6 transects, x2 seasons).
-## This supersedes the earlier short_percent_t4/t6.csv exports (see
-## wrangle_ROV_percent-cover_data.R), which only covered a single season.
+## This supersedes the earlier short_percent_t4/t6.csv exports (single-season
+## data, now removed along with the script that read them).
 ##
 ## Category code -> descriptive name mappings (see consistent.labels() in
 ## wrangle_data_functions.R) were cross-checked against the Label/Long Label

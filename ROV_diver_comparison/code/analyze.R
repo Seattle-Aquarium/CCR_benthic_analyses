@@ -22,8 +22,8 @@ getwd()
 
 
 ## relative file paths
-diver_output <- "data_output/diver"
-ROV_output <- "data_output/ROV"
+diver_output <- "results/diver"
+ROV_output <- "results/ROV"
 code <- "code"
 figs <- "figs"
 
@@ -41,9 +41,11 @@ diver_UPC_percentage <- read.csv(file.path(diver_output, "diver_UPC_percentage.c
   
 
 ## read ROV data
+## NOTE: ROV_invert_abundance.csv doesn't exist yet -- new VIAME-derived
+## abundance data is forthcoming (wrangle_ROV_abundance_data.R will need to
+## be re-run once it lands); the lines below will fail until then
 ROV_abundance <- read.csv(file.path(ROV_output, "ROV_invert_abundance.csv"))
-ROV_percent_cover_averaged <- read.csv(file.path(ROV_output, "ROV_percent-cover_averaged.csv"))
-ROV_percent_cover <- read.csv(file.path(ROV_output, "ROV_percent-cover.csv"))
+ROV_percent_cover_averaged <- read.csv(file.path(ROV_output, "HSIL_percent-cover_transect-averaged.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -71,8 +73,10 @@ exp(coefficients(crabmod))
 # To-do: add depth, check nb, overdisp?
 
 
-## need to add more ROV-derived percent-cover before we can visualize these
-## visualize percent-cover 
+## visualize percent-cover
+## NOTE: x_axis/y_axis are paired positionally (row i of one against row i of
+## the other), not joined by site/transect/season key -- confirm the two
+## dataframes' rows are in matching order before trusting this plot
 #visualize.percent.cover.pairs(x_axis = ROV_percent_cover_averaged,
 #                              y_axis = diver_UPC_percentage,
 #                              colnames = c("combined_red_algae",

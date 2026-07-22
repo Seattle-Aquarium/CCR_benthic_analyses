@@ -30,20 +30,28 @@ So, to facilitate a comparison, we have averaged the ROV percent-cover data (acr
 
 ## Data
 ### Reef Check diver data
-See [wrangle_diver_data.R](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/code/wrangle_diver_data.R) and [wrangle_diver_functions.R](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/code/wrangle_data_functions.R) for the code used to process the diver data, producing data with summary values per transect (per row). 
+See [wrangle_diver_data.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/wrangle_diver_data.R) and [wrangle_diver_functions.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/wrangle_data_functions.R) for the code used to process the diver data, producing data with summary values per transect (per row). 
 
-- [diver_algae_abundance.csv](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/data_output/diver/diver_algae_abundance.csv)
-- [diver_invert_abundance.csv](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/data_output/diver/diver_invert_abundance.csv)
-- [diver_UPC_percentage.csv](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/data_output/diver/diver_UPC_percentage.csv)
+- [diver_algae_abundance.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/diver/diver_algae_abundance.csv)
+- [diver_invert_abundance.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/diver/diver_invert_abundance.csv)
+- [diver_UPC_percentage.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/diver/diver_UPC_percentage.csv)
 
-### ROV data 
-See [wrangle_ROV_abundance_data.R](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/code/wrangle_ROV_abundance_data.R), [wrangle_ROV_percent-cover_data.R](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/code/wrangle_ROV_percent-cover_data.R), and [wrangle_data_functions.R](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/code/wrangle_data_functions.R) for the code used to process the ROV data, producing the following: 
+### ROV abundance data
+See [wrangle_ROV_abundance_data.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/wrangle_ROV_abundance_data.R) and [wrangle_data_functions.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/wrangle_data_functions.R) for the code used to process VIAME-derived ROV object-detection data, producing:
 
-- [ROV_invert_abundance.csv](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/data_output/ROV/ROV_invert_abundance.csv)
-- [ROV_percent-cover.csv](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/data_output/ROV/ROV_percent-cover.csv)
-- [ROV_percent-cover_averaged.csv ](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/data_output/ROV/ROV_percent-cover_averaged.csv)
+- [ROV_invert_abundance.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/ROV_invert_abundance.csv)
+
+(New VIAME abundance data is forthcoming; this script needs to be re-run once it lands.)
+
+### ROV percent-cover data (HSIL export)
+See [wrangle_HSIL_percent-cover_data.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/wrangle_HSIL_percent-cover_data.R) for the code used to process `HSIL_percent_cover.csv` -- the full photo-level percent-cover export (both sites, all 6 transects, both seasons), which supersedes the single-season `short_percent_t4.csv`/`short_percent_t6.csv` inputs used above. It produces:
+
+- [HSIL_percent-cover_photo-level.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_percent-cover_photo-level.csv) -- cleaned, one row per photo
+- [HSIL_percent-cover_long.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_percent-cover_long.csv) -- long format (photo x category)
+- [HSIL_percent-cover_transect-averaged.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_percent-cover_transect-averaged.csv) -- mean percent cover per site/transect/depth/season
+- [HSIL_points_photo-level.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_points_photo-level.csv), [HSIL_points_transect-sums.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_points_transect-sums.csv), [HSIL_points_transect-average.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_points_transect-average.csv) -- the same data expressed as point counts (each photo's cover is generated from 50 randomly distributed points), which are additive in a way percentages are not
 
 We have a started some scripts to visualize and analyze both ROV and diver data, e.g.,
 
-- [analyze.R](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/code/analyze.R)
-- [analyze_functions.R](https://github.com/zhrandell/ROV-diver_methods_comparison/blob/main/code/analyze_functions.R)
+- [analyze.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/analyze.R)
+- [analyze_functions.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/analyze_functions.R)

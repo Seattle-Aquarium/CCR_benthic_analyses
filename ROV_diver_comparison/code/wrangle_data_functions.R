@@ -194,18 +194,27 @@ combine.UPC.names <- function(df) {
 }
 
 
-## calculate density:
-calculate.density <- function(df, start_col, end_col, divisor) {
-  start_idx <- which(names(df) == start_col)
-  end_idx <- which(names(df) == end_col)
-  
-  if (length(start_idx) == 0 || length(end_idx) == 0 || start_idx > end_idx) {
-    stop("Invalid start or end column names.")
+## calculate density. Prefer the `cols` argument (an explicit vector of column
+## names) over start_col/end_col where possible: a start/end range is looked
+## up by CURRENT column position, so if the df was previously reordered (e.g.
+## by reorder.by.total(), which sorts columns by total value) the range can
+## silently span the wrong columns -- it'll only "happen" to be correct if the
+## intended start/end columns still rank highest/lowest by total.
+calculate.density <- function(df, start_col = NULL, end_col = NULL, divisor, cols = NULL) {
+  if (is.null(cols)) {
+    start_idx <- which(names(df) == start_col)
+    end_idx <- which(names(df) == end_col)
+
+    if (length(start_idx) == 0 || length(end_idx) == 0 || start_idx > end_idx) {
+      stop("Invalid start or end column names.")
+    }
+
+    cols <- names(df)[start_idx:end_idx]
   }
-  
+
   # Compute density
-  df[start_idx:end_idx] <- round(df[start_idx:end_idx] / divisor, 2)
-  
+  df[cols] <- round(df[cols] / divisor, 2)
+
   return(df)
 }
 
@@ -332,14 +341,6 @@ consistent.labels <- function(df) {
     "KE_stipe"    = "kelp_stipe",
     "SI_kelpBry"  = "kelp_bryozoan",
     "SU_anth"     = "anthropogenic",
-    ## additional categories introduced by the HSIL_percent_cover.csv export;
-    ## cross-checked against the Label/Long Label pairs in the raw Toolbox
-    ## exports (../Toolbox_classification_output/data/*.csv), which are the
-    ## ground truth for these codes. "KE_bull" (long label "kelp_bull_blade")
-    ## specifically denotes visible bull kelp *blade* cover, not the whole
-    ## organism -- don't treat it as directly comparable to diver "bull_kelp"
-    ## whole-plant counts. "RE_CCA" (crustose coralline algae) is distinct
-    ## from the more general "RE_encrust" encrusting-red-algae category.
     "BR_encrust"  = "brown_algae_encrusting",
     "BR_fucus"    = "brown_algae_fucus",
     "GR_filam"    = "green_algae_filamentous",

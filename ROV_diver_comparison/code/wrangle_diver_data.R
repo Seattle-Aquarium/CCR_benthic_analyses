@@ -22,8 +22,8 @@ getwd()
 
 
 ## relative file paths
-diver_input <- "data_input/diver"
-diver_output <- "data_output/diver"
+diver_input <- "data/diver"
+diver_output <- "results/diver"
 code <- "code"
 
 
@@ -118,6 +118,17 @@ algae <- rename_columns(algae, algae_name_map)
 invert <- standardize.invert.cols(invert)
 
 
+## explicit species-column lists, captured now (before reorder.by.total()
+## below re-sorts columns by total value). calculate.density() is called
+## further down with these, rather than a start_col/end_col name-range,
+## since a range is looked up by *current* column position and would only
+## "happen" to be correct if the intended start/end species still ranked
+## highest/lowest by total after reordering
+meta_cols <- c("Date", "season", "site", "transect", "depth")
+algae_cols <- setdiff(names(algae), meta_cols)
+invert_cols <- setdiff(names(invert), meta_cols)
+
+
 ## combine red algae categories
 UPC <- combine.cols(UPC, c("Cover_Red Algae", 
                            "Superlayer Red Algae"), 
@@ -138,16 +149,14 @@ invert <- reorder.by.total(invert, "bat_star", "ochre_mottled_star")
 
 
 ## calculate density for algae abundances
-algae_density <- calculate.density(df = algae, 
-                                   start_col = "kelp_sieve", 
-                                   end_col = "woody_kelp", 
+algae_density <- calculate.density(df = algae,
+                                   cols = algae_cols,
                                    divisor = 60)
 
 
 ## calculate density for invert abundances
-invert_density <- calculate.density(df = invert, 
-                                    start_col = "ochre_mottled_star",
-                                    end_col = "sunflower_star",
+invert_density <- calculate.density(df = invert,
+                                    cols = invert_cols,
                                     divisor = 60)
 ## END diver data wrangling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

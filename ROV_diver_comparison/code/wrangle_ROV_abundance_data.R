@@ -22,10 +22,10 @@ getwd()
 
 
 ## relative file paths
-ROV_input <- "data_input/ROV"
-ROV_output <- "data_output/ROV"
+ROV_input <- "data/ROV"
+ROV_output <- "results/ROV"
 code <- "code"
-diver_output <- "data_output/diver"
+diver_output <- "results/diver"
 
 
 ## source functions 
@@ -45,8 +45,8 @@ invert <- read.csv(file.path(diver_output, "diver_invert_abundance.csv"))
 ROV_objects <- remove.chars(ROV_objects, Transect, 1)
 
 
-## rename ROV cols
-ROV_objects <- rename.columns(ROV_objects, old_names, new_names)
+## rename ROV cols (species codes -> descriptive names)
+ROV_objects <- rename.columns(ROV_objects, names(rov_invert_name_map), unname(rov_invert_name_map))
 
 
 ## trim down the 1s interval data to every 3s to avoid double counting 
@@ -82,16 +82,15 @@ save.csv(ROV_objects, ROV_output, "ROV_invert_abundance.csv")
 
 
 ## combine ROV and diver abundances into single dataframe ~~~~~~~~~~~~~~~~~~~~~~
-diver_invert_abundance <- read.csv(file.path(diver_output, "diver_invert_abundance.csv"))
-diver_invert_abundance <- add_column(diver_invert_abundance, "observer", "diver", 3)
+## reuse `invert` (already read at startup) rather than re-reading the same
+## file; the old version also force-reordered rows to [7:12, 1:6], which
+## assumed exactly 12 rows (one season) -- now that the diver data covers two
+## seasons (24 rows), that would have silently dropped every winter row before
+## combine_with_zero_fill() ever ran. bind_rows() (used inside
+## combine_with_zero_fill()) matches by column name, not row position, so no
+## row reordering is needed here at all.
+diver_invert_abundance <- add_column(invert, "observer", "diver", 3)
 diver_invert_abundance <- add_depth_column(diver_invert_abundance, 4)
-
-# Swap rows 1–6 with 7–12 (exactly 12 rows total)
-diver_invert_abundance <- diver_invert_abundance[c(7:12, 1:6), , drop = FALSE]
-
-# Reset row numbers
-rownames(diver_invert_abundance) <- NULL
-
 
 
 ROV_abundance <- read.csv(file.path(ROV_output, "ROV_invert_abundance.csv"))
