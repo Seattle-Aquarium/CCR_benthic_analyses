@@ -117,7 +117,6 @@ summary(kk_mod)
 
 Percent-cover models
 ```{r}
-
 dat <- dat %>%
   mutate(cover_red_algae_ind = if_else(cover_red_algae > 0, 1, 0),
          combined_green_algae_ind = if_else(combined_green_algae > 0, 1, 0),
@@ -132,8 +131,11 @@ dat <- dat %>%
 mod_cga <- glmer(combined_green_algae_ind ~ type + site + (1|transect_id) + season + depth, 
                  data = dat, 
                family = binomial)
+mod_cga_red <- glmer(combined_green_algae_ind ~ type + (1|transect_id), 
+                 data = dat, 
+               family = binomial)
 
-summary(mod_cga)
+summary(mod_cga_red)
 
 mod_sr <- glmer(substrate_rock_.15.25cm.wa._ind ~ type + site + (1|transect_id) + season + depth, 
                  data = dat, 
