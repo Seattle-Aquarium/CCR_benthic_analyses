@@ -261,7 +261,49 @@ add.season <- function(df) {
 }
 
 
-## function to save.csv 
+## classify each photo as belonging to the ROV's outbound ("out") or return
+## pass along the transect tape. Two passes are run per 30m transect, one on
+## each side of the tape: within each site/transect/season group, ordering
+## photos by Time and tracking each one's planar distance (GPS, equirectangular
+## approximation) from that group's first-captured photo traces a curve that
+## rises through the outbound leg to a peak near the transect's far end, then
+## falls back down through the return leg -- so the peak marks the turnaround.
+## Everything up to and including the peak is "out"; everything after is
+## "return" (this mirrors add.transect.distance() in
+## data_visualization_functions.R, which computes the same distance metric for
+## plotting rather than classification).
+##
+## Verified against all 24 site x transect x season groups in HSIL_percent_
+## cover.csv: 21 show a clean rise-then-fall distance curve. Two
+## (Elliott_Bay_Marina transects 1 & 2, summer) only have ~37-38 photos with a
+## monotonically increasing distance -- no return pass was captured for those,
+## so every photo is correctly labeled "out". One (Centennial_Park transect 4,
+## winter) has visibly noisy/unreliable GPS fixes (repeated identical
+## coordinates, erratic jumps) throughout the transect, so its "out"/"return"
+## split should be treated with caution.
+add.transect.pass <- function(df, group_cols = c("site", "transect", "season")) {
+  stopifnot(all(c("Time", "Latitude", "Longitude") %in% names(df)))
+
+  df %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
+    dplyr::mutate(
+      .time_rank = rank(Time, ties.method = "first"),
+      .lat0 = Latitude[which.min(.time_rank)],
+      .lon0 = Longitude[which.min(.time_rank)],
+      .dx = (Longitude - .lon0) * 111320 * cos(.lat0 * pi / 180),
+      .dy = (Latitude - .lat0) * 111320,
+      .dist_from_start = sqrt(.dx^2 + .dy^2),
+      pass = dplyr::if_else(
+        .time_rank <= .time_rank[which.max(.dist_from_start)], "out", "return"
+      ),
+      .after = season
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-.time_rank, -.lat0, -.lon0, -.dx, -.dy, -.dist_from_start)
+}
+
+
+## function to save.csv
 save.csv <- function(df, path, filename){
   write.csv(x = df,
             file = file.path(path, filename),

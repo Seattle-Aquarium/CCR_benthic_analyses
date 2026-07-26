@@ -187,6 +187,62 @@ ggsave(file.path(figs, "ROV_photo-level_kelp_sugar_Centennial_summer.png"),
 
 
 
+## ROV photo-level spatial visualization -- outward pass only ~~~~~~~~~~~~~~~~~
+## test of add.transect.pass() (added to HSIL_percent-cover_photo-level.csv by
+## wrangle_HSIL_percent-cover_data.R, from GPS): restricting to the outbound
+## ("out") pass gives one non-interleaved leg per transect, so distance_m
+## alone orders photos along the tape -- no need to combine both passes the
+## way the full-transect plot above does.
+kelp_sugar_out_plot <- visualize.photo.level(
+  data = filter(centennial_summer_photos, pass == "out"),
+  category = "kelp_sugar",
+  transect_order = c(4, 5, 6, 1, 2, 3),
+  color = kelp_sugar_color,
+  ncol = 3,
+  x_label = "distance along outward pass (m)",
+  y_label = "proportion sugar kelp"
+) +
+  labs(title = paste("Centennial Park, summer, outward pass --", sugar_kelp_name)) +
+  theme(plot.title = ggtext::element_markdown())
+kelp_sugar_out_plot
+
+ggsave(file.path(figs, "ROV_photo-level_kelp_sugar_Centennial_summer_out-pass.png"),
+      kelp_sugar_out_plot, width = 12, height = 8, dpi = 300)
+
+
+## sieve kelp is almost exclusively found at the Elliott Bay Marina breakwater
+## (near-zero at Centennial Park -- see README), so it needs its own
+## site/season subset rather than reusing centennial_summer_photos above
+elliott_summer_photos <- ROV_percent_cover_photo_level %>%
+  filter(site == "Elliott_Bay_Marina", season == "summer", transect %in% 1:6) %>%
+  add.transect.distance()
+
+## reuse the already-loaded Zooniverse RGB matrix (kelp_sugar_rgb holds every
+## code, not just sugar kelp's) for sieve kelp's color, for consistency with
+## the other kelp figures
+kelp_sieve_color <- rgb(kelp_sugar_rgb["KE_sieve", 1], kelp_sugar_rgb["KE_sieve", 2],
+                        kelp_sugar_rgb["KE_sieve", 3], maxColorValue = 255)
+
+kelp_sieve_out_plot <- visualize.photo.level(
+  data = filter(elliott_summer_photos, pass == "out"),
+  category = "kelp_sieve",
+  transect_order = c(4, 5, 6, 1, 2, 3),
+  color = kelp_sieve_color,
+  ncol = 3,
+  x_label = "distance along outward pass (m)",
+  y_label = "proportion sieve kelp"
+) +
+  labs(title = paste("Elliott Bay Marina, summer, outward pass --", sieve_kelp_name)) +
+  theme(plot.title = ggtext::element_markdown())
+kelp_sieve_out_plot
+
+ggsave(file.path(figs, "ROV_photo-level_kelp_sieve_Elliott_summer_out-pass.png"),
+      kelp_sieve_out_plot, width = 12, height = 8, dpi = 300)
+## END ROV photo-level spatial visualization -- outward pass only ~~~~~~~~~~~~~~
+
+
+
+
 ## kelp density (diver) vs. percent-cover (ROV) concordance ~~~~~~~~~~~~~~~~~~~
 ## diver density (individuals, extrapolated/standardized per transect) and
 ## ROV cover (proportion of photo points) are not the same unit and can't be

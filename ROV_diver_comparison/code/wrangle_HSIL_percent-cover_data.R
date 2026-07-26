@@ -85,6 +85,21 @@ HSIL <- rename.cells(HSIL, "site", old_vals, new_vals)
 ## add shallow/deep (by transect number) and season (by date) columns
 HSIL <- add.depth(HSIL)
 HSIL <- add.season(HSIL)
+
+
+## classify each photo as the ROV's outbound ("out") or return ("return")
+## pass along the transect tape, from GPS (see add.transect.pass() for the
+## turnaround-detection method and known data-quality caveats)
+HSIL <- add.transect.pass(HSIL)
+
+
+## sanity check: photo counts per site/transect/season/pass -- flags groups
+## with an unexpectedly small/large split (e.g. no return pass captured, or
+## noisy GPS throwing off the turnaround point)
+HSIL %>%
+  dplyr::count(site, transect, season, pass) %>%
+  tidyr::pivot_wider(names_from = pass, values_from = n, values_fill = 0) %>%
+  print(n = Inf)
 ## END metadata prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
