@@ -15,6 +15,8 @@ rm(list=ls())
 library(tidyverse)
 library(stringr)
 library(jsonlite)
+library(legendry)   ## nested (transect > season > site) x-axis guide
+library(patchwork)  ## combining + collecting shared legend/axis title
 
 
 ## set working directory one level up and verify
@@ -42,6 +44,7 @@ source(file.path(code, "data_visualization_functions.R"))
 ## read_csv() preserves them as-is, matching the header actually written to disk.
 diver_invert_abundance <- read_csv(file.path(diver_output, "diver_invert_abundance.csv"))
 diver_UPC_percentage <- read_csv(file.path(diver_output, "diver_UPC_percentage.csv"))
+diver_algae_density <- read_csv(file.path(diver_output, "diver_algae_density.csv"))
 
 
 ## read ROV data
@@ -172,6 +175,79 @@ kelp_sugar_plot
 ggsave(file.path(figs, "ROV_photo-level_kelp_sugar_Centennial_summer.png"),
       kelp_sugar_plot, width = 12, height = 8, dpi = 300)
 ## END ROV photo-level spatial visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+## kelp density (diver) vs. percent-cover (ROV) concordance ~~~~~~~~~~~~~~~~~~~
+## diver density (individuals, extrapolated/standardized per transect) and
+## ROV cover (proportion of photo points) are not the same unit and can't be
+## converted into one another without calibration data we don't have (see
+## discussion in this thread). These three plots instead compare *relative
+## pattern* across the 24 site x transect x season combinations: do the two
+## methods agree on which transects have more/less sugar kelp, even though
+## their absolute scales differ?
+kelp_sugar_comparison <- build.kelp.comparison.data(
+  diver_density_df = diver_algae_density,
+  rov_cover_df = ROV_percent_cover_averaged,
+  species_col = "kelp_sugar"
+)
+
+method_colors <- c("diver" = "#1B9E77", "ROV" = "#D95F02")
+
+
+## same comparison for sieve kelp (kelp_sieve) -- almost exclusively found at
+## the Elliott Bay Marina breakwater, a useful contrast to sugar kelp above,
+## which was almost exclusively a Centennial Park signal
+kelp_sieve_comparison <- build.kelp.comparison.data(
+  diver_density_df = diver_algae_density,
+  rov_cover_df = ROV_percent_cover_averaged,
+  species_col = "kelp_sieve"
+)
+
+
+## 1. standardized overlay -- both series z-scored onto one shared axis,
+## sugar kelp (top) and sieve kelp (bottom) combined into a single figure:
+## transects ordered site (Centennial Park, then Elliott Bay Marina) > season
+## (summer, then winter) > transect (1-6); shared legend, shared y-axis title,
+## and the nested transect/season/site x-axis label shown only on the bottom
+## row (top row keeps its tick marks, unlabeled, so the two rows still align)
+kelp_overlay_stack <- visualize.kelp.standardized.overlay.stack(
+  data_top = kelp_sugar_comparison,
+  data_bottom = kelp_sieve_comparison,
+  title_top = "sugar kelp",
+  title_bottom = "sieve kelp",
+  colors = method_colors
+)
+kelp_overlay_stack
+
+ggsave(file.path(figs, "kelp_sugar_sieve_standardized_overlay.png"),
+      kelp_overlay_stack, width = 12, height = 9, dpi = 300)
+
+
+## 2. bump/slope chart -- per-transect rank in each method, colored by site
+kelp_sugar_bump_plot <- visualize.kelp.bump.chart(
+  data = kelp_sugar_comparison,
+  rank_color_by = "site"
+) +
+  labs(title = "sugar kelp: diver vs. ROV rank agreement by transect")
+kelp_sugar_bump_plot
+
+ggsave(file.path(figs, "kelp_sugar_bump_chart.png"),
+      kelp_sugar_bump_plot, width = 6, height = 8, dpi = 300)
+
+
+## 3. scatter -- diver density vs. ROV cover, colored by site, with loess trend
+kelp_sugar_scatter_plot <- visualize.kelp.scatter(
+  data = kelp_sugar_comparison,
+  color_by = "site"
+) +
+  labs(title = "sugar kelp: diver density vs. ROV cover")
+kelp_sugar_scatter_plot
+
+ggsave(file.path(figs, "kelp_sugar_scatter.png"),
+      kelp_sugar_scatter_plot, width = 7, height = 6, dpi = 300)
+## END kelp density vs. percent-cover concordance ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 

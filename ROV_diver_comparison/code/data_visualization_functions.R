@@ -161,3 +161,152 @@ visualize.photo.level <- function(data, category, transect_order,
     labs(x = x_label, y = y_label) +
     my.theme
 }
+
+
+## build one row per transect (site x transect x season) comparing diver
+## density to ROV percent-cover for a single algae/kelp species. These are
+## NOT the same units -- diver density is a count-based index (individuals
+## per transect, extrapolated/standardized), ROV cover is the proportion of
+## photo points classified as that species -- and there's no defensible way
+## to convert one into the other without calibration data (e.g. average
+## canopy footprint per individual) that we don't have. The three
+## visualize.kelp.*() functions below compare relative pattern/concordance
+## across transects instead of raw magnitude.
+build.kelp.comparison.data <- function(diver_density_df, rov_cover_df, species_col) {
+  diver_slim <- diver_density_df %>%
+    select(site, transect, season, depth, diver_value = all_of(species_col))
+  rov_slim <- rov_cover_df %>%
+    select(site, transect, season, depth, rov_value = all_of(species_col))
+
+  inner_join(diver_slim, rov_slim, by = c("site", "transect", "season", "depth")) %>%
+    mutate(transect_label = paste0(site, "_T", transect, "_", season)) %>%
+    arrange(site, transect, season)
+}
+
+
+## z-score both series (mean 0, sd 1) so they're visually comparable on one
+## shared axis despite being on fundamentally different scales; supports a
+## relative/pattern comparison across transects, not an absolute-magnitude one
+visualize.kelp.standardized.overlay <- function(data, colors,
+                                                x_label = "transect",
+                                                y_label = "standardized value (z-score)") {
+  plot_data <- data %>%
+    mutate(
+      diver = as.numeric(scale(diver_value)),
+      ROV = as.numeric(scale(rov_value)),
+      transect_label = factor(transect_label, levels = transect_label)
+    ) %>%
+    select(transect_label, diver, ROV) %>%
+    pivot_longer(cols = c(diver, ROV), names_to = "method", values_to = "value")
+
+  ggplot(plot_data, aes(x = transect_label, y = value, color = method, group = method)) +
+    geom_line() +
+    geom_point(size = 2) +
+    scale_color_manual(values = colors) +
+    labs(x = x_label, y = y_label, color = "method") +
+    my.theme +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+}
+
+
+## shared data-prep for visualize.kelp.standardized.overlay.stack(): z-scores
+## both methods and builds a "T#.season.site" nested x category (in that
+## order -- transect innermost/fastest-varying, season next, site outermost)
+## for use with legendry::guide_axis_nested(), which draws the season/site
+## groupings as bracket labels beneath the transect ticks.
+prep.kelp.standardized.data <- function(data, site_order, season_order) {
+  data %>%
+    mutate(
+      site_f = factor(site, levels = site_order),
+      season_f = factor(season, levels = season_order),
+      site_display = factor(gsub("_", " ", as.character(site_f)),
+                            levels = gsub("_", " ", site_order)),
+      transect_short = factor(paste0("T", transect),
+                              levels = paste0("T", sort(unique(transect)))),
+      diver = as.numeric(scale(diver_value)),
+      ROV = as.numeric(scale(rov_value))
+    ) %>%
+    arrange(site_f, season_f, transect) %>%
+    mutate(x_nested = interaction(transect_short, season_f, site_display,
+                                  sep = ".", lex.order = FALSE)) %>%
+    select(x_nested, diver, ROV) %>%
+    pivot_longer(cols = c(diver, ROV), names_to = "method", values_to = "value")
+}
+
+
+## combine two standardized (z-score) overlay plots -- e.g. two kelp species --
+## into a single one-column, two-row figure: a shared legend, a single shared
+## y-axis title, and a shared nested x-axis (transect > season > site) shown
+## only on the bottom row (the top row keeps its tick marks but no text, so
+## the two rows still line up). Requires legendry (nested axis guide) and
+## patchwork (stacking + collecting the shared legend/axis title).
+visualize.kelp.standardized.overlay.stack <- function(data_top, data_bottom,
+                                                       title_top, title_bottom,
+                                                       colors,
+                                                       site_order = c("Centennial_Park", "Elliott_Bay_Marina"),
+                                                       season_order = c("summer", "winter"),
+                                                       y_label = "standardized z-score") {
+  plot_top <- ggplot(
+    prep.kelp.standardized.data(data_top, site_order, season_order),
+    aes(x = x_nested, y = value, color = method, group = method)
+  ) +
+    geom_line() +
+    geom_point(size = 2) +
+    scale_color_manual(values = colors) +
+    labs(x = NULL, y = y_label, color = "method", title = title_top) +
+    my.theme +
+    theme(axis.text.x = element_blank())
+
+  plot_bottom <- ggplot(
+    prep.kelp.standardized.data(data_bottom, site_order, season_order),
+    aes(x = x_nested, y = value, color = method, group = method)
+  ) +
+    geom_line() +
+    geom_point(size = 2) +
+    scale_color_manual(values = colors) +
+    guides(x = legendry::guide_axis_nested(key = legendry::key_range_auto(sep = "\\."))) +
+    labs(x = NULL, y = y_label, color = "method", title = title_bottom) +
+    my.theme +
+    theme(axis.text.x = element_text(size = 11))
+
+  (plot_top / plot_bottom) +
+    patchwork::plot_layout(guides = "collect", axes = "collect", axis_titles = "collect")
+}
+
+
+## rank transects separately within each method (1 = highest value) and draw
+## a two-column slope/bump graph connecting each transect's diver-rank to its
+## ROV-rank -- visualizes relative agreement ("did the methods agree on which
+## transects had more kelp") without needing shared units
+visualize.kelp.bump.chart <- function(data, rank_color_by = "site") {
+  plot_data <- data %>%
+    mutate(
+      diver = rank(-diver_value, ties.method = "min"),
+      ROV = rank(-rov_value, ties.method = "min")
+    ) %>%
+    select(transect_label, diver, ROV, all_of(rank_color_by)) %>%
+    pivot_longer(cols = c(diver, ROV), names_to = "method", values_to = "rank") %>%
+    mutate(method = factor(method, levels = c("diver", "ROV")))
+
+  ggplot(plot_data, aes(x = method, y = rank, group = transect_label,
+                        color = .data[[rank_color_by]])) +
+    geom_line(alpha = 0.6) +
+    geom_point(size = 2) +
+    scale_y_reverse(breaks = seq_len(max(plot_data$rank))) +
+    labs(x = NULL, y = "rank (1 = highest)", color = rank_color_by) +
+    my.theme
+}
+
+
+## scatter of diver density vs. ROV cover per transect -- no 1:1 line (there
+## is no meaningful "equal" value across these units), just a look at the
+## strength/shape of the association, with a loess trend for reference
+visualize.kelp.scatter <- function(data, color_by = "site",
+                                   x_label = "diver kelp density",
+                                   y_label = "ROV kelp percent-cover") {
+  ggplot(data, aes(x = diver_value, y = rov_value, color = .data[[color_by]])) +
+    geom_point(size = 2) +
+    geom_smooth(method = "loess", se = TRUE, color = "black", linewidth = 0.6) +
+    labs(x = x_label, y = y_label, color = color_by) +
+    my.theme
+}
