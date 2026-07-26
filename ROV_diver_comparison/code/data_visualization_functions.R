@@ -235,17 +235,23 @@ prep.kelp.standardized.data <- function(data, site_order, season_order) {
 
 
 ## combine two standardized (z-score) overlay plots -- e.g. two kelp species --
-## into a single one-column, two-row figure: a shared legend, a single shared
-## y-axis title, and a shared nested x-axis (transect > season > site) shown
-## only on the bottom row (the top row keeps its tick marks but no text, so
-## the two rows still line up). Requires legendry (nested axis guide) and
-## patchwork (stacking + collecting the shared legend/axis title).
+## into a single one-column, two-row figure: a legend inset into the top
+## panel's upper right, a single shared y-axis title, and a shared nested
+## x-axis (transect > season > site) shown only on the bottom row (the top
+## row keeps its tick marks but no text, so the two rows still line up).
+## `title_top`/`title_bottom` are rendered as markdown (via ggtext), so pass
+## e.g. "*Saccharina latissima* (sugar kelp)" for italicized scientific names.
+## Requires legendry (nested axis guide), patchwork (stacking + collecting
+## the shared axis title), and ggtext (markdown/italic titles).
 visualize.kelp.standardized.overlay.stack <- function(data_top, data_bottom,
                                                        title_top, title_bottom,
                                                        colors,
                                                        site_order = c("Centennial_Park", "Elliott_Bay_Marina"),
                                                        season_order = c("summer", "winter"),
-                                                       y_label = "standardized z-score") {
+                                                       y_label = "standardized z-score",
+                                                       axis_text_size = 15,
+                                                       subtitle_text_size = 13,
+                                                       legend_position_inside = c(0.93, 0.90)) {
   plot_top <- ggplot(
     prep.kelp.standardized.data(data_top, site_order, season_order),
     aes(x = x_nested, y = value, color = method, group = method)
@@ -255,7 +261,11 @@ visualize.kelp.standardized.overlay.stack <- function(data_top, data_bottom,
     scale_color_manual(values = colors) +
     labs(x = NULL, y = y_label, color = "method", title = title_top) +
     my.theme +
-    theme(axis.text.x = element_blank())
+    theme(axis.text.x = element_blank(),
+          plot.title = ggtext::element_markdown(size = 15),
+          legend.position = "inside",
+          legend.position.inside = legend_position_inside,
+          legend.background = element_blank())
 
   plot_bottom <- ggplot(
     prep.kelp.standardized.data(data_bottom, site_order, season_order),
@@ -267,10 +277,56 @@ visualize.kelp.standardized.overlay.stack <- function(data_top, data_bottom,
     guides(x = legendry::guide_axis_nested(key = legendry::key_range_auto(sep = "\\."))) +
     labs(x = NULL, y = y_label, color = "method", title = title_bottom) +
     my.theme +
-    theme(axis.text.x = element_text(size = 11))
+    theme(axis.text.x = element_text(size = axis_text_size),
+          legendry.axis.subtitle = element_text(size = subtitle_text_size),
+          plot.title = ggtext::element_markdown(size = 15),
+          legend.position = "none")
 
   (plot_top / plot_bottom) +
-    patchwork::plot_layout(guides = "collect", axes = "collect", axis_titles = "collect")
+    patchwork::plot_layout(axes = "collect", axis_titles = "collect")
+}
+
+
+## combine sugar and sieve kelp standardized overlays into a single row/panel
+## (4 lines: diver x {sugar, sieve}, ROV x {sugar, sieve}) rather than the
+## two-row stack in visualize.kelp.standardized.overlay.stack(). Reuses
+## prep.kelp.standardized.data() for the per-species z-scoring/nested x-axis
+## category, then combines both species into one long dataframe with a
+## 4-level method x species "series" column.
+## `colors` must be a named vector keyed by "diver_sugar", "diver_sieve",
+## "ROV_sugar", "ROV_sieve"; `series_labels` (same keys) controls the legend
+## text shown for each.
+visualize.kelp.standardized.overlay.combined <- function(data_sugar, data_sieve,
+                                                          title, colors,
+                                                          site_order = c("Centennial_Park", "Elliott_Bay_Marina"),
+                                                          season_order = c("summer", "winter"),
+                                                          y_label = "standardized z-score",
+                                                          axis_text_size = 15,
+                                                          subtitle_text_size = 13,
+                                                          series_labels = c(
+                                                            diver_sugar = "diver – sugar kelp",
+                                                            diver_sieve = "diver – sieve kelp",
+                                                            ROV_sugar   = "ROV – sugar kelp",
+                                                            ROV_sieve   = "ROV – sieve kelp"
+                                                          )) {
+  sugar_data <- prep.kelp.standardized.data(data_sugar, site_order, season_order) %>%
+    mutate(series = paste(method, "sugar", sep = "_"))
+  sieve_data <- prep.kelp.standardized.data(data_sieve, site_order, season_order) %>%
+    mutate(series = paste(method, "sieve", sep = "_"))
+
+  plot_data <- bind_rows(sugar_data, sieve_data) %>%
+    mutate(series = factor(series, levels = names(series_labels)))
+
+  ggplot(plot_data, aes(x = x_nested, y = value, color = series, group = series)) +
+    geom_line() +
+    geom_point(size = 2) +
+    scale_color_manual(values = colors, labels = series_labels, breaks = names(series_labels)) +
+    guides(x = legendry::guide_axis_nested(key = legendry::key_range_auto(sep = "\\."))) +
+    labs(x = NULL, y = y_label, color = NULL, title = title) +
+    my.theme +
+    theme(axis.text.x = element_text(size = axis_text_size),
+          legendry.axis.subtitle = element_text(size = subtitle_text_size),
+          plot.title = ggtext::element_markdown(size = 15))
 }
 
 

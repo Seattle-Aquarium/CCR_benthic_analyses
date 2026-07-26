@@ -17,6 +17,7 @@ library(stringr)
 library(jsonlite)
 library(legendry)   ## nested (transect > season > site) x-axis guide
 library(patchwork)  ## combining + collecting shared legend/axis title
+library(ggtext)     ## markdown/italic plot titles (scientific names)
 
 
 ## set working directory one level up and verify
@@ -160,6 +161,12 @@ kelp_sugar_color <- rgb(kelp_sugar_rgb["KE_sugar", 1], kelp_sugar_rgb["KE_sugar"
                         kelp_sugar_rgb["KE_sugar", 3], maxColorValue = 255)
 
 
+## species display names (scientific name, italicized via markdown, then
+## common name) -- reused across every kelp figure below
+sugar_kelp_name <- "*Saccharina latissima* (sugar kelp)"
+sieve_kelp_name <- "*Agarum clathratum* (sieve kelp)"
+
+
 ## shallow transects (4,5,6) on top, deep transects (1,2,3) on bottom
 kelp_sugar_plot <- visualize.photo.level(
   data = centennial_summer_photos,
@@ -169,7 +176,8 @@ kelp_sugar_plot <- visualize.photo.level(
   ncol = 3,
   y_label = "proportion sugar kelp"
 ) +
-  labs(title = "Centennial Park, summer -- sugar kelp")
+  labs(title = paste("Centennial Park, summer --", sugar_kelp_name)) +
+  theme(plot.title = ggtext::element_markdown())
 kelp_sugar_plot
 
 ggsave(file.path(figs, "ROV_photo-level_kelp_sugar_Centennial_summer.png"),
@@ -209,14 +217,15 @@ kelp_sieve_comparison <- build.kelp.comparison.data(
 ## 1. standardized overlay -- both series z-scored onto one shared axis,
 ## sugar kelp (top) and sieve kelp (bottom) combined into a single figure:
 ## transects ordered site (Centennial Park, then Elliott Bay Marina) > season
-## (summer, then winter) > transect (1-6); shared legend, shared y-axis title,
-## and the nested transect/season/site x-axis label shown only on the bottom
-## row (top row keeps its tick marks, unlabeled, so the two rows still align)
+## (summer, then winter) > transect (1-6); legend inset into the top panel,
+## a single shared y-axis title, and the nested transect/season/site x-axis
+## label shown only on the bottom row (top row keeps its tick marks,
+## unlabeled, so the two rows still align)
 kelp_overlay_stack <- visualize.kelp.standardized.overlay.stack(
   data_top = kelp_sugar_comparison,
   data_bottom = kelp_sieve_comparison,
-  title_top = "sugar kelp",
-  title_bottom = "sieve kelp",
+  title_top = sugar_kelp_name,
+  title_bottom = sieve_kelp_name,
   colors = method_colors
 )
 kelp_overlay_stack
@@ -230,7 +239,8 @@ kelp_sugar_bump_plot <- visualize.kelp.bump.chart(
   data = kelp_sugar_comparison,
   rank_color_by = "site"
 ) +
-  labs(title = "sugar kelp: diver vs. ROV rank agreement by transect")
+  labs(title = paste0(sugar_kelp_name, ":<br>diver vs. ROV rank agreement by transect")) +
+  theme(plot.title = ggtext::element_markdown())
 kelp_sugar_bump_plot
 
 ggsave(file.path(figs, "kelp_sugar_bump_chart.png"),
@@ -242,11 +252,39 @@ kelp_sugar_scatter_plot <- visualize.kelp.scatter(
   data = kelp_sugar_comparison,
   color_by = "site"
 ) +
-  labs(title = "sugar kelp: diver density vs. ROV cover")
+  labs(title = paste0(sugar_kelp_name, ": diver density vs. ROV cover")) +
+  theme(plot.title = ggtext::element_markdown())
 kelp_sugar_scatter_plot
 
 ggsave(file.path(figs, "kelp_sugar_scatter.png"),
       kelp_sugar_scatter_plot, width = 7, height = 6, dpi = 300)
+
+
+## 4. standardized overlay, sugar + sieve kelp combined into a single row --
+## an alternative to the two-row stack above: 4 lines (diver/ROV x sugar/sieve)
+## in one panel instead of 2 panels of 2 lines each. Diver gets two shades of
+## blue (one per species); ROV gets two shades of orange -- blue's complement
+## on the color wheel, chosen so the ROV pair reads as a distinct-but-related
+## counterpart to the diver pair rather than clashing with it. Both pairs are
+## drawn from ColorBrewer's "Paired" qualitative palette, so the light/dark
+## relationship within each color family is perceptually consistent.
+kelp_combined_colors <- c(
+  "diver_sugar" = "#1F78B4",  # dark blue
+  "diver_sieve" = "#A6CEE3",  # light blue
+  "ROV_sugar"   = "#FF7F00",  # dark orange
+  "ROV_sieve"   = "#FDBF6F"   # light orange
+)
+
+kelp_overlay_combined <- visualize.kelp.standardized.overlay.combined(
+  data_sugar = kelp_sugar_comparison,
+  data_sieve = kelp_sieve_comparison,
+  title = paste(sugar_kelp_name, "&", sieve_kelp_name),
+  colors = kelp_combined_colors
+)
+kelp_overlay_combined
+
+ggsave(file.path(figs, "kelp_sugar_sieve_standardized_overlay_combined.png"),
+      kelp_overlay_combined, width = 13, height = 6, dpi = 300)
 ## END kelp density vs. percent-cover concordance ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
