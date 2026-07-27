@@ -163,6 +163,123 @@ visualize.photo.level <- function(data, category, transect_order,
 }
 
 
+## kernel density of a single percent-cover category's per-photo values,
+## overlaid by transect (one curve per transect, all photos -- both ROV
+## passes -- from a single site x season). Unlike visualize.photo.level()
+## above, this isn't about *where* along the tape cover occurs, just the
+## overall distribution of values within each transect. Density is bounded to
+## [0, 1] (the only possible range for a proportion) via geom_density()'s
+## `bounds` argument, so the KDE doesn't leak probability mass past the edges
+## of the data -- these categories are typically heavily zero-inflated, so
+## expect a sharp peak at/near 0 regardless.
+visualize.category.density.by.transect <- function(data, category, colors,
+                                                    transect_order = 1:6,
+                                                    x_label = "proportion cover",
+                                                    y_label = "density") {
+  plot_data <- data %>%
+    mutate(transect = factor(transect, levels = transect_order))
+
+  ggplot(plot_data, aes(x = .data[[category]], color = transect, fill = transect)) +
+    geom_density(alpha = 0.15, linewidth = 1, bounds = c(0, 1)) +
+    scale_color_manual(values = colors) +
+    scale_fill_manual(values = colors) +
+    coord_cartesian(xlim = c(0, 1)) +
+    labs(x = x_label, y = y_label, color = "transect", fill = "transect") +
+    my.theme
+}
+
+
+## same as visualize.category.density.by.transect() above, but pooling the
+## three deep (transects 1-3) and three shallow (4-6) transects into two
+## curves instead of six -- uses the existing `depth` column (added upstream
+## by add.depth()) rather than re-deriving it from transect number
+visualize.category.density.by.depth <- function(data, category, colors,
+                                                 x_label = "proportion cover",
+                                                 y_label = "density") {
+  plot_data <- data %>%
+    mutate(depth = factor(depth, levels = c("deep", "shallow")))
+
+  ggplot(plot_data, aes(x = .data[[category]], color = depth, fill = depth)) +
+    geom_density(alpha = 0.15, linewidth = 1, bounds = c(0, 1)) +
+    scale_color_manual(values = colors) +
+    scale_fill_manual(values = colors) +
+    coord_cartesian(xlim = c(0, 1)) +
+    labs(x = x_label, y = y_label, color = "depth", fill = "depth") +
+    my.theme
+}
+
+
+## distribution of cover magnitude *given presence* (proportion > 0 only) for
+## a single category, per transect: violin (density shape) + a narrow inset
+## boxplot (median/IQR reference) + jittered points, all colored by transect.
+## Each transect's prevalence (% of all photos, zero included, with any
+## cover) is printed as large bold black text directly above its violin,
+## with a smaller header line naming what those numbers mean -- in-panel text
+## in place of a separate prevalence bar-chart panel.
+##
+## Loosely modeled after Fig. 4 of Randell et al. 2022 (PNAS Kelp-forest
+## dynamics controlled by substrate complexity) -- a beeswarm + median line
+## per group -- but swaps their flat median line for a violin, since our
+## categories are proportions (bounded [0, 1], often multimodal) rather than
+## the roughly unimodal urchin-abundance counts in that figure. Density is
+## bounded to [0, 1] via geom_violin()'s `bounds` argument, same reasoning as
+## visualize.category.density.by.transect() above.
+##
+## Zero-cover photos are excluded from the violin/box/points (that's the
+## point -- see the % labels for how common they are); this is stated
+## explicitly in the subtitle so the exclusion isn't silent.
+visualize.category.violin.with.prevalence <- function(data, category, colors,
+                                                       transect_order = 1:6,
+                                                       species_label = category,
+                                                       title = category,
+                                                       y_label = "proportion cover (given present)",
+                                                       label_y = 1.12,
+                                                       header_y = 1.24) {
+  plot_data <- data %>%
+    mutate(transect = factor(transect, levels = transect_order))
+
+  prevalence <- plot_data %>%
+    group_by(transect) %>%
+    summarise(pct = round(100 * mean(.data[[category]] > 0, na.rm = TRUE)),
+             .groups = "drop")
+
+  nonzero_data <- filter(plot_data, .data[[category]] > 0)
+  n_total <- nrow(plot_data)
+  n_nonzero <- nrow(nonzero_data)
+  subtitle <- paste0(
+    "shown below: the ", n_nonzero, "/", n_total, " photos (",
+    round(100 * n_nonzero / n_total, 1),
+    "%) with any cover; zero-cover photos excluded (see % above)"
+  )
+
+  header_data <- tibble::tibble(
+    x = mean(seq_along(transect_order)), y = header_y,
+    label = paste0("% of photos with ", species_label, " present")
+  )
+
+  ggplot(nonzero_data, aes(x = transect, y = .data[[category]])) +
+    geom_violin(aes(fill = transect, color = transect), alpha = 0.25,
+               bounds = c(0, 1), linewidth = 0.8) +
+    geom_boxplot(aes(color = transect), width = 0.12, fill = "white",
+                alpha = 0.8, outlier.shape = NA, linewidth = 0.6) +
+    geom_jitter(aes(color = transect), width = 0.15, alpha = 0.5, size = 1.5) +
+    geom_text(data = prevalence, aes(x = transect, y = label_y, label = paste0(pct, "%")),
+              inherit.aes = FALSE, color = "black", fontface = "bold", size = 6) +
+    ggtext::geom_richtext(data = header_data, aes(x = x, y = y, label = label),
+                          inherit.aes = FALSE, fill = NA, label.color = NA,
+                          color = "black", size = 4.2) +
+    scale_fill_manual(values = colors) +
+    scale_color_manual(values = colors) +
+    scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+    coord_cartesian(ylim = c(0, header_y + 0.06)) +
+    labs(x = "transect", y = y_label, title = title, subtitle = subtitle) +
+    guides(fill = "none", color = "none") +
+    my.theme +
+    theme(plot.title = ggtext::element_markdown(size = 15),
+          plot.subtitle = element_text(size = 10.5))
+}
+
+
 ## build one row per transect (site x transect x season) comparing diver
 ## density to ROV percent-cover for a single algae/kelp species. These are
 ## NOT the same units -- diver density is a count-based index (individuals

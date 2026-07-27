@@ -243,6 +243,128 @@ ggsave(file.path(figs, "ROV_photo-level_kelp_sieve_Elliott_summer_out-pass.png")
 
 
 
+## kernel density distributions of percent-cover, by transect ~~~~~~~~~~~~~~~~~
+## per-photo proportions for a single category, overlaid by transect (all
+## photos from both ROV passes, one site x season). Reuses
+## centennial_summer_photos / elliott_summer_photos from above -- the pass
+## split isn't relevant here, so both passes are pooled.
+##
+## six-color, depth-grouped palette: deep transects (1-3) in blues, shallow
+## transects (4-6) in oranges (three shades each, dark -> light) -- echoes the
+## blue/orange diver-vs-ROV pairing used in kelp_combined_colors above, so the
+## six transects stay individually distinguishable but still visually group
+## by depth at a glance
+transect_density_colors <- c(
+  "1" = "#08519C", "2" = "#3182BD", "3" = "#6BAED6",
+  "4" = "#A63603", "5" = "#E6550D", "6" = "#FD8D3C"
+)
+
+sugar_density_by_transect <- visualize.category.density.by.transect(
+  data = centennial_summer_photos,
+  category = "kelp_sugar",
+  colors = transect_density_colors,
+  x_label = "proportion sugar kelp"
+) +
+  labs(title = paste("Centennial Park, summer --", sugar_kelp_name)) +
+  theme(plot.title = ggtext::element_markdown())
+sugar_density_by_transect
+
+ggsave(file.path(figs, "kelp_sugar_density_by_transect.png"),
+      sugar_density_by_transect, width = 8, height = 6, dpi = 300)
+
+
+sieve_density_by_transect <- visualize.category.density.by.transect(
+  data = elliott_summer_photos,
+  category = "kelp_sieve",
+  colors = transect_density_colors,
+  x_label = "proportion sieve kelp"
+) +
+  labs(title = paste("Elliott Bay Marina, summer --", sieve_kelp_name)) +
+  theme(plot.title = ggtext::element_markdown())
+sieve_density_by_transect
+
+ggsave(file.path(figs, "kelp_sieve_density_by_transect.png"),
+      sieve_density_by_transect, width = 8, height = 6, dpi = 300)
+## END kernel density distributions of percent-cover, by transect ~~~~~~~~~~~~~~
+
+
+
+
+## kernel density distributions of percent-cover, by depth ~~~~~~~~~~~~~~~~~~~~
+## same data as above, pooled into deep (transects 1-3) vs shallow (4-6)
+## instead of six individual transect curves -- darkest blue/orange from the
+## six-transect palette above, so the two sets of figures read as consistent
+## extensions of one another
+depth_density_colors <- c("deep" = "#08519C", "shallow" = "#A63603")
+
+sugar_density_by_depth <- visualize.category.density.by.depth(
+  data = centennial_summer_photos,
+  category = "kelp_sugar",
+  colors = depth_density_colors,
+  x_label = "proportion sugar kelp"
+) +
+  labs(title = paste("Centennial Park, summer --", sugar_kelp_name)) +
+  theme(plot.title = ggtext::element_markdown())
+sugar_density_by_depth
+
+ggsave(file.path(figs, "kelp_sugar_density_by_depth.png"),
+      sugar_density_by_depth, width = 8, height = 6, dpi = 300)
+
+
+sieve_density_by_depth <- visualize.category.density.by.depth(
+  data = elliott_summer_photos,
+  category = "kelp_sieve",
+  colors = depth_density_colors,
+  x_label = "proportion sieve kelp"
+) +
+  labs(title = paste("Elliott Bay Marina, summer --", sieve_kelp_name)) +
+  theme(plot.title = ggtext::element_markdown())
+sieve_density_by_depth
+
+ggsave(file.path(figs, "kelp_sieve_density_by_depth.png"),
+      sieve_density_by_depth, width = 8, height = 6, dpi = 300)
+## END kernel density distributions of percent-cover, by depth ~~~~~~~~~~~~~~~~~
+
+
+
+
+## prevalence + magnitude, by transect (violin) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## single-panel alternative to the two-panel bar+boxplot version: violin +
+## inset boxplot + jittered points (magnitude given presence), with each
+## transect's prevalence (% of photos with any cover, zero included) printed
+## as large black text above its violin instead of a separate bar-chart panel.
+## Loosely modeled after Fig. 4 of Randell et al. 2022 (PNAS) -- see
+## visualize.category.violin.with.prevalence() for details. Reuses
+## transect_density_colors from the density figures above for continuity.
+sugar_violin_prevalence <- visualize.category.violin.with.prevalence(
+  data = centennial_summer_photos,
+  category = "kelp_sugar",
+  colors = transect_density_colors,
+  species_label = sugar_kelp_name,
+  title = paste("Centennial Park, summer --", sugar_kelp_name)
+)
+sugar_violin_prevalence
+
+ggsave(file.path(figs, "kelp_sugar_prevalence_magnitude.png"),
+      sugar_violin_prevalence, width = 10, height = 7, dpi = 300)
+
+
+sieve_violin_prevalence <- visualize.category.violin.with.prevalence(
+  data = elliott_summer_photos,
+  category = "kelp_sieve",
+  colors = transect_density_colors,
+  species_label = sieve_kelp_name,
+  title = paste("Elliott Bay Marina, summer --", sieve_kelp_name)
+)
+sieve_violin_prevalence
+
+ggsave(file.path(figs, "kelp_sieve_prevalence_magnitude.png"),
+      sieve_violin_prevalence, width = 10, height = 7, dpi = 300)
+## END prevalence + magnitude, by transect (violin) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
 ## kelp density (diver) vs. percent-cover (ROV) concordance ~~~~~~~~~~~~~~~~~~~
 ## diver density (individuals, extrapolated/standardized per transect) and
 ## ROV cover (proportion of photo points) are not the same unit and can't be
