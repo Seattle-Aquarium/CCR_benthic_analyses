@@ -145,67 +145,63 @@ add.transect.distance <- function(df, group_cols = c("site", "transect", "season
 
 ## visualize a single percent-cover category across photos/space (both ROV
 ## passes interleaved by distance along the transect) for one site x season,
-## faceted by transect in the given order
-visualize.photo.level <- function(data, category, transect_order,
-                                  color = "black", ncol = 3,
+## faceted by transect in the given order. Facet strips read "Transect N"
+## (via a custom labeller) rather than a bare number, and are sized up from
+## ggplot's small default so they're legible when the figure is stretched
+## wide for spatial pattern (see prep.outward.pass.photos() below).
+##
+## Line/point color is mapped to transect (via `colors`, the same six-color
+## transect_density_colors palette used by the violin figures) rather than a
+## single fixed color per category -- since each facet panel only shows one
+## transect anyway, this just tints each panel to match its transect's color
+## elsewhere, for visual consistency between the two figure families, and
+## replaces an earlier version that pulled one color per category from the
+## Zooniverse labelset JSON. The color legend is redundant with the facet
+## strip label, so it's suppressed. The y-axis is fixed to `y_limits`
+## (default 0-1, the full possible range for a proportion) rather than
+## floating per-category, so cover magnitude is directly comparable across
+## categories -- at the cost of making rarer categories harder to read on
+## their own panel.
+visualize.photo.level <- function(data, category, transect_order, colors,
+                                  ncol = 3,
                                   x_label = "distance along transect (m)",
-                                  y_label = category) {
+                                  y_label = category,
+                                  strip_text_size = 16,
+                                  y_limits = c(0, 1)) {
   plot_data <- data %>%
     mutate(transect = factor(transect, levels = transect_order)) %>%
     arrange(transect, distance_m)
 
-  ggplot(plot_data, aes(x = distance_m, y = .data[[category]])) +
-    geom_line(color = color) +
-    geom_point(color = color, size = 2) +
-    facet_wrap(~ transect, ncol = ncol) +
+  ggplot(plot_data, aes(x = distance_m, y = .data[[category]], color = transect)) +
+    geom_line() +
+    geom_point(size = 2) +
+    scale_color_manual(values = colors) +
+    coord_cartesian(ylim = y_limits) +
+    facet_wrap(~ transect, ncol = ncol,
+              labeller = as_labeller(function(x) paste("Transect", x))) +
+    guides(color = "none") +
     labs(x = x_label, y = y_label) +
-    my.theme
+    my.theme +
+    theme(strip.text = element_text(size = strip_text_size, face = "bold"))
 }
 
 
-## kernel density of a single percent-cover category's per-photo values,
-## overlaid by transect (one curve per transect, all photos -- both ROV
-## passes -- from a single site x season). Unlike visualize.photo.level()
-## above, this isn't about *where* along the tape cover occurs, just the
-## overall distribution of values within each transect. Density is bounded to
-## [0, 1] (the only possible range for a proportion) via geom_density()'s
-## `bounds` argument, so the KDE doesn't leak probability mass past the edges
-## of the data -- these categories are typically heavily zero-inflated, so
-## expect a sharp peak at/near 0 regardless.
-visualize.category.density.by.transect <- function(data, category, colors,
-                                                    transect_order = 1:6,
-                                                    x_label = "proportion cover",
-                                                    y_label = "density") {
-  plot_data <- data %>%
-    mutate(transect = factor(transect, levels = transect_order))
-
-  ggplot(plot_data, aes(x = .data[[category]], color = transect, fill = transect)) +
-    geom_density(alpha = 0.15, linewidth = 1, bounds = c(0, 1)) +
-    scale_color_manual(values = colors) +
-    scale_fill_manual(values = colors) +
-    coord_cartesian(xlim = c(0, 1)) +
-    labs(x = x_label, y = y_label, color = "transect", fill = "transect") +
-    my.theme
-}
-
-
-## same as visualize.category.density.by.transect() above, but pooling the
-## three deep (transects 1-3) and three shallow (4-6) transects into two
-## curves instead of six -- uses the existing `depth` column (added upstream
-## by add.depth()) rather than re-deriving it from transect number
-visualize.category.density.by.depth <- function(data, category, colors,
-                                                 x_label = "proportion cover",
-                                                 y_label = "density") {
-  plot_data <- data %>%
-    mutate(depth = factor(depth, levels = c("deep", "shallow")))
-
-  ggplot(plot_data, aes(x = .data[[category]], color = depth, fill = depth)) +
-    geom_density(alpha = 0.15, linewidth = 1, bounds = c(0, 1)) +
-    scale_color_manual(values = colors) +
-    scale_fill_manual(values = colors) +
-    coord_cartesian(xlim = c(0, 1)) +
-    labs(x = x_label, y = y_label, color = "depth", fill = "depth") +
-    my.theme
+## build the outward ("out") pass subset for one site x season, ready for
+## visualize.photo.level(): filters to the six transects, computes each
+## photo's GPS distance from its transect's first photo (add.transect.distance()),
+## keeps only the outbound pass (pass == "out", from add.transect.pass() in
+## the wrangle pipeline), and -- since transects are a fixed 30m long --
+## drops any photo whose computed distance falls past `max_distance`. A
+## handful of photos (mostly single stragglers after a multi-minute time gap,
+## e.g. one Centennial Park transect 2 photo landing at ~40m) are GPS/logging
+## artifacts past the actual tape, not real 30+ m of transect; left in, they
+## stretch the x-axis and open up a long flat gap in the line before the
+## final stray point.
+prep.outward.pass.photos <- function(data, site_name, season_name, max_distance = 30) {
+  data %>%
+    filter(site == site_name, season == season_name, transect %in% 1:6) %>%
+    add.transect.distance() %>%
+    filter(pass == "out", distance_m <= max_distance)
 }
 
 
@@ -214,23 +210,24 @@ visualize.category.density.by.depth <- function(data, category, colors,
 ## boxplot (median/IQR reference) + jittered points, all colored by transect.
 ## Each transect's prevalence (% of all photos, zero included, with any
 ## cover) is printed as large bold black text directly above its violin,
-## with a smaller header line naming what those numbers mean -- in-panel text
-## in place of a separate prevalence bar-chart panel.
+## with a smaller header line naming what those numbers mean.
 ##
 ## Loosely modeled after Fig. 4 of Randell et al. 2022 (PNAS Kelp-forest
 ## dynamics controlled by substrate complexity) -- a beeswarm + median line
 ## per group -- but swaps their flat median line for a violin, since our
 ## categories are proportions (bounded [0, 1], often multimodal) rather than
 ## the roughly unimodal urchin-abundance counts in that figure. Density is
-## bounded to [0, 1] via geom_violin()'s `bounds` argument, same reasoning as
-## visualize.category.density.by.transect() above.
+## bounded to [0, 1] via geom_violin()'s `bounds` argument.
 ##
 ## Zero-cover photos are excluded from the violin/box/points (that's the
 ## point -- see the % labels for how common they are); this is stated
-## explicitly in the subtitle so the exclusion isn't silent.
+## explicitly in the subtitle so the exclusion isn't silent. `category_label`
+## is the human-readable name used in the header text (e.g. from
+## format.category.label()) -- separate from `title`, since the title may add
+## site/season context the header line doesn't need repeated.
 visualize.category.violin.with.prevalence <- function(data, category, colors,
                                                        transect_order = 1:6,
-                                                       species_label = category,
+                                                       category_label = category,
                                                        title = category,
                                                        y_label = "proportion cover (given present)",
                                                        label_y = 1.12,
@@ -254,7 +251,7 @@ visualize.category.violin.with.prevalence <- function(data, category, colors,
 
   header_data <- tibble::tibble(
     x = mean(seq_along(transect_order)), y = header_y,
-    label = paste0("% of photos with ", species_label, " present")
+    label = paste0("% of photos with ", category_label, " present")
   )
 
   ggplot(nonzero_data, aes(x = transect, y = .data[[category]])) +
@@ -270,6 +267,13 @@ visualize.category.violin.with.prevalence <- function(data, category, colors,
                           color = "black", size = 4.2) +
     scale_fill_manual(values = colors) +
     scale_color_manual(values = colors) +
+    ## drop = FALSE: without this, a transect with 0% prevalence (no rows
+    ## survive the category > 0 filter feeding the violin/box/jitter layers)
+    ## gets silently reordered to the end of the x-axis instead of staying in
+    ## its correct position -- ggplot infers axis order from which layers
+    ## first "discover" each level, and the geom_text/geom_richtext layers
+    ## (built from the un-filtered `prevalence` data) discover it last
+    scale_x_discrete(drop = FALSE) +
     scale_y_continuous(breaks = seq(0, 1, 0.25)) +
     coord_cartesian(ylim = c(0, header_y + 0.06)) +
     labs(x = "transect", y = y_label, title = title, subtitle = subtitle) +
@@ -277,6 +281,149 @@ visualize.category.violin.with.prevalence <- function(data, category, colors,
     my.theme +
     theme(plot.title = ggtext::element_markdown(size = 15),
           plot.subtitle = element_text(size = 10.5))
+}
+
+
+## human-readable title for a raw percent-cover category column, e.g.
+## "sand_fine_shell" -> "Sand Fine Shell". kelp_sugar/kelp_sieve get their
+## markdown-italic scientific name instead (rendered via element_markdown in
+## the plot title theme), for consistency with the earlier kelp figures.
+format.category.label <- function(category, sugar_kelp_name, sieve_kelp_name) {
+  species_names <- c(kelp_sugar = sugar_kelp_name, kelp_sieve = sieve_kelp_name)
+  if (category %in% names(species_names)) return(species_names[[category]])
+  words <- strsplit(gsub("_", " ", category), " ")[[1]]
+  paste0(toupper(substring(words, 1, 1)), substring(words, 2), collapse = " ")
+}
+
+
+## Two-term local quadrat variance (TTLQV; Hill 1973, via Ludwig & Reynolds
+## 1988 "Statistical Ecology") -- a classic technique for detecting a
+## transect's characteristic patch size. Photos aren't evenly spaced, so
+## values are first binned into regularly-spaced base quadrats of width
+## `quadrat_width` (mean cover of whatever photos fall in each quadrat; an
+## empty quadrat gets NA and is skipped via na.rm in the sliding-window sums
+## below -- a small local data gap, not an error). TTLQV at block size b (a
+## multiple of quadrat_width) slides a pair of adjacent, b-quadrat-wide
+## windows along the transect and averages the squared difference between
+## each pair's sums, normalized per Ludwig & Reynolds' V(b) = 1/(2b(N-2b+1))
+## * sum((T1_i - T2_i)^2). A peak in the resulting variance-vs-block-size
+## curve flags the block width at which neighboring blocks differ most --
+## the approximate patch scale. Block sizes only go up to half the transect
+## length (`max_block_quadrats`), since beyond that too few non-overlapping
+## window pairs exist for a reliable estimate.
+compute.ttlqv <- function(distance_m, value, quadrat_width = 1,
+                          max_block_quadrats = 15, transect_length = 30) {
+  n_quadrats <- floor(transect_length / quadrat_width)
+  quadrat_id <- pmin(floor(distance_m / quadrat_width) + 1, n_quadrats)
+  quadrat_means <- tapply(value, quadrat_id, mean, na.rm = TRUE)
+  x <- rep(NA_real_, n_quadrats)
+  x[as.integer(names(quadrat_means))] <- quadrat_means
+
+  safe_sum <- function(v) if (all(is.na(v))) NA_real_ else sum(v, na.rm = TRUE)
+
+  purrr::map_dfr(seq_len(max_block_quadrats), function(b) {
+    n_windows <- n_quadrats - 2 * b + 1
+    if (n_windows < 1) return(NULL)
+
+    sums_a <- vapply(seq_len(n_windows), function(i) safe_sum(x[i:(i + b - 1)]), numeric(1))
+    sums_b <- vapply(seq_len(n_windows), function(i) safe_sum(x[(i + b):(i + 2 * b - 1)]), numeric(1))
+
+    tibble::tibble(
+      block_size_m = b * quadrat_width,
+      ttlqv = mean((sums_a - sums_b)^2, na.rm = TRUE) / (2 * b),
+      n_windows = sum(!is.na(sums_a) & !is.na(sums_b))
+    )
+  })
+}
+
+
+## spatial correlogram: binned-lag Pearson autocorrelation among all pairs of
+## photos within a transect. Handles irregular photo spacing directly (no
+## interpolation/regridding needed, unlike TTLQV above) by binning raw
+## pairwise distances into lag classes rather than assuming a fixed grid --
+## all point-pairs whose separation falls in a given lag bin are treated as a
+## (x1, x2) sample and correlated. Lag bins only go out to `max_lag` (default
+## half the transect length, same convention as TTLQV above) since beyond
+## that few valid pairs exist and estimates get unreliable. Returns one row
+## per lag bin: its midpoint distance, the correlation among pairs at that
+## separation, and how many pairs contributed (useful for gauging how noisy
+## each point is -- often just a handful at the largest lags).
+compute.correlogram <- function(distance_m, value, lag_width = 2, max_lag = 15) {
+  n <- length(distance_m)
+  if (n < 2) return(tibble::tibble(lag_mid = numeric(0), correlation = numeric(0), n_pairs = integer(0)))
+
+  pair_idx <- combn(n, 2)
+  d <- abs(distance_m[pair_idx[1, ]] - distance_m[pair_idx[2, ]])
+  x1 <- value[pair_idx[1, ]]
+  x2 <- value[pair_idx[2, ]]
+
+  lag_bin <- floor(d / lag_width) * lag_width
+  keep <- lag_bin < max_lag
+
+  tibble::tibble(lag_bin = lag_bin[keep], x1 = x1[keep], x2 = x2[keep]) %>%
+    group_by(lag_bin) %>%
+    summarise(
+      lag_mid = unique(lag_bin) + lag_width / 2,
+      correlation = if (dplyr::n() >= 3) cor(x1, x2) else NA_real_,
+      n_pairs = dplyr::n(),
+      .groups = "drop"
+    ) %>%
+    select(lag_mid, correlation, n_pairs)
+}
+
+
+## apply a compute.ttlqv()/compute.correlogram()-style function separately to
+## each transect within one site x season's outward-pass data (never pooling
+## raw points across transects -- see the "spatial structure" section of
+## data_visualization.R for why), retaining transect/depth as identifier
+## columns via group_modify(). Uses an explicit function rather than
+## group_modify()'s `~` formula shorthand -- rlang's formula-to-function
+## conversion binds a bare `...` in the body to *all* positional args the
+## generated function receives, which for group_modify() includes the .x/.y
+## arguments themselves, so `...` here would silently re-append the group's
+## whole data frame and key tibble as extra arguments to compute_fn.
+compute.spatial.structure.by.transect <- function(data, category, compute_fn, ...) {
+  extra_args <- list(...)
+  data %>%
+    group_by(transect, depth) %>%
+    group_modify(function(.x, .y) {
+      do.call(compute_fn, c(list(.x$distance_m, .x[[category]]), extra_args))
+    }) %>%
+    ungroup()
+}
+
+
+## visualize TTLQV or correlogram results for one category, one site x
+## season: a thin, transect-colored line per individual replicate transect,
+## plus a bold black line for the mean across the three replicates within
+## each depth (computed by averaging the per-transect curves at each shared
+## x-value -- see compute.spatial.structure.by.transect()), faceted by depth
+## so shallow and deep are directly comparable. Works for either TTLQV or
+## correlogram output since both are one row per transect x x-value x
+## y-value -- pass the relevant column names via `x_col`/`y_col`.
+visualize.spatial.structure <- function(per_transect, x_col, y_col, colors,
+                                        x_label, y_label, title,
+                                        depth_order = c("deep", "shallow")) {
+  pooled <- per_transect %>%
+    group_by(depth, .data[[x_col]]) %>%
+    summarise(y_mean = mean(.data[[y_col]], na.rm = TRUE), .groups = "drop") %>%
+    mutate(depth = factor(depth, levels = depth_order))
+
+  plot_data <- per_transect %>%
+    mutate(transect = factor(transect, levels = 1:6),
+          depth = factor(depth, levels = depth_order))
+
+  ggplot(plot_data, aes(x = .data[[x_col]], y = .data[[y_col]])) +
+    geom_line(aes(color = transect), linewidth = 0.7, alpha = 0.7) +
+    geom_point(aes(color = transect), size = 1.5, alpha = 0.7) +
+    geom_line(data = pooled, aes(x = .data[[x_col]], y = y_mean),
+              inherit.aes = FALSE, color = "black", linewidth = 1.3) +
+    scale_color_manual(values = colors) +
+    facet_wrap(~ depth, ncol = 2) +
+    labs(x = x_label, y = y_label, title = title, color = "transect") +
+    my.theme +
+    theme(strip.text = element_text(size = 14, face = "bold"),
+          plot.title = ggtext::element_markdown(size = 15))
 }
 
 

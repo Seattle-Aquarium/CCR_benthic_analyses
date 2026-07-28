@@ -118,7 +118,7 @@ red_algae_plot <- visualize.head.to.head(
   labs(title = "combined_red_algae")
 red_algae_plot
 
-ggsave(file.path(figs, "ROV_diver_combined_red_algae.png"),
+ggsave(file.path(figs, "head-to-head", "ROV_diver_combined_red_algae.png"),
       red_algae_plot, width = 6, height = 6, dpi = 300)
 
 
@@ -129,36 +129,37 @@ head_to_head_plot <- visualize.head.to.head(
 )
 head_to_head_plot
 
-ggsave(file.path(figs, "ROV_diver_head_to_head.png"),
+ggsave(file.path(figs, "head-to-head", "ROV_diver_head_to_head.png"),
       head_to_head_plot, width = 12, height = 10, dpi = 300)
 ## END percent-cover head-to-head comparisons ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
-## ROV photo-level spatial visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## ROV photo-level spatial data prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## full-resolution (not transect-averaged) ROV percent-cover, visualized across
 ## individual, sequential photos rather than compared against diver data.
-##
-## Two ROV passes are run per 30m transect -- an outbound pass down one side
-## of the meter tape, and a return pass down the other -- so raw photo/capture
-## order doesn't map cleanly onto "meters along the transect" (a naive
-## sequential x-axis would run the outbound leg 0->30m and then the return
-## leg would also run roughly 0->30m, appended after it). Instead,
-## add.transect.distance() estimates each photo's GPS distance (m) from its
-## transect's first-captured photo, so ordering ALL photos (both passes) by
-## that distance interleaves them by physical position along the tape --
-## roughly two points per meter mark, one from each pass.
-centennial_summer_photos <- ROV_percent_cover_photo_level %>%
-  filter(site == "Centennial_Park", season == "summer", transect %in% 1:6) %>%
-  add.transect.distance()
+## site_season_photos holds every photo (both ROV passes) for each site x
+## season combination, with each photo's GPS distance (m) from its transect's
+## first-captured photo attached via add.transect.distance() -- the "violin
+## distributions" section below uses these directly (zeros excluded within
+## the plotting function itself); the "proportion across space" section
+## re-derives an outward-pass-only, <=30m-cutoff version per category via
+## prep.outward.pass.photos().
+site_display_names <- c(Centennial_Park = "Centennial Park",
+                        Elliott_Bay_Marina = "Elliott Bay Marina")
 
+## folder name per season ("Summer"/"Winter"), used for both figure families
+season_display_names <- c(summer = "Summer", winter = "Winter")
 
-## reuse the kelp - Sugar color from the Zooniverse labelset for consistency
-## with the head-to-head figures above
-kelp_sugar_rgb <- get.zooniverse.rgb(file.path(ROV_input, "labelset_toolbox_zooniverse.json"))
-kelp_sugar_color <- rgb(kelp_sugar_rgb["KE_sugar", 1], kelp_sugar_rgb["KE_sugar", 2],
-                        kelp_sugar_rgb["KE_sugar", 3], maxColorValue = 255)
+site_season_photos <- list()
+for (site_name in names(site_display_names)) {
+  for (season_name in names(season_display_names)) {
+    site_season_photos[[paste(site_name, season_name, sep = "_")]] <- ROV_percent_cover_photo_level %>%
+      filter(site == site_name, season == season_name, transect %in% 1:6) %>%
+      add.transect.distance()
+  }
+}
 
 
 ## species display names (scientific name, italicized via markdown, then
@@ -167,200 +168,193 @@ sugar_kelp_name <- "*Saccharina latissima* (sugar kelp)"
 sieve_kelp_name <- "*Agarum clathratum* (sieve kelp)"
 
 
-## shallow transects (4,5,6) on top, deep transects (1,2,3) on bottom
-kelp_sugar_plot <- visualize.photo.level(
-  data = centennial_summer_photos,
-  category = "kelp_sugar",
-  transect_order = c(4, 5, 6, 1, 2, 3),
-  color = kelp_sugar_color,
-  ncol = 3,
-  y_label = "proportion sugar kelp"
-) +
-  labs(title = paste("Centennial Park, summer --", sugar_kelp_name)) +
-  theme(plot.title = ggtext::element_markdown())
-kelp_sugar_plot
-
-ggsave(file.path(figs, "ROV_photo-level_kelp_sugar_Centennial_summer.png"),
-      kelp_sugar_plot, width = 12, height = 8, dpi = 300)
-## END ROV photo-level spatial visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-## ROV photo-level spatial visualization -- outward pass only ~~~~~~~~~~~~~~~~~
-## test of add.transect.pass() (added to HSIL_percent-cover_photo-level.csv by
-## wrangle_HSIL_percent-cover_data.R, from GPS): restricting to the outbound
-## ("out") pass gives one non-interleaved leg per transect, so distance_m
-## alone orders photos along the tape -- no need to combine both passes the
-## way the full-transect plot above does.
-kelp_sugar_out_plot <- visualize.photo.level(
-  data = filter(centennial_summer_photos, pass == "out"),
-  category = "kelp_sugar",
-  transect_order = c(4, 5, 6, 1, 2, 3),
-  color = kelp_sugar_color,
-  ncol = 3,
-  x_label = "distance along outward pass (m)",
-  y_label = "proportion sugar kelp"
-) +
-  labs(title = paste("Centennial Park, summer, outward pass --", sugar_kelp_name)) +
-  theme(plot.title = ggtext::element_markdown())
-kelp_sugar_out_plot
-
-ggsave(file.path(figs, "ROV_photo-level_kelp_sugar_Centennial_summer_out-pass.png"),
-      kelp_sugar_out_plot, width = 12, height = 8, dpi = 300)
-
-
-## sieve kelp is almost exclusively found at the Elliott Bay Marina breakwater
-## (near-zero at Centennial Park -- see README), so it needs its own
-## site/season subset rather than reusing centennial_summer_photos above
-elliott_summer_photos <- ROV_percent_cover_photo_level %>%
-  filter(site == "Elliott_Bay_Marina", season == "summer", transect %in% 1:6) %>%
-  add.transect.distance()
-
-## reuse the already-loaded Zooniverse RGB matrix (kelp_sugar_rgb holds every
-## code, not just sugar kelp's) for sieve kelp's color, for consistency with
-## the other kelp figures
-kelp_sieve_color <- rgb(kelp_sugar_rgb["KE_sieve", 1], kelp_sugar_rgb["KE_sieve", 2],
-                        kelp_sugar_rgb["KE_sieve", 3], maxColorValue = 255)
-
-kelp_sieve_out_plot <- visualize.photo.level(
-  data = filter(elliott_summer_photos, pass == "out"),
-  category = "kelp_sieve",
-  transect_order = c(4, 5, 6, 1, 2, 3),
-  color = kelp_sieve_color,
-  ncol = 3,
-  x_label = "distance along outward pass (m)",
-  y_label = "proportion sieve kelp"
-) +
-  labs(title = paste("Elliott Bay Marina, summer, outward pass --", sieve_kelp_name)) +
-  theme(plot.title = ggtext::element_markdown())
-kelp_sieve_out_plot
-
-ggsave(file.path(figs, "ROV_photo-level_kelp_sieve_Elliott_summer_out-pass.png"),
-      kelp_sieve_out_plot, width = 12, height = 8, dpi = 300)
-## END ROV photo-level spatial visualization -- outward pass only ~~~~~~~~~~~~~~
-
-
-
-
-## kernel density distributions of percent-cover, by transect ~~~~~~~~~~~~~~~~~
-## per-photo proportions for a single category, overlaid by transect (all
-## photos from both ROV passes, one site x season). Reuses
-## centennial_summer_photos / elliott_summer_photos from above -- the pass
-## split isn't relevant here, so both passes are pooled.
-##
-## six-color, depth-grouped palette: deep transects (1-3) in blues, shallow
-## transects (4-6) in oranges (three shades each, dark -> light) -- echoes the
-## blue/orange diver-vs-ROV pairing used in kelp_combined_colors above, so the
-## six transects stay individually distinguishable but still visually group
-## by depth at a glance
+## six-color, depth-grouped palette used by every per-transect figure below --
+## both the violin distributions and the proportion-across-space line plots,
+## which as of this revision are colored by transect too, replacing an
+## earlier version that pulled one color per category from the Zooniverse
+## labelset JSON: deep transects (1-3) in blues, shallow transects (4-6) in
+## oranges (three shades each, dark -> light) -- echoes the blue/orange
+## diver-vs-ROV pairing used in kelp_combined_colors further down, so the six
+## transects stay individually distinguishable but still visually group by
+## depth at a glance
 transect_density_colors <- c(
   "1" = "#08519C", "2" = "#3182BD", "3" = "#6BAED6",
   "4" = "#A63603", "5" = "#E6550D", "6" = "#FD8D3C"
 )
 
-sugar_density_by_transect <- visualize.category.density.by.transect(
-  data = centennial_summer_photos,
-  category = "kelp_sugar",
-  colors = transect_density_colors,
-  x_label = "proportion sugar kelp"
-) +
-  labs(title = paste("Centennial Park, summer --", sugar_kelp_name)) +
-  theme(plot.title = ggtext::element_markdown())
-sugar_density_by_transect
 
-ggsave(file.path(figs, "kelp_sugar_density_by_transect.png"),
-      sugar_density_by_transect, width = 8, height = 6, dpi = 300)
+## every raw percent-cover category (used as-is by the violin sweep below).
+## The spatial sweep adds the 3 combined_* categories (red/green/encrusting
+## algae) on top of this, so it shows both the combined view and every
+## individual taxon that feeds into it.
+all_percent_cover_categories <- c("brown_algae_encrusting", "brown_algae_filamentous",
+                                  "brown_algae_fucus", "brown_algae_sargassum",
+                                  "green_algae_filamentous", "green_algae_ulva",
+                                  "kelp_five_rib", "kelp_bull_blade", "kelp_holdfast", "kelp_sieve",
+                                  "kelp_stipe", "kelp_sugar",
+                                  "mobile_species",
+                                  "red_algae_cca", "red_algae_branching", "red_algae_bushy",
+                                  "red_algae_encrusting", "red_algae_filamentous", "red_algae_flat_leaf",
+                                  "sessile_invertebrates", "kelp_bryozoan",
+                                  "anthropogenic", "boulder", "cobble", "pebble",
+                                  "sand_fine_shell", "shell_hash", "silt", "wood_debris",
+                                  "unknown_area")
 
+combined_categories <- c("combined_red_algae", "combined_green_algae", "combined_encrusting_algae")
 
-sieve_density_by_transect <- visualize.category.density.by.transect(
-  data = elliott_summer_photos,
-  category = "kelp_sieve",
-  colors = transect_density_colors,
-  x_label = "proportion sieve kelp"
-) +
-  labs(title = paste("Elliott Bay Marina, summer --", sieve_kelp_name)) +
-  theme(plot.title = ggtext::element_markdown())
-sieve_density_by_transect
-
-ggsave(file.path(figs, "kelp_sieve_density_by_transect.png"),
-      sieve_density_by_transect, width = 8, height = 6, dpi = 300)
-## END kernel density distributions of percent-cover, by transect ~~~~~~~~~~~~~~
+spatial_categories <- c(all_percent_cover_categories, combined_categories)
+## END ROV photo-level spatial data prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
-## kernel density distributions of percent-cover, by depth ~~~~~~~~~~~~~~~~~~~~
-## same data as above, pooled into deep (transects 1-3) vs shallow (4-6)
-## instead of six individual transect curves -- darkest blue/orange from the
-## six-transect palette above, so the two sets of figures read as consistent
-## extensions of one another
-depth_density_colors <- c("deep" = "#08519C", "shallow" = "#A63603")
+## proportion across space, by category (outward pass, <=30m only) ~~~~~~~~~~~~
+## systematic sweep of visualize.photo.level() over every percent-cover
+## category (every raw taxon + the 3 combined_* groupings), for both sites
+## and both seasons -- saved into figs/proportion_across_space/<site>/<season>/.
+## Restricting to the outbound ("out") pass (see add.transect.pass() in
+## wrangle_data_functions.R) gives one non-interleaved leg per transect, so
+## distance_m alone orders photos along the tape; prep.outward.pass.photos()
+## also drops the handful of photos whose GPS distance lands past the actual
+## 30m tape length (logging/GPS artifacts, not real transect). Figures are
+## stretched wide (18in) so spatial pattern isn't visually compressed within
+## each of the 3 facet columns, and the y-axis is fixed to 0-1 (not left to
+## float per-category) so cover magnitude is directly comparable across
+## categories, even though that makes rarer categories harder to read on
+## their own panel.
+##
+## NOTE for later: if any of these categories show a legible spatial signal
+## (e.g. a recurring peak/trough spacing along the transect), that's exactly
+## the kind of pattern a wavelet (or similar spatial-frequency) analysis could
+## formalize -- worth a follow-up once we've eyeballed this full category set.
+for (site_name in names(site_display_names)) {
+  for (season_name in names(season_display_names)) {
+    season_label <- season_display_names[[season_name]]
+    out_dir <- file.path(figs, "proportion_across_space", site_name, season_label)
+    dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
-sugar_density_by_depth <- visualize.category.density.by.depth(
-  data = centennial_summer_photos,
-  category = "kelp_sugar",
-  colors = depth_density_colors,
-  x_label = "proportion sugar kelp"
-) +
-  labs(title = paste("Centennial Park, summer --", sugar_kelp_name)) +
-  theme(plot.title = ggtext::element_markdown())
-sugar_density_by_depth
+    site_out_photos <- prep.outward.pass.photos(ROV_percent_cover_photo_level, site_name, season_name)
 
-ggsave(file.path(figs, "kelp_sugar_density_by_depth.png"),
-      sugar_density_by_depth, width = 8, height = 6, dpi = 300)
+    for (category in spatial_categories) {
+      category_label <- format.category.label(category, sugar_kelp_name, sieve_kelp_name)
 
+      spatial_plot <- visualize.photo.level(
+        data = site_out_photos,
+        category = category,
+        transect_order = c(4, 5, 6, 1, 2, 3),
+        colors = transect_density_colors,
+        ncol = 3,
+        x_label = "distance along outward pass (m)",
+        y_label = paste("proportion", gsub("_", " ", category))
+      ) +
+        labs(title = paste(site_display_names[[site_name]], season_name, "outward pass --", category_label)) +
+        theme(plot.title = ggtext::element_markdown())
 
-sieve_density_by_depth <- visualize.category.density.by.depth(
-  data = elliott_summer_photos,
-  category = "kelp_sieve",
-  colors = depth_density_colors,
-  x_label = "proportion sieve kelp"
-) +
-  labs(title = paste("Elliott Bay Marina, summer --", sieve_kelp_name)) +
-  theme(plot.title = ggtext::element_markdown())
-sieve_density_by_depth
-
-ggsave(file.path(figs, "kelp_sieve_density_by_depth.png"),
-      sieve_density_by_depth, width = 8, height = 6, dpi = 300)
-## END kernel density distributions of percent-cover, by depth ~~~~~~~~~~~~~~~~~
+      ggsave(file.path(out_dir, paste0(category, ".png")),
+            spatial_plot, width = 18, height = 8, dpi = 300)
+    }
+  }
+}
+## END proportion across space, by category ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
-## prevalence + magnitude, by transect (violin) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## single-panel alternative to the two-panel bar+boxplot version: violin +
-## inset boxplot + jittered points (magnitude given presence), with each
-## transect's prevalence (% of photos with any cover, zero included) printed
-## as large black text above its violin instead of a separate bar-chart panel.
-## Loosely modeled after Fig. 4 of Randell et al. 2022 (PNAS) -- see
-## visualize.category.violin.with.prevalence() for details. Reuses
-## transect_density_colors from the density figures above for continuity.
-sugar_violin_prevalence <- visualize.category.violin.with.prevalence(
-  data = centennial_summer_photos,
-  category = "kelp_sugar",
-  colors = transect_density_colors,
-  species_label = sugar_kelp_name,
-  title = paste("Centennial Park, summer --", sugar_kelp_name)
+## violin distributions, by category (given presence, w/ prevalence) ~~~~~~~~~~
+## systematic sweep of visualize.category.violin.with.prevalence() over every
+## percent-cover category (both ROV passes; zero-cover photos excluded from
+## the violin/box/points, with each transect's prevalence -- % of all photos,
+## zero included, with any cover -- printed above), for both sites and both
+## seasons -- saved into figs/violin/<site>/<season>/.
+for (site_name in names(site_display_names)) {
+  for (season_name in names(season_display_names)) {
+    season_label <- season_display_names[[season_name]]
+    out_dir <- file.path(figs, "violin", site_name, season_label)
+    dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+
+    site_season_data <- site_season_photos[[paste(site_name, season_name, sep = "_")]]
+
+    for (category in all_percent_cover_categories) {
+      category_label <- format.category.label(category, sugar_kelp_name, sieve_kelp_name)
+
+      violin_plot <- visualize.category.violin.with.prevalence(
+        data = site_season_data,
+        category = category,
+        colors = transect_density_colors,
+        category_label = category_label,
+        title = paste(site_display_names[[site_name]], season_name, "--", category_label)
+      )
+
+      ggsave(file.path(out_dir, paste0(category, ".png")),
+            violin_plot, width = 10, height = 7, dpi = 300)
+    }
+  }
+}
+## END violin distributions, by category ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+## spatial structure (trial): TTLQV & correlogram ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## first trial of two classic patchiness/spatial-structure techniques (see
+## compute.ttlqv() / compute.correlogram() / visualize.spatial.structure() in
+## data_visualization_functions.R), computed on the same outward-pass, <=30m
+## data as the spatial line plots above -- never on both passes combined
+## (they're physically different tracks, ~2m apart across the tape, not
+## repeat samples of the same line) and never stitched end-to-end across the
+## three replicate transects within a depth (they're separate 30m tracks with
+## an unsurveyed ~5m gap between them, so concatenating them would inject a
+## fake discontinuity every 30m).
+##
+## Instead, TTLQV/the correlogram are computed separately per transect, then
+## the three replicates within a depth are pooled by averaging their curves
+## at each shared block-size/lag (the bold black line in each panel) -- the
+## three thin, transect-colored lines underneath show how much the replicates
+## agree or disagree, which is itself informative (tight agreement = a robust
+## depth-level signal; wide spread = patchiness that varies a lot even within
+## a nominally uniform depth stratum).
+##
+## Trialed for our two focal kelp species only, at the site where each
+## dominates: sugar kelp at Centennial Park, sieve kelp at Elliott Bay Marina
+## (both summer).
+dir.create(file.path(figs, "TTLQV"), showWarnings = FALSE, recursive = TRUE)
+dir.create(file.path(figs, "correlogram"), showWarnings = FALSE, recursive = TRUE)
+
+spatial_structure_trials <- list(
+  list(site_name = "Centennial_Park", category = "kelp_sugar", category_label = sugar_kelp_name),
+  list(site_name = "Elliott_Bay_Marina", category = "kelp_sieve", category_label = sieve_kelp_name)
 )
-sugar_violin_prevalence
 
-ggsave(file.path(figs, "kelp_sugar_prevalence_magnitude.png"),
-      sugar_violin_prevalence, width = 10, height = 7, dpi = 300)
+for (trial in spatial_structure_trials) {
+  site_out_photos <- prep.outward.pass.photos(ROV_percent_cover_photo_level, trial$site_name, "summer")
+  site_title <- site_display_names[[trial$site_name]]
 
+  ttlqv_by_transect <- compute.spatial.structure.by.transect(
+    site_out_photos, trial$category, compute.ttlqv
+  )
+  ttlqv_plot <- visualize.spatial.structure(
+    ttlqv_by_transect, x_col = "block_size_m", y_col = "ttlqv",
+    colors = transect_density_colors,
+    x_label = "block size (m)", y_label = "TTLQV (block variance)",
+    title = paste(site_title, "summer --", trial$category_label, "-- TTLQV")
+  )
+  ggsave(file.path(figs, "TTLQV", paste0(trial$category, "_", trial$site_name, "_summer.png")),
+        ttlqv_plot, width = 10, height = 6, dpi = 300)
 
-sieve_violin_prevalence <- visualize.category.violin.with.prevalence(
-  data = elliott_summer_photos,
-  category = "kelp_sieve",
-  colors = transect_density_colors,
-  species_label = sieve_kelp_name,
-  title = paste("Elliott Bay Marina, summer --", sieve_kelp_name)
-)
-sieve_violin_prevalence
-
-ggsave(file.path(figs, "kelp_sieve_prevalence_magnitude.png"),
-      sieve_violin_prevalence, width = 10, height = 7, dpi = 300)
-## END prevalence + magnitude, by transect (violin) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  correlogram_by_transect <- compute.spatial.structure.by.transect(
+    site_out_photos, trial$category, compute.correlogram
+  )
+  correlogram_plot <- visualize.spatial.structure(
+    correlogram_by_transect, x_col = "lag_mid", y_col = "correlation",
+    colors = transect_density_colors,
+    x_label = "distance lag (m)", y_label = "spatial autocorrelation",
+    title = paste(site_title, "summer --", trial$category_label, "-- correlogram")
+  ) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "gray40")
+  ggsave(file.path(figs, "correlogram", paste0(trial$category, "_", trial$site_name, "_summer.png")),
+        correlogram_plot, width = 10, height = 6, dpi = 300)
+}
+## END spatial structure (trial): TTLQV & correlogram ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -408,7 +402,7 @@ kelp_overlay_stack <- visualize.kelp.standardized.overlay.stack(
 )
 kelp_overlay_stack
 
-ggsave(file.path(figs, "kelp_sugar_sieve_standardized_overlay.png"),
+ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay.png"),
       kelp_overlay_stack, width = 12, height = 9, dpi = 300)
 
 
@@ -421,7 +415,7 @@ kelp_sugar_bump_plot <- visualize.kelp.bump.chart(
   theme(plot.title = ggtext::element_markdown())
 kelp_sugar_bump_plot
 
-ggsave(file.path(figs, "kelp_sugar_bump_chart.png"),
+ggsave(file.path(figs, "z-score", "kelp_sugar_bump_chart.png"),
       kelp_sugar_bump_plot, width = 6, height = 8, dpi = 300)
 
 
@@ -434,7 +428,7 @@ kelp_sugar_scatter_plot <- visualize.kelp.scatter(
   theme(plot.title = ggtext::element_markdown())
 kelp_sugar_scatter_plot
 
-ggsave(file.path(figs, "kelp_sugar_scatter.png"),
+ggsave(file.path(figs, "head-to-head", "kelp_sugar_scatter.png"),
       kelp_sugar_scatter_plot, width = 7, height = 6, dpi = 300)
 
 
@@ -461,7 +455,7 @@ kelp_overlay_combined <- visualize.kelp.standardized.overlay.combined(
 )
 kelp_overlay_combined
 
-ggsave(file.path(figs, "kelp_sugar_sieve_standardized_overlay_combined.png"),
+ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay_combined.png"),
       kelp_overlay_combined, width = 13, height = 6, dpi = 300)
 ## END kelp density vs. percent-cover concordance ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
