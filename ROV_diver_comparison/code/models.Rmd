@@ -1,41 +1,83 @@
 ---
-title: "ROV/diver models"
+title: "DRAFT ROV/diver models"
 author: "Rachael Aber"
 date: "07/22/2026"
 output: html_notebook
 ---
-Set up; grab data:
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE,
                       echo = T, warning = T, message = T, 
                       fig.align = "center", fig.width = 6, fig.height = 3)
+
 library(tidyverse)
 library(lme4)
+library(glmmTMB)
+```
 
-div_upc <- read.csv("../results/diver/diver_UPC_percentage.csv")
-#div_alg <- read.csv("../results/diver/diver_algae_abundance.csv")
-#div_inv <- read.csv("../results/diver/diver_invert_abundance.csv")
-# div <- div_upc %>%
-#   left_join(div_alg, by = c('Date', 'season', 'site', 'transect', 'depth')) %>%
-#   left_join(div_inv, by = c('Date', 'season', 'site', 'transect', 'depth')) %>%
-#   mutate(type = 'diver')
-#rm(div_upc, div_alg, div_inv) 
-
-div <- div_upc %>%
-  mutate(type = 'diver')
-
+Set up data
+```{r}
+# ROV pc
 rov_pc <- read.csv("../results/ROV/HSIL_percent-cover_transect-averaged.csv")
-
-# rov <-  rov_inv %>%
-#   left_join(rov_pc, by = c('site', 'transect')) %>%
-#   mutate(type = 'ROV')
-# rm(rov_pc, rov_inv)
 
 rov <- rov_pc %>%
   mutate(type = 'ROV')
 
-dat <- bind_rows(div %>% select(site, transect, season, depth, type, 
-                                #ochre_mottled_star, cancer_crab, kelp_crab, ***
+rm(rov_pc)
+
+dd <- read.csv("../results/ROV/HSIL_points_photo-level.csv")
+
+dd <- dd %>%
+  rowwise() %>%
+  mutate(npoints = sum(across(22:51))) 
+
+dd <- dd %>%
+  group_by(transect, site, season) %>%
+  summarize(pts = list(npoints)) %>%
+  rowwise() %>%
+  mutate(totalpts = sum(unlist(pts))) %>%
+  select(transect, site, season, n = totalpts)
+
+rov <- rov %>%
+  left_join(dd, by = c('transect', 'site', 'season'))
+
+rm(dd)
+
+# Add ROV abundance data
+rov_ab <- read.csv('../results/HSIL_abundances_averaged.csv')
+
+rov <- rov %>% 
+  left_join(rov_ab, by = c('site', 'season', 'transect', 'depth'))
+
+rm(rov_ab)
+
+# Diver pc
+div_upc <- read.csv("../results/diver/diver_UPC_percentage.csv")
+
+div <- div_upc %>%
+  mutate(type = 'diver') %>%
+  mutate(n = 30)
+
+rm(div_upc)
+
+# Add diver abundance data
+diver_ab1 <- read.csv('../results/diver/diver_algae_abundance.csv')
+diver_ab2 <- read.csv('../results/diver/diver_invert_abundance.csv')
+
+diver_ab <- diver_ab1 %>% 
+  left_join(diver_ab2, by = c('season', 'site', 'transect', 'depth'))
+
+rm(diver_ab1)
+rm(diver_ab2)
+
+div <- div %>%
+  left_join(diver_ab, by = c('season', 'site', 'transect', 'depth'))
+
+rm(diver_ab)
+
+# Create full data set
+dat <- bind_rows(div %>% select(site, transect, season, depth, type, n,
+                                
+                                ochre_mottled_star, cancer_crab, burrowing_sea_cucumber, kelp_crab, leather_star, plumose_anemone,
                                 
                                 cover_red_algae, 
                                 combined_green_algae, 
@@ -57,8 +99,9 @@ dat <- bind_rows(div %>% select(site, transect, season, depth, type,
                      
                    ),
                  
-                 rov %>% select(site, transect, season, depth, type, 
-                                #ochre_mottled_star, cancer_crab, kelp_crab, ***
+                 rov %>% select(site, transect, season, depth, type, n, 
+                                
+                                ochre_mottled_star, cancer_crab, burrowing_sea_cucumber, kelp_crab, leather_star, plumose_anemone, 
                                 
                                 cover_red_algae = combined_red_algae, 
                                 combined_green_algae = green_algae_ulva, 
@@ -78,6 +121,63 @@ dat <- dat %>%
 
 unique(dat$transect_id)
 ```
+Percent-cover models (logistic example)
+```{r}
+dat <- dat %>%
+  mutate(cover_red_algae_ind = if_else(cover_red_algae > 0, 1, 0),
+         combined_green_algae_ind = if_else(combined_green_algae > 0, 1, 0),
+         cover_crustose_coralline_ind = if_else(cover_crustose_coralline > 0, 1, 0),
+         combined_substrate_boulder_ind = if_else(combined_substrate_boulder > 0, 1, 0),
+         substrate_rock_.15.25cm.wa._ind = if_else(substrate_rock_.15.25cm.wa. > 0, 1, 0),
+         combined_substrate_pebble_ind = if_else(combined_substrate_pebble > 0, 1, 0),
+         substrate_sand_ind = if_else(substrate_sand > 0, 1, 0),
+         substrate_shell_hash_ind = if_else(substrate_shell_hash > 0 , 1, 0)
+         )
+
+mod_ssh <- glmer(substrate_shell_hash_ind ~ type + site + season + depth + (1|transect_id), 
+                 data = dat, 
+               family = binomial)
+
+summary(mod_ssh)
+```
+
+Percent-cover models (binomial examples)
+```{r}
+# Note that it may be better to compute the numerators directly from detections out of n
+dat <- dat %>%
+  mutate(cover_red_algae_num = ceiling(cover_red_algae * n),
+         combined_green_algae_num = ceiling(combined_green_algae * n),
+         cover_crustose_coralline_num = ceiling(cover_crustose_coralline * n),
+         combined_substrate_boulder_num = ceiling(combined_substrate_boulder * n),
+         substrate_rock_.15.25cm.wa._num = ceiling(substrate_rock_.15.25cm.wa. * n),
+         combined_substrate_pebble_num = ceiling(combined_substrate_pebble * n),
+         substrate_sand_num = ceiling(substrate_sand * n),
+         substrate_shell_hash_num = ceiling(substrate_shell_hash * n)
+         )
+
+mod_cra <- glmmTMB(
+  cbind(cover_red_algae_num, n - cover_red_algae_num) ~ type + site + season + depth + (1|transect_id),
+  family = binomial,
+  data = dat
+)
+
+summary(mod_cra)
+
+mod_cra_disp <- glmmTMB(
+  cbind(cover_red_algae_num, n - cover_red_algae_num) ~ type + site + season + depth + (1|transect_id),
+  family = betabinomial(link = "logit"),
+  data = dat
+)
+summary(mod_cra_disp) # preferred
+
+mod_cga_disp <- glmmTMB(
+  cbind(combined_green_algae_num, n - combined_green_algae_num) ~ type + site + season + depth + (1|transect_id),
+  family = betabinomial(link = "logit"),
+  data = dat
+)
+summary(mod_cga_disp)
+```
+
 Abundance visualization:
 ```{r}
 ggplot(dat, aes(x = transect_id, y = ochre_mottled_star, col = type)) +
@@ -99,54 +199,15 @@ ggplot(dat, aes(x = transect_id, y = kelp_crab, col = type)) +
   )
 ```
 
-Abundance models: ochre mottled star, cancer crab, kelp crab
+Abundance models: ochre mottled star example
 ```{r}
-ochre_mod <- glmer(ochre_mottled_star ~ type + site + (1|transect_id), data = dat, 
+ochre_mod <- glmer(ochre_mottled_star ~ type + site + season + depth + (1|transect_id), 
+                   data = dat, 
                family = poisson(link = "log"))
 summary(ochre_mod)
 
-ck_mod <- glmer(cancer_crab ~ type + site + (1|transect_id), data = dat, 
-               family = poisson(link = "log"))
-summary(ck_mod)
-
-kk_mod <- glmer(kelp_crab ~ type + site + (1|transect_id), data = dat, 
-               family = poisson(link = "log"))
-summary(kk_mod)
-# check nb, overdisp? ***
+# Check nb
+ochre_mod_disp <- glmer.nb(ochre_mottled_star ~ type + site + season + depth + (1|transect_id), 
+                   data = dat)
+summary(ochre_mod_disp)
 ```
-
-Percent-cover models
-```{r}
-dat <- dat %>%
-  mutate(cover_red_algae_ind = if_else(cover_red_algae > 0, 1, 0),
-         combined_green_algae_ind = if_else(combined_green_algae > 0, 1, 0),
-         cover_crustose_coralline_ind = if_else(cover_crustose_coralline > 0, 1, 0),
-         combined_substrate_boulder_ind = if_else(combined_substrate_boulder > 0, 1, 0),
-         substrate_rock_.15.25cm.wa._ind = if_else(substrate_rock_.15.25cm.wa. > 0, 1, 0),
-         combined_substrate_pebble_ind = if_else(combined_substrate_pebble > 0, 1, 0),
-         substrate_sand_ind = if_else(substrate_sand > 0, 1, 0),
-         substrate_shell_hash_ind = if_else(substrate_shell_hash > 0 , 1, 0),
-         )
-
-mod_cga <- glmer(combined_green_algae_ind ~ type + site + (1|transect_id) + season + depth, 
-                 data = dat, 
-               family = binomial)
-mod_cga_red <- glmer(combined_green_algae_ind ~ type + (1|transect_id), 
-                 data = dat, 
-               family = binomial)
-
-summary(mod_cga_red)
-
-mod_sr <- glmer(substrate_rock_.15.25cm.wa._ind ~ type + site + (1|transect_id) + season + depth, 
-                 data = dat, 
-               family = binomial)
-
-summary(mod_sr)
-
-mod_ssh <- glmer(substrate_shell_hash_ind ~ type + site + (1|transect_id) + season + depth, 
-                 data = dat, 
-               family = binomial)
-
-summary(mod_ssh)
-```
-
