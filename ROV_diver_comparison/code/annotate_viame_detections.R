@@ -3,33 +3,41 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##
 ## QA tool: draws each detection's bounding box + descriptive species name on a COPY of the
-## real photo it came from, so the abundance counts in HSIL_viame_export.csv
+## real photo it came from, so the abundance counts in HSIL_viame_abundance.csv
 ## can be visually spot-checked against the actual imagery (VIAME's own web
 ## viewer shows every volunteer pass over a photo, including duplicates from
 ## overlapping review, so it isn't usable for this directly).
 ##
-## Source CSVs: data/ROV/VIAME_raw_export/*.csv -- VIAME's native per-track
-## detection export (id, image name, frame id, bbox TL/BR corners, detection
-## confidence, target length, species + species confidence). Box coordinates
-## are in the pixel space of the CROPPED photos (the "testing"/"training"
-## subfolders for 2024 surveys, "edited" for 2025 -- confirmed by comparing
-## max box coordinates, ~4608x4036, against actual image dimensions: the
-## cropped set is 4606x4031, the uncropped set is 5044x4414).
+## Source JSON: data/ROV/VIAME_raw_export/*.json -- VIAME's native per-track
+## export ({"tracks": {"<id>": {"confidencePairs": [[species, conf]],
+## "features": [{"frame": N, "bounds": [TL_x,TL_y,BR_x,BR_y]}]}}}). One track
+## per detection; a handful of transects may have tracks spanning multiple
+## frames (multiple "features" entries), handled by looping over features.
+## Bounding boxes are in the pixel space of the CROPPED photos (the
+## "testing"/"training" subfolders for 2024 surveys, "edited" for 2025).
 ##
-## IMPORTANT: these raw per-track CSVs cover every photo volunteers reviewed
-## in VIAME, which is MORE photos than the official ~1-photo-per-meter set
-## actually used for the abundance counts (volunteers deliberately reviewed
-## overlapping frames too, for ML training imagery -- see 2026-07-28
-## conversation). Annotating those extra photos would misrepresent counts as
-## if every reviewed frame counted toward the transect total, so this script
-## restricts to whichever photos actually appear as that Transect_ID's rows
-## in results/HSIL_abundances_photo_scale.csv (get.official.photos()) before
-## drawing anything -- e.g. for CNL_S24_T1, 25 of the 83 photos in the raw
-## detections CSV are official; the rest are skipped.
+## Frame -> filename: the JSON has no filename field, only a frame number.
+## Confirmed 2026-07-29 (cross-checked against all 83 detections in the
+## original per-transect CSV export, zero mismatches): frame_id is the
+## 0-indexed rank of that photo within the alphabetically-sorted union of the
+## transect folder's testing+training (2024) or edited (2025) subfolders --
+## see get.frame.to.name.map().
 ##
-## Output: one annotated copy per official photo, written to an
-## "annotated_qaqc" subfolder alongside testing/training/edited in that
-## photo's own T{n}_{deep,shallow} transect folder -- originals untouched.
+## Official photo list: data/ROV/HSIL_viame_abundance.csv, updated 2026-07-29
+## to include every reviewed photo for a transect -- including the ones with
+## zero detections, which earlier VIAME exports omitted entirely (an export
+## only lists photos that have >=1 annotation). Restricting to this list
+## (get.official.photos()) still matters: VIAME review covered more photos
+## per transect than the official ~1-photo-per-meter out+return set (see
+## 2026-07-28 conversation), so this file -- not "every photo referenced in
+## the JSON" -- defines which photos belong in the transect's QA record.
+##
+## Output: one copy per official photo, written to an "annotated_qaqc"
+## subfolder alongside testing/training/edited in that photo's own
+## T{n}_{deep,shallow} transect folder -- originals untouched. Photos with
+## detections get boxes + labels drawn; photos with zero detections are
+## copied as-is, so the folder is a complete photo record for the transect,
+## not just the photos that had something in them.
 
 
 
@@ -39,6 +47,7 @@ rm(list=ls())
 
 library(tidyverse)
 library(magick)
+library(jsonlite)
 
 
 ## set working directory one level up and verify
@@ -59,13 +68,58 @@ source(file.path(code, "wrangle_data_functions.R"))
 
 
 
-## the official ~1-photo-per-meter set for a given Transect_ID, per
-## results/HSIL_abundances_photo_scale.csv
-get.official.photos <- function(transect_id, abundance_csv_path = file.path(results, "HSIL_abundances_photo_scale.csv")) {
+## the official reviewed-photo set (including zero-detection photos) for one
+## transect/survey-date, per data/ROV/HSIL_viame_abundance.csv. That file
+## covers both survey dates for a given Site ID + Transect ID combo (e.g.
+## Centennial T1 summer AND winter both show up as "Centennial"/"T1"), so
+## date_prefix ("2024_10_08") picks out the one survey being annotated.
+get.official.photos <- function(site_id, transect_id, date_prefix,
+                                abundance_csv_path = file.path(ROV_input, "HSIL_viame_abundance.csv")) {
   abundances <- read_csv(abundance_csv_path, show_col_types = FALSE)
-  photos <- abundances$Name[abundances$Transect_ID == transect_id]
+  photos <- abundances$Name[abundances$`Site ID` == site_id &
+                            abundances$`Transect ID` == transect_id &
+                            startsWith(abundances$Name, date_prefix)]
   stopifnot(length(photos) > 0)
-  photos
+  sort(photos)
+}
+
+
+## frame_id -> photo filename for one transect (see header note on how this
+## correspondence was established). `search_subfolders` are searched in
+## order and their contents pooled/sorted together, matching how VIAME loaded
+## the photos when it assigned frame numbers.
+get.frame.to.name.map <- function(transect_dir, search_subfolders = c("testing", "training", "edited")) {
+  all_images <- character(0)
+  for (sub in search_subfolders) {
+    d <- file.path(transect_dir, sub)
+    if (dir.exists(d)) all_images <- c(all_images, list.files(d, pattern = "\\.jpg$"))
+  }
+  all_images <- sort(unique(all_images))
+  stopifnot(length(all_images) > 0)
+  all_images
+}
+
+
+## parse a VIAME tracks JSON export into one row per detection: frame_id,
+## bbox corners, species code
+parse.viame.json <- function(json_path) {
+  raw <- fromJSON(json_path, simplifyVector = FALSE)
+
+  rows <- list()
+  for (track in raw$tracks) {
+    species <- track$confidencePairs[[1]][[1]]
+    for (feat in track$features) {
+      bounds <- feat$bounds
+      rows[[length(rows) + 1]] <- data.frame(
+        frame_id = feat$frame,
+        TL_x = bounds[[1]], TL_y = bounds[[2]],
+        BR_x = bounds[[3]], BR_y = bounds[[4]],
+        species = species,
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  dplyr::bind_rows(rows)
 }
 
 
@@ -122,15 +176,18 @@ draw.detection.label <- function(label, TL_x, TL_y, BR_x, BR_y, cex = 6, stroke_
 ## <transect_dir>/annotated_qaqc/. `transect_dir` is the T{n}_{deep,shallow}
 ## folder itself; source photos are located by searching, in order, whichever
 ## of its testing/training/edited subfolders actually contain the file (2024
-## surveys split photos across testing+training, 2025 surveys use edited only)
-annotate.transect.detections <- function(csv_path, transect_dir, official_photos,
+## surveys split photos across testing+training, 2025 surveys use edited only).
+## Every photo in `official_photos` gets a copy in the output folder -- ones
+## with detections get boxes+labels, ones without are copied unmodified --
+## so the folder is a complete photo record for the transect.
+annotate.transect.detections <- function(json_path, transect_dir, official_photos,
                                          search_subfolders = c("testing", "training", "edited")) {
 
-  detections <- read_csv(csv_path, skip = 2, col_names = FALSE, show_col_types = FALSE)
-  stopifnot(ncol(detections) == 11)
-  names(detections) <- c("track_id", "image", "frame_id",
-                         "TL_x", "TL_y", "BR_x", "BR_y",
-                         "det_conf", "target_length", "species", "species_conf")
+  frame_to_name <- get.frame.to.name.map(transect_dir, search_subfolders)
+
+  detections <- parse.viame.json(json_path)
+  detections$image <- frame_to_name[detections$frame_id + 1]
+  stopifnot(!anyNA(detections$image))
 
   unmapped_species <- setdiff(unique(detections$species), names(species_name_map))
   if (length(unmapped_species) > 0) {
@@ -142,23 +199,20 @@ annotate.transect.detections <- function(csv_path, transect_dir, official_photos
   output_dir <- file.path(transect_dir, "annotated_qaqc")
   dir.create(output_dir, showWarnings = FALSE)
 
-  images <- intersect(unique(detections$image), official_photos)
+  official_with_detections <- intersect(official_photos, unique(detections$image))
+  official_without_detections <- setdiff(official_photos, unique(detections$image))
   skipped <- setdiff(unique(detections$image), official_photos)
-  unresolved <- setdiff(official_photos, unique(detections$image))
 
-  cat(sprintf("Annotating %d official photos (out of %d total photos, %d detections, in %s)\n",
-             length(images), length(unique(detections$image)), nrow(detections), basename(csv_path)))
+  cat(sprintf("Annotating %d official photos (%d with detections, %d with zero) from %s\n",
+             length(official_photos), length(official_with_detections),
+             length(official_without_detections), basename(json_path)))
   if (length(skipped) > 0) {
-    cat(sprintf("Skipped %d non-official photo(s) present in the raw detections CSV but not in HSIL_abundances_photo_scale.csv\n", length(skipped)))
-  }
-  if (length(unresolved) > 0) {
-    warning(sprintf("%d official photo(s) have no detections in %s: %s",
-                    length(unresolved), basename(csv_path), paste(unresolved, collapse = ", ")))
+    cat(sprintf("Skipped %d non-official photo(s) with detections in the JSON but not in HSIL_viame_abundance.csv\n", length(skipped)))
   }
 
   missing <- character(0)
 
-  for (img_name in images) {
+  for (img_name in official_photos) {
     candidate_paths <- file.path(transect_dir, search_subfolders, img_name)
     found <- candidate_paths[file.exists(candidate_paths)][1]
 
@@ -168,6 +222,11 @@ annotate.transect.detections <- function(csv_path, transect_dir, official_photos
     }
 
     boxes <- dplyr::filter(detections, image == img_name)
+
+    if (nrow(boxes) == 0) {
+      file.copy(found, file.path(output_dir, img_name), overwrite = TRUE)
+      next
+    }
 
     img <- image_read(found)
     img_plot <- image_draw(img)
@@ -181,13 +240,12 @@ annotate.transect.detections <- function(csv_path, transect_dir, official_photos
   }
 
   if (length(missing) > 0) {
-    warning(sprintf("%d photo(s) referenced in %s not found under %s: %s",
-                    length(missing), basename(csv_path), transect_dir,
-                    paste(missing, collapse = ", ")))
+    warning(sprintf("%d official photo(s) not found under %s: %s",
+                    length(missing), transect_dir, paste(missing, collapse = ", ")))
   }
 
-  cat(sprintf("Wrote %d annotated photos to %s\n",
-             length(images) - length(missing), output_dir))
+  cat(sprintf("Wrote %d photos to %s\n",
+             length(official_photos) - length(missing), output_dir))
 
   invisible(output_dir)
 }
