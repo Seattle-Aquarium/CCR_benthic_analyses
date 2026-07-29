@@ -70,15 +70,32 @@ source(file.path(code, "wrangle_data_functions.R"))
 
 ## the official reviewed-photo set (including zero-detection photos) for one
 ## transect/survey-date, per data/ROV/HSIL_viame_abundance.csv. That file
-## covers both survey dates for a given Site ID + Transect ID combo (e.g.
-## Centennial T1 summer AND winter both show up as "Centennial"/"T1"), so
-## date_prefix ("2024_10_08") picks out the one survey being annotated.
-get.official.photos <- function(site_id, transect_id, date_prefix,
-                                abundance_csv_path = file.path(ROV_input, "HSIL_viame_abundance.csv")) {
+## covers both survey dates for a given Site ID combo (e.g. Centennial T1
+## summer AND winter both show up as "Centennial"), so date_prefix
+## ("2024_10_08") picks out the one survey being annotated.
+##
+## IMPORTANT: this file's own "Transect ID" column is NOT used to pick out
+## the transect -- confirmed 2026-07-29 that it carries the same unreliable
+## VIAME-side labeling as the original HSIL_viame_export.csv (31% correct
+## against the real folder structure, see wrangle_HSIL_viame_abundance_data.R
+## header). E.g. 13 of the 63 rows tagged "Centennial"/"T1" for 2024-10-08 are
+## physically stored in the T3_deep folder, one with 3 real ochre-star
+## detections -- not just zero-detection noise. Instead, every candidate
+## photo (matched on Site ID + date only) is cross-checked against
+## data/ROV/HSIL_viame_transect_ground_truth.csv (the same folder-derived
+## ground truth used in the main abundance pipeline) and assigned to
+## `transect_number` based on where the photo file actually lives.
+get.official.photos <- function(site, transect_number, date_prefix,
+                                abundance_csv_path = file.path(ROV_input, "HSIL_viame_abundance.csv"),
+                                ground_truth_path = file.path(ROV_input, "HSIL_viame_transect_ground_truth.csv")) {
   abundances <- read_csv(abundance_csv_path, show_col_types = FALSE)
-  photos <- abundances$Name[abundances$`Site ID` == site_id &
-                            abundances$`Transect ID` == transect_id &
-                            startsWith(abundances$Name, date_prefix)]
+  ground_truth <- read_csv(ground_truth_path, show_col_types = FALSE)
+
+  candidates <- abundances[abundances$`Site ID` == site & startsWith(abundances$Name, date_prefix), ]
+  candidates <- dplyr::left_join(candidates, ground_truth, by = c("Name" = "basename"))
+  stopifnot(!anyNA(candidates$transect))
+
+  photos <- candidates$Name[candidates$transect == transect_number]
   stopifnot(length(photos) > 0)
   sort(photos)
 }
@@ -258,9 +275,9 @@ annotate.transect.detections <- function(json_path, transect_dir, official_photo
 flights_root <- "C:/Users/randellz/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL"
 
 annotate.transect.detections(
-  csv_path = file.path(ROV_input, "VIAME_raw_export", "2024_10_08_centennial_t1_cropped.csv"),
+  json_path = file.path(ROV_input, "VIAME_raw_export", "2024_10_08_Centennial_T1_cropped.json"),
   transect_dir = file.path(flights_root, "2024/2024_10_08_diver-ROV_Centennial_Park/downward/photos/transects/T1_deep"),
-  official_photos = get.official.photos("CNL_S24_T1")
+  official_photos = get.official.photos("Centennial", 1, "2024_10_08")
 )
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
