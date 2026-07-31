@@ -261,6 +261,29 @@ add.season <- function(df) {
 }
 
 
+## function to add a fully-unique site x transect x season key, e.g.
+## "CP_1_summer" or "EBM_4_summer". Distinct from transect_id (site x
+## transect only), which collapses summer/winter together for use as a
+## repeated-measures random-effect grouping variable -- key instead
+## uniquely identifies each of the 24 site/transect/season sampling events,
+## shared across the diver and ROV rows for that same event
+add.key <- function(df) {
+  df %>%
+    dplyr::mutate(
+      key = paste(
+        dplyr::case_when(
+          site == "Centennial_Park" ~ "CP",
+          site == "Elliott_Bay_Marina" ~ "EBM",
+          TRUE ~ NA_character_
+        ),
+        transect, season,
+        sep = "_"
+      ),
+      .after = site
+    )
+}
+
+
 ## classify each photo as belonging to the ROV's outbound ("out") or return
 ## pass along the transect tape. Two passes are run per 30m transect, one on
 ## each side of the tape: within each site/transect/season group, ordering

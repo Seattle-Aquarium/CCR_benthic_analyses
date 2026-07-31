@@ -6,7 +6,7 @@ output: html_notebook
 ---
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE,
-                      echo = T, warning = T, message = T, 
+                      echo = T, warning = T, message = T,
                       fig.align = "center", fig.width = 6, fig.height = 3)
 
 library(tidyverse)
@@ -14,124 +14,18 @@ library(lme4)
 library(glmmTMB)
 ```
 
-Set up data
+Read combined data. Data assembly (joining ROV + diver, category crosswalks,
+0-100 -> 0-1 conversion, transect_id / key derivation) now lives upstream in
+build_combined_abundance.R and build_combined_percent_cover.R -- this notebook
+starts from their outputs, so it only ever contains modeling.
 ```{r}
-# ROV pc
-rov_pc <- read.csv("../results/ROV/percent_cover/HSIL_percent-cover_transect-averaged.csv")
-
-rov <- rov_pc %>%
-  mutate(type = 'ROV')
-
-rm(rov_pc)
-
-dd <- read.csv("../results/ROV/percent_cover/HSIL_points_photo-level.csv")
-
-dd <- dd %>%
-  rowwise() %>%
-  mutate(npoints = sum(across(22:51))) 
-
-dd <- dd %>%
-  group_by(transect, site, season) %>%
-  summarize(pts = list(npoints)) %>%
-  rowwise() %>%
-  mutate(totalpts = sum(unlist(pts))) %>%
-  select(transect, site, season, n = totalpts)
-
-rov <- rov %>%
-  left_join(dd, by = c('transect', 'site', 'season'))
-
-rm(dd)
-
-# Add ROV abundance data
-# NOTE (updated 2026-07-30): HSIL_abundances_averaged.csv no longer exists --
-# superseded by ../results/ROV/abundance/HSIL_viame_abundance_corrected_summed.csv
-# (see build_HSIL_viame_abundance_corrected.R), which uses the same join keys
-# (site, transect, season, depth) but a different/fuller set of species
-# columns (full descriptive names, ground-truth-corrected transect
-# assignment). Left pointed at the old filename rather than silently
-# swapping in the new one, since that would change this model's input data
-# without review.
-rov_ab <- read.csv('../results/HSIL_abundances_averaged.csv')
-
-rov <- rov %>% 
-  left_join(rov_ab, by = c('site', 'season', 'transect', 'depth'))
-
-rm(rov_ab)
-
-# Diver pc
-div_upc <- read.csv("../results/diver/diver_UPC_percentage.csv")
-
-div <- div_upc %>%
-  mutate(type = 'diver') %>%
-  mutate(n = 30)
-
-rm(div_upc)
-
-# Add diver abundance data
-diver_ab1 <- read.csv('../results/diver/diver_algae_abundance.csv')
-diver_ab2 <- read.csv('../results/diver/diver_invert_abundance.csv')
-
-diver_ab <- diver_ab1 %>% 
-  left_join(diver_ab2, by = c('season', 'site', 'transect', 'depth'))
-
-rm(diver_ab1)
-rm(diver_ab2)
-
-div <- div %>%
-  left_join(diver_ab, by = c('season', 'site', 'transect', 'depth'))
-
-rm(diver_ab)
-
-# Create full data set
-dat <- bind_rows(div %>% select(site, transect, season, depth, type, n,
-                                
-                                ochre_mottled_star, cancer_crab, burrowing_sea_cucumber, kelp_crab, leather_star, plumose_anemone,
-                                
-                                cover_red_algae, 
-                                combined_green_algae, 
-                                cover_crustose_coralline,
-                                combined_substrate_boulder, 
-                                substrate_rock_.15.25cm.wa., 
-                                combined_substrate_pebble, 
-                                substrate_sand, 
-                                substrate_shell_hash) %>%
-                   mutate(
-                                cover_red_algae = cover_red_algae/100, 
-                                combined_green_algae = combined_green_algae/100, 
-                                cover_crustose_coralline = cover_crustose_coralline/100,
-                                combined_substrate_boulder = combined_substrate_boulder/100, 
-                                substrate_rock_.15.25cm.wa. = substrate_rock_.15.25cm.wa./100, 
-                                combined_substrate_pebble = combined_substrate_pebble/100, 
-                                substrate_sand = substrate_sand/100, 
-                                substrate_shell_hash = substrate_shell_hash/100
-                     
-                   ),
-                 
-                 rov %>% select(site, transect, season, depth, type, n, 
-                                
-                                ochre_mottled_star, cancer_crab, burrowing_sea_cucumber, kelp_crab, leather_star, plumose_anemone, 
-                                
-                                cover_red_algae = combined_red_algae, 
-                                combined_green_algae = green_algae_ulva, 
-                                cover_crustose_coralline = red_algae_cca,
-                                combined_substrate_boulder = boulder, 
-                                substrate_rock_.15.25cm.wa. = cobble, 
-                                combined_substrate_pebble = pebble, 
-                                substrate_sand = sand_fine_shell, 
-                                substrate_shell_hash = shell_hash)
-                 )
+dat_abundance <- read.csv("../results/combined/ROV_diver_abundance_combined.csv")
+dat_pc <- read.csv("../results/combined/ROV_diver_percent_cover_combined.csv")
 ```
 
-Create unique transect labels such that there are 12 transects instead of 6:
-```{r}
-dat <- dat %>%
-  mutate(transect_id = paste(transect, site))
-
-unique(dat$transect_id)
-```
 Percent-cover models (logistic example)
 ```{r}
-dat <- dat %>%
+dat_pc <- dat_pc %>%
   mutate(cover_red_algae_ind = if_else(cover_red_algae > 0, 1, 0),
          combined_green_algae_ind = if_else(combined_green_algae > 0, 1, 0),
          cover_crustose_coralline_ind = if_else(cover_crustose_coralline > 0, 1, 0),
@@ -142,8 +36,8 @@ dat <- dat %>%
          substrate_shell_hash_ind = if_else(substrate_shell_hash > 0 , 1, 0)
          )
 
-mod_ssh <- glmer(substrate_shell_hash_ind ~ type + site + season + depth + (1|transect_id), 
-                 data = dat, 
+mod_ssh <- glmer(substrate_shell_hash_ind ~ type + site + season + depth + (1|transect_id),
+                 data = dat_pc,
                family = binomial)
 
 summary(mod_ssh)
@@ -152,7 +46,7 @@ summary(mod_ssh)
 Percent-cover models (binomial examples)
 ```{r}
 # Note that it may be better to compute the numerators directly from detections out of n
-dat <- dat %>%
+dat_pc <- dat_pc %>%
   mutate(cover_red_algae_num = ceiling(cover_red_algae * n),
          combined_green_algae_num = ceiling(combined_green_algae * n),
          cover_crustose_coralline_num = ceiling(cover_crustose_coralline * n),
@@ -166,7 +60,7 @@ dat <- dat %>%
 mod_cra <- glmmTMB(
   cbind(cover_red_algae_num, n - cover_red_algae_num) ~ type + site + season + depth + (1|transect_id),
   family = binomial,
-  data = dat
+  data = dat_pc
 )
 
 summary(mod_cra)
@@ -174,33 +68,33 @@ summary(mod_cra)
 mod_cra_disp <- glmmTMB(
   cbind(cover_red_algae_num, n - cover_red_algae_num) ~ type + site + season + depth + (1|transect_id),
   family = betabinomial(link = "logit"),
-  data = dat
+  data = dat_pc
 )
 summary(mod_cra_disp) # preferred
 
 mod_cga_disp <- glmmTMB(
   cbind(combined_green_algae_num, n - combined_green_algae_num) ~ type + site + season + depth + (1|transect_id),
   family = betabinomial(link = "logit"),
-  data = dat
+  data = dat_pc
 )
 summary(mod_cga_disp)
 ```
 
 Abundance visualization:
 ```{r}
-ggplot(dat, aes(x = transect_id, y = ochre_mottled_star, col = type)) +
+ggplot(dat_abundance, aes(x = transect_id, y = ochre_mottled_star, col = type)) +
   geom_point() +
   theme(
     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
   )
 
-ggplot(dat, aes(x = transect_id, y = cancer_crab, col = type)) +
+ggplot(dat_abundance, aes(x = transect_id, y = cancer_crab, col = type)) +
   geom_point() +
   theme(
     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
   )
 
-ggplot(dat, aes(x = transect_id, y = kelp_crab, col = type)) +
+ggplot(dat_abundance, aes(x = transect_id, y = kelp_crab, col = type)) +
   geom_point()+
   theme(
     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
@@ -209,13 +103,13 @@ ggplot(dat, aes(x = transect_id, y = kelp_crab, col = type)) +
 
 Abundance models: ochre mottled star example
 ```{r}
-ochre_mod <- glmer(ochre_mottled_star ~ type + site + season + depth + (1|transect_id), 
-                   data = dat, 
+ochre_mod <- glmer(ochre_mottled_star ~ type + site + season + depth + (1|transect_id),
+                   data = dat_abundance,
                family = poisson(link = "log"))
 summary(ochre_mod)
 
 # Check nb
-ochre_mod_disp <- glmer.nb(ochre_mottled_star ~ type + site + season + depth + (1|transect_id), 
-                   data = dat)
+ochre_mod_disp <- glmer.nb(ochre_mottled_star ~ type + site + season + depth + (1|transect_id),
+                   data = dat_abundance)
 summary(ochre_mod_disp)
 ```
