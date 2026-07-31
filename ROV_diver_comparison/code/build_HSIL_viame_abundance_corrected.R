@@ -9,20 +9,21 @@
 ## built from the same ground-truth-verified data as the QA imagery, not
 ## re-derived separately.
 ##
-## Per-photo species counts come from the raw VIAME_raw_export/*.json tracks,
-## not from HSIL_viame_abundance.csv's own count columns -- since that file's
-## Transect ID is already known to be wrong for some rows (see functions file
-## header), re-deriving counts directly from the JSON (resolved to real
-## filenames via the transect's own folder) avoids inheriting any related
-## bug in how that file's per-photo counts were assembled. HSIL_viame_
-## abundance.csv is still used for one thing only: which photos count as the
-## official ~1-photo-per-meter set (get.official.photos()).
+## Per-photo species counts come from the raw VIAME_JSON_export_abundances/*.json
+## tracks, not from HSIL_viame_abundance.csv's own count columns -- since that
+## file's Transect ID is already known to be wrong for some rows (see
+## functions file header), re-deriving counts directly from the JSON
+## (resolved to real filenames via the transect's own folder) avoids
+## inheriting any related bug in how that file's per-photo counts were
+## assembled. HSIL_viame_abundance.csv is still used for one thing only:
+## which photos count as the official ~1-photo-per-meter set
+## (get.official.photos()).
 ##
 ## Outputs:
-##   data/ROV/HSIL_viame_abundance_corrected.csv -- one row per official
-##     photo (site, transect, season, depth, photo_name, species columns)
-##   results/HSIL_viame_abundance_corrected_summed.csv -- one row per
-##     transect (24 total), summed species counts + n_photos
+##   results/ROV/abundance/HSIL_viame_abundance_corrected.csv -- one row per
+##     official photo (site, transect, season, depth, photo_name, species columns)
+##   results/ROV/abundance/HSIL_viame_abundance_corrected_summed.csv -- one
+##     row per transect (24 total), summed species counts + n_photos
 
 
 
@@ -41,7 +42,7 @@ getwd()
 
 
 ROV_input <- "data/ROV"
-results <- "results"
+results_abundance <- "results/ROV/abundance"
 code <- "code"
 
 source(file.path(code, "wrangle_data_functions.R"))
@@ -49,7 +50,7 @@ source(file.path(code, "annotate_viame_detections_functions.R"))
 
 abundance_csv_path <- file.path(ROV_input, "HSIL_viame_abundance.csv")
 ground_truth_path <- file.path(ROV_input, "HSIL_viame_transect_ground_truth.csv")
-json_dir <- file.path(ROV_input, "VIAME_raw_export")
+json_dir <- file.path(ROV_input, "VIAME_JSON_export_abundances")
 flights_root <- "C:/Users/randellz/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL"
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -161,7 +162,7 @@ corrected <- photo_meta %>%
 
 stopifnot(nrow(corrected) == nrow(photo_meta))
 
-save.csv(corrected, ROV_input, "HSIL_viame_abundance_corrected.csv")
+save.csv(corrected, results_abundance, "HSIL_viame_abundance_corrected.csv")
 ## END corrected per-photo CSV ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -175,7 +176,7 @@ corrected_sums <- sum.by.group(
 )
 stopifnot(nrow(corrected_sums) == 24)
 
-save.csv(corrected_sums, results, "HSIL_viame_abundance_corrected_summed.csv")
+save.csv(corrected_sums, results_abundance, "HSIL_viame_abundance_corrected_summed.csv")
 ## END transect-level sums ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

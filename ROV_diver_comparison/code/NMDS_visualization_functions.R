@@ -23,7 +23,11 @@ site_display_names <- c(Centennial_Park = "Centennial Park",
                         Elliott_Bay_Marina = "Elliott Bay Marina")
 season_display_names <- c(summer = "Summer", winter = "Winter")
 
-site_colors <- c("Centennial Park" = "#1B9E77", "Elliott Bay Marina" = "#7570B3")
+## blue = Elliott Bay Marina, orange = Centennial Park -- same hue convention
+## as transect_density_colors in data_visualization.R and
+## site_depth_season_colors below (mid-tones, since these 2 figures show site
+## alone/site x depth rather than the full site x depth x season breakdown)
+site_colors <- c("Centennial Park" = "#E6550D", "Elliott Bay Marina" = "#3182BD")
 
 
 ## site x depth x season palette for the single-panel, most-granular figure --
@@ -93,26 +97,52 @@ visualize.nmds <- function(data, color_by, colors, group_by = color_by, facets =
 ## overlay percent-cover category correlation vectors (arrows + labels, from
 ## the spp_scores saved alongside the ordination in NMDS.R) on top of a
 ## faded, site-colored NMDS scatter -- shows which categories pull ordination
-## space in which direction, independent of the site/depth/season groupings
-## shown in the other 3 figures. With 30 categories this gets crowded; the
-## saved NMDS_spp_scores_photo-level.csv is the more precise reference.
-visualize.nmds.categories <- function(data, spp_scores, colors, title = NULL,
-                                      label_size = 3.2){
+## space in which direction. `categories`, if given, subsets spp_scores down
+## to just those category names (the full 30-category set gets crowded; see
+## NMDS_category_scores.png for that unfiltered reference). Labels are placed
+## via ggrepel::geom_label_repel rather than plain geom_label so they nudge
+## apart instead of stacking illegibly on top of each other -- `seed` is
+## fixed so repositioning is reproducible across re-runs. `ellipses = TRUE`
+## adds the same per-site 95% ellipse as visualize.nmds(), letting this
+## double as an annotated version of the site-only figure. `legend_position`,
+## if given (a c(x, y) pair in normalized panel coordinates), moves the
+## legend inside the panel -- e.g. c(0.95, 0.05) with the default
+## legend.justification below for a bottom-right inset.
+visualize.nmds.categories <- function(data, spp_scores, colors, categories = NULL,
+                                      point_alpha = 0.15, point_size = 1.2,
+                                      ellipses = FALSE, ellipse_linewidth = 1,
+                                      title = NULL, legend_name = "site",
+                                      legend_position = NULL, legend_justification = c(1, 0),
+                                      label_size = 3.2, seed = 42){
+  if (!is.null(categories)) spp_scores <- dplyr::filter(spp_scores, category %in% categories)
+
   p <- ggplot(data, aes(x = MDS1, y = MDS2)) +
-    geom_point(aes(color = site), size = 1.2, alpha = 0.15) +
-    scale_color_manual(values = colors, name = "site") +
+    geom_point(aes(color = site), size = point_size, alpha = point_alpha) +
+    scale_color_manual(values = colors, name = legend_name)
+
+  if (ellipses) {
+    p <- p + stat_ellipse(aes(color = site, group = site), linewidth = ellipse_linewidth, level = 0.95)
+  }
+
+  p <- p +
     geom_segment(data = spp_scores, linewidth = 0.8, color = "black",
                 aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
                 arrow = arrow(length = unit(0.2, "cm"))) +
-    geom_label(data = spp_scores, hjust = 0.5, size = label_size,
+    ggrepel::geom_label_repel(data = spp_scores, size = label_size, seed = seed,
               fontface = "bold", label.size = 0.4, fill = "white",
-              aes(x = NMDS1, y = NMDS2, label = category,
-                  vjust = ifelse(NMDS2 >= 0, -0.4, 1.3))) +
+              max.overlaps = Inf, min.segment.length = 0, segment.color = "gray40",
+              aes(x = NMDS1, y = NMDS2, label = category)) +
     coord_fixed() +
     xlab("NMDS1") + ylab("NMDS2") +
     my.theme
 
   if (!is.null(title)) p <- p + ggtitle(title)
+
+  if (!is.null(legend_position)) {
+    p <- p + theme(legend.position = legend_position,
+                   legend.justification = legend_justification,
+                   legend.background = element_rect(fill = scales::alpha("white", 0.7), color = NA))
+  }
 
   p
 }

@@ -17,14 +17,14 @@ library(glmmTMB)
 Set up data
 ```{r}
 # ROV pc
-rov_pc <- read.csv("../results/ROV/HSIL_percent-cover_transect-averaged.csv")
+rov_pc <- read.csv("../results/ROV/percent_cover/HSIL_percent-cover_transect-averaged.csv")
 
 rov <- rov_pc %>%
   mutate(type = 'ROV')
 
 rm(rov_pc)
 
-dd <- read.csv("../results/ROV/HSIL_points_photo-level.csv")
+dd <- read.csv("../results/ROV/percent_cover/HSIL_points_photo-level.csv")
 
 dd <- dd %>%
   rowwise() %>%
@@ -43,6 +43,14 @@ rov <- rov %>%
 rm(dd)
 
 # Add ROV abundance data
+# NOTE (updated 2026-07-30): HSIL_abundances_averaged.csv no longer exists --
+# superseded by ../results/ROV/abundance/HSIL_viame_abundance_corrected_summed.csv
+# (see build_HSIL_viame_abundance_corrected.R), which uses the same join keys
+# (site, transect, season, depth) but a different/fuller set of species
+# columns (full descriptive names, ground-truth-corrected transect
+# assignment). Left pointed at the old filename rather than silently
+# swapping in the new one, since that would change this model's input data
+# without review.
 rov_ab <- read.csv('../results/HSIL_abundances_averaged.csv')
 
 rov <- rov %>% 

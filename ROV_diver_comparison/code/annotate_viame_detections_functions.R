@@ -6,7 +6,7 @@
 ## Shared by annotate_viame_detections.R (single-transect pipeline test) and
 ## build_HSIL_viame_abundance_corrected.R (all 24 transects + corrected CSVs).
 ##
-## Source JSON: data/ROV/VIAME_raw_export/*.json -- VIAME's native per-track
+## Source JSON: data/ROV/VIAME_JSON_export_abundances/*.json -- VIAME's native per-track
 ## export ({"tracks": {"<id>": {"confidencePairs": [[species, conf]],
 ## "features": [{"frame": N, "bounds": [TL_x,TL_y,BR_x,BR_y]}]}}}). One track
 ## per detection; looping over "features" also handles the rare track that

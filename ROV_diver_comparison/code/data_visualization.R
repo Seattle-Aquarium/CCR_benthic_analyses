@@ -27,7 +27,7 @@ getwd()
 
 ## relative file paths
 diver_output <- "results/diver"
-ROV_output <- "results/ROV"
+ROV_output <- "results/ROV/percent_cover"
 ROV_input <- "data/ROV"
 code <- "code"
 figs <- "figs"
@@ -103,6 +103,12 @@ category_combos <- list(
   combined_red_algae = c("RE_branch", "RE_bush", "RE_fil", "RE_leaf")
 )
 
+## BROKEN as of 2026-07-30, unrelated to the results/ folder reorg: both
+## get.category.colors() (defined in code/analyze_functions.R) and
+## data/ROV/labelset_toolbox_zooniverse.json were removed from the repo
+## (see "delete old scripts" commit) -- this call has no function to run and
+## no file to read. Needs a decision on where the replacement/equivalent
+## lives before this block can work again.
 category_colors <- get.category.colors(
   json_path = file.path(ROV_input, "labelset_toolbox_zooniverse.json"),
   code_map = category_codes,
@@ -463,10 +469,17 @@ ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay_combine
 
 
 ## visualize abundances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## NOTE: ROV_invert_abundance.csv doesn't exist yet -- new VIAME-derived
-## abundance data is forthcoming (wrangle_ROV_abundance_data.R will need to
-## be re-run once it lands); this block will error out until then, so it's
-## placed last rather than in startup
+## NOTE (updated 2026-07-30): the VIAME-derived abundance data mentioned below
+## as "forthcoming" has landed, but under a different name/shape than this
+## block expects -- results/ROV/abundance/HSIL_viame_abundance_corrected_
+## summed.csv (24 rows, one per site/transect/season/depth, full descriptive
+## species column names -- see build_HSIL_viame_abundance_corrected.R), not
+## ROV_invert_abundance.csv (which was never produced -- wrangle_ROV_
+## abundance_data.R's own source file, data/ROV/ROV_VIAME_abundance_data.csv,
+## doesn't exist either). visualize.abundance.pairs() is also gone (defined
+## in the deleted code/analyze_functions.R). This block needs to be rewired
+## to the new file/columns rather than just a path fix -- flagging rather
+## than guessing at the intended column mapping.
 ROV_abundance <- read_csv(file.path(ROV_output, "ROV_invert_abundance.csv"))
 
 visualize.abundance.pairs(x_axis = ROV_abundance,

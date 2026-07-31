@@ -34,14 +34,13 @@ getwd()
 
 ## relative file paths
 ROV_input <- "data/ROV"
-ROV_output <- "results/ROV"
+ROV_output <- "results/ROV/percent_cover"
 code <- "code"
 figs <- "figs"
 
 
 ## source functions
 source(file.path(code, "wrangle_data_functions.R"))
-source(file.path(code, "analyze_functions.R"))
 
 
 ## read ROV data

@@ -1,6 +1,13 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## wrangle data for ROV-diver comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##
+## SUPERSEDED as of 2026-07-30: this script's source file, data/ROV/ROV_
+## VIAME_abundance_data.csv, no longer exists in the repo, so it cannot
+## currently run regardless of the path fixes below. It's been replaced by
+## the annotate_viame_detections.R / build_HSIL_viame_abundance_corrected.R
+## pipeline. Ask before deleting this file outright -- keeping it only for
+## reference until confirmed no longer needed.
 
 
 
@@ -23,7 +30,7 @@ getwd()
 
 ## relative file paths
 ROV_input <- "data/ROV"
-ROV_output <- "results/ROV"
+ROV_output <- "results/ROV/abundance"
 code <- "code"
 diver_output <- "results/diver"
 

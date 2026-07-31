@@ -44,7 +44,7 @@ official <- get.official.photos(
 )
 
 process.transect(
-  json_path = file.path(ROV_input, "VIAME_raw_export", "2024_10_08_Centennial_T1_cropped.json"),
+  json_path = file.path(ROV_input, "VIAME_JSON_export_abundances", "2024_10_08_Centennial_T1_cropped.json"),
   transect_dir = file.path(flights_root, "2024/2024_10_08_diver-ROV_Centennial_Park/downward/photos/transects/T1_deep"),
   official_photos = official$Name
 )
