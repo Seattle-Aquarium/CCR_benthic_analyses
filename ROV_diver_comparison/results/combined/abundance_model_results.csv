@@ -1,0 +1,13 @@
+"taxon","converged","note","estimate_lograte","se","z_value","p_value","rate_ratio_ROV_vs_diver"
+"ochre_mottled_star",TRUE,NA,0.161641784128571,0.120691281064058,1.33929959731539,0.180473159794351,1.17543910495335
+"cancer_crab",FALSE,"Model failed to converge with max|grad| = 0.0303542 (tol = 0.002, component 1); unable to evaluate scaled gradient; Model failed to converge: degenerate  Hessian with 1 negative eigenvalues",0.384644244455542,0.408876838558479,0.940733756922082,0.346841315304876,1.46909159098572
+"burrowing_sea_cucumber",FALSE,"Model failed to converge with max|grad| = 0.00424687 (tol = 0.002, component 1); Model failed to converge with max|grad| = 0.00486172 (tol = 0.002, component 1)",0.18586194096514,0.0144361337076926,12.8747727562332,6.24225306895898e-38,1.20425599048059
+"kelp_crab",TRUE,NA,0.163771191910479,0.373560495985932,0.438406077918492,0.661091941313459,1.1779447609655
+"leather_star",TRUE,NA,0.158269525392167,0.265975328700916,0.595053406514024,0.551807772330735,1.17148189627847
+"plumose_anemone",TRUE,NA,0.146016206540432,0.348220298312009,0.41932135274205,0.674981293342543,1.15721494234958
+"green_white_urchin",FALSE,"Model is nearly unidentifiable: large eigenvalue ratio
+ - Rescale variables?; unable to evaluate scaled gradient; Model failed to converge: degenerate  Hessian with 2 negative eigenvalues; Model is nearly unidentifiable: large eigenvalue ratio
+ - Rescale variables?",0.255185869138516,0.822958393940218,0.310083560745665,0.756497413183596,1.29070150015504
+"california_sea_cucumber",TRUE,NA,0.340259619796462,0.321916357521345,1.05698145448822,0.290520051431827,1.40531239012364
+"blood_star",FALSE,"iteration limit reached",-0.287689453151326,0.440457740315216,-0.65316017138316,0.513653024076923,0.749994464495769
+"large_anemone",TRUE,NA,0.117422324771065,0.756240777457194,0.155271083325987,0.8766076112762,1.12459427343341
