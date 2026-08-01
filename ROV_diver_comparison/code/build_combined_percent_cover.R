@@ -1,16 +1,16 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## build combined ROV-diver percent-cover data, ready for models.Rmd ~~~~~~~~~~~
+## build combined ROV-diver percent-cover data, ready for percent-cover_models.R
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##
 ## Combines diver_UPC_percentage.csv and HSIL_percent-cover_transect-averaged.csv
 ## (the photo-averaged ROV percent-cover -- one row per transect, matching the
 ## diver's one-UPC-summary-per-transect grain) into one long-format table
 ## (site, transect, season, depth, type), restricted to the 8 cover categories
-## models.Rmd already crosswalks between the two protocols. This replaces the
-## percent-cover half of the data-assembly steps that used to live inline in
-## models.Rmd's "Set up data" chunk.
+## percent-cover_models.R crosswalks between the two protocols. This replaces
+## the percent-cover half of the data-assembly steps that used to live inline
+## in that script's "Set up data" step.
 ##
-## Category crosswalk (diver name = ROV name), ported as-is from models.Rmd:
+## Category crosswalk (diver name = ROV name), ported as-is from percent-cover_models.R:
 ##   cover_red_algae             = combined_red_algae
 ##   combined_green_algae        = green_algae_ulva
 ##   cover_crustose_coralline    = red_algae_cca
@@ -25,14 +25,15 @@
 ## HSIL_percent-cover_transect-averaged.csv) and are left as-is.
 ##
 ## "n" (the percent-cover sample-size denominator, needed for binomial/beta-
-## binomial models in models.Rmd): divers record a fixed n = 30 (one point
-## every meter along the 30m tape). ROV n is the total number of classified
-## percent-cover points across all photos in a transect (up to 50 points per
-## photo, per HSIL_points_photo-level.csv), summed here from that file --
-## this replaces models.Rmd's equivalent rowwise()/list()/unlist() chunk with
-## a plain group_by() %>% summarise(sum(...)), and sums by explicit point-
-## category column name rather than column position (22:51), since position-
-## based indexing silently breaks if that file's column order ever changes.
+## binomial models in percent-cover_models.R): divers record a fixed n = 30
+## (one point every meter along the 30m tape). ROV n is the total number of
+## classified percent-cover points across all photos in a transect (up to 50
+## points per photo, per HSIL_points_photo-level.csv), summed here from that
+## file -- this replaces percent-cover_models.R's equivalent rowwise()/
+## list()/unlist() step with a plain group_by() %>% summarise(sum(...)), and
+## sums by explicit point-category column name rather than column position
+## (22:51), since position-based indexing silently breaks if that file's
+## column order ever changes.
 ##
 ## Output:
 ##   results/combined/ROV_diver_percent_cover_combined.csv -- one row per
