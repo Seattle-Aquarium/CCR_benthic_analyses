@@ -1,5 +1,5 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## build combined ROV-diver abundance data, ready for models.Rmd ~~~~~~~~~~~~~~~
+## build combined ROV-diver abundance data, ready for abundance_models.R ~~~~~~~
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##
 ## Combines diver_invert_abundance.csv and HSIL_viame_abundance_corrected_
@@ -7,7 +7,7 @@
 ## restricted to the 10 taxa recorded by BOTH methods (see tab:overlap_taxa --
 ## clam_siphon excluded, since diver count = 0 across all 24 transects). This
 ## replaces the abundance half of the data-assembly steps that used to live
-## inline in models.Rmd's "Set up data" chunk, which pointed at
+## inline in abundance_models.R's "Set up data" step, which pointed at
 ## results/HSIL_abundances_averaged.csv -- a file that no longer exists
 ## (superseded by HSIL_viame_abundance_corrected_summed.csv, see
 ## build_HSIL_viame_abundance_corrected.R).
@@ -17,11 +17,11 @@
 ##     transect x method (48 rows: 24 transects x 2 methods), with
 ##     transect_id identifying the 12 physical transect locations (site x
 ##     transect number, collapsed across season) for use as the (1|transect_id)
-##     random-effect grouping variable in models.Rmd, and key -- a fully
-##     unique site/transect/season identifier (e.g. "CP_1_summer") shared by
-##     the diver and ROV rows for that same sampling event, distinguishing
-##     e.g. Centennial Park T1 summer from Centennial Park T1 winter (see
-##     add.key() in wrangle_data_functions.R).
+##     random-effect grouping variable in abundance_models.R, and key -- a
+##     fully unique site/transect/season identifier (e.g. "CP_1_summer")
+##     shared by the diver and ROV rows for that same sampling event,
+##     distinguishing e.g. Centennial Park T1 summer from Centennial Park T1
+##     winter (see add.key() in wrangle_data_functions.R).
 
 
 
