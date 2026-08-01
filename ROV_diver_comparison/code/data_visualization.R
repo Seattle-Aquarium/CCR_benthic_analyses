@@ -66,22 +66,17 @@ ROV_percent_cover_photo_level <- read_csv(file.path(ROV_output, "HSIL_percent-co
 combined_percent_cover <- read_csv(file.path("results/combined", "ROV_diver_percent_cover_combined.csv"),
                                    show_col_types = FALSE)
 
-## panel order: the 3 algae categories first, in this fixed order, followed
-## by the 5 substrate categories ordered by diver mean percent-cover,
-## highest to lowest (computed from the data, not hardcoded, so this stays
-## correct if the underlying values ever change)
-algae_categories <- c("cover_red_algae", "combined_green_algae", "cover_crustose_coralline")
-substrate_categories <- c("combined_substrate_boulder", "substrate_rock_.15.25cm.wa.",
-                          "combined_substrate_pebble", "substrate_sand", "substrate_shell_hash")
-
-substrate_order <- combined_percent_cover %>%
-  filter(type == "diver") %>%
-  summarise(across(all_of(substrate_categories), mean)) %>%
-  pivot_longer(everything(), names_to = "category", values_to = "diver_mean") %>%
-  arrange(desc(diver_mean)) %>%
-  pull(category)
-
-percent_cover_categories <- c(algae_categories, substrate_order)
+## panel order: fixed, per explicit request -- red algae, green algae, CCA,
+## then substrate boulder, rock (15-25cm/"cobble"), pebble, shell hash, sand.
+## Note this is NOT the "substrate ordered by diver proportion, highest to
+## lowest" rule used in the previous version of this figure (that order was
+## boulder, pebble, sand, shell hash, rock) -- flagging the difference here
+## in case the change in relative substrate order wasn't intentional.
+percent_cover_categories <- c(
+  "cover_red_algae", "combined_green_algae", "cover_crustose_coralline",
+  "combined_substrate_boulder", "substrate_rock_.15.25cm.wa.",
+  "combined_substrate_pebble", "substrate_shell_hash", "substrate_sand"
+)
 
 ## one color per category: red/green reserved for the two algae categories
 ## they name, the rest hand-picked to avoid competing with that red/green
@@ -100,11 +95,19 @@ percent_cover_colors <- c(
   substrate_shell_hash          = "#C7BFC2"   # pale gray
 )
 
-## strip-label-only rename: the on-disk column name for "rock, 15-25cm" ends
-## up as substrate_rock_.15.25cm.wa. after base R's read.csv() sanitizes the
-## original "substrate_rock_(15-25cm-wa)" header -- not something to show
-## verbatim on a figure
-percent_cover_labels <- c("substrate_rock_.15.25cm.wa." = "substrate_rock_15-25cm")
+## strip-label-only renames -- short display names, per explicit request;
+## the underlying column names (and therefore color mapping / data / models
+## elsewhere in the pipeline) are untouched
+percent_cover_labels <- c(
+  cover_red_algae               = "red_algae",
+  combined_green_algae          = "green_algae",
+  cover_crustose_coralline      = "crustose_coralline",
+  combined_substrate_boulder    = "substrate_boulder",
+  "substrate_rock_.15.25cm.wa." = "substrate_rock",
+  combined_substrate_pebble     = "substrate_pebble",
+  substrate_shell_hash          = "substrate_shell_hash",
+  substrate_sand                = "substrate_sand"
+)
 
 
 ## single-category example: combined red algae
@@ -114,7 +117,7 @@ red_algae_plot <- visualize.head.to.head(
   data = filter(percent_cover_pairs_data, category == "cover_red_algae"),
   colors = percent_cover_colors["cover_red_algae"]
 ) +
-  labs(title = "cover_red_algae")
+  labs(title = "red_algae")
 red_algae_plot
 
 dir.create(file.path(figs, "percent-cover"), showWarnings = FALSE, recursive = TRUE)
