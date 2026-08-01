@@ -16,102 +16,168 @@ my.theme = theme(panel.grid.major = element_blank(),
                  legend.text=element_text(size=15))
 
 
-## function to visualize diffs between ROV - diver abundance data
-visualize.abundance.pairs <- function(x_axis, y_axis, colname, axis_limit = 10,
-                            x_label = deparse(substitute(x_axis)),
-                            y_label = deparse(substitute(y_axis))) {
-
-  combined_df <- data.frame(
-    x = x_axis[[colname]],
-    y = y_axis[[colname]]
-  )
-
-  ggplot(combined_df, aes(x = x, y = y)) +
-    geom_point(color = "black", size=2) +
-    geom_abline(slope = 1, intercept = 0, color = "gray40", linetype = "solid") +
-    coord_fixed(ratio = 1, xlim = c(0, axis_limit), ylim = c(0, axis_limit)) +
-    labs(x = x_label, y = y_label, title = colname) +
-    my.theme
-}
-
-
-## build the long-form ROV-diver head-to-head comparison data ~~~~~~~~~~~~~~~~~
-## `pairs` is a data frame with one row per head-to-head comparison (see
-## head_to_head_pairs in data_visualization.R), giving the display category
-## label, the matching ROV column name, and the matching diver column name.
-## Each pair is joined on site/transect/season independently (rather than one
-## big join across all pairs at once) so that columns which happen to share a
-## name across the ROV and diver dataframes -- e.g. both have their own
-## "combined_red_algae" -- never collide or get silently suffixed.
-## `rov_scale` rescales the ROV values (stored as 0-1 proportions) up to the
-## same 0-100 percentage scale as the diver UPC data, so the two axes and the
-## 1:1 reference line are directly comparable.
-build.head.to.head.data <- function(rov_df, diver_df, pairs, rov_scale = 100) {
-  purrr::map_dfr(seq_len(nrow(pairs)), function(i) {
-    rov_slim <- rov_df %>%
-      select(site, transect, season, y = all_of(pairs$rov_col[i])) %>%
-      mutate(y = y * rov_scale)
-    diver_slim <- diver_df %>%
-      select(site, transect, season, x = all_of(pairs$diver_col[i]))
-
-    inner_join(diver_slim, rov_slim, by = c("site", "transect", "season")) %>%
-      mutate(category = pairs$category[i], .before = 1)
+## build the long-form ROV-diver abundance head-to-head comparison data, from
+## results/combined/ROV_diver_abundance_combined.csv (one row per transect x
+## method, "key" uniquely identifying each of the 24 site/transect/season
+## sampling events -- see build_combined_abundance.R). Reshapes into one row
+## per key x taxon, joining that transect's diver count (x) against its ROV
+## count (y) by key, for each taxon in `taxa`
+build.abundance.pairs.data <- function(combined_df, taxa) {
+  purrr::map_dfr(taxa, function(tx) {
+    diver_slim <- combined_df %>% filter(type == "diver") %>% select(key, x = all_of(tx))
+    rov_slim <- combined_df %>% filter(type == "ROV") %>% select(key, y = all_of(tx))
+    inner_join(diver_slim, rov_slim, by = "key") %>%
+      mutate(category = tx, .before = 1)
   })
 }
 
 
-## read Zooniverse labelset colors, keyed by short_label_code, as a numeric
-## RGB matrix (0-255)
-get.zooniverse.rgb <- function(json_path) {
-  labelset <- jsonlite::fromJSON(json_path)
-  rgb_mat <- do.call(rbind, labelset$color)[, 1:3, drop = FALSE]
-  rownames(rgb_mat) <- labelset$short_label_code
-  rgb_mat
+## visualize ROV vs. diver abundance head-to-head comparisons (one point per
+## site/transect/season, faceted by taxon). Unlike visualize.head.to.head()
+## (percent-cover, one shared 0-100 scale across every category), abundance
+## counts span wildly different ranges taxon to taxon -- ochre/mottled star
+## reaches the tens to hundreds, several others rarely exceed single digits
+## -- so each facet gets its own free x/y scale, anchored at 0, rather than
+## one shared axis that would flatten the rarer taxa unreadably close to the
+## origin. coord_fixed() can't be combined with facet_wrap(scales = "free")
+## in current ggplot2 (raises an error), so a true 1:1 diagonal is achieved
+## instead by forcing each facet's x and y ranges to match one another: an
+## invisible geom_blank() point is injected at (panel_max, panel_max) for
+## every taxon, which extends that facet's own free x/y auto-range to
+## exactly the same upper bound in both directions (limits = c(0, NA) below
+## anchors the lower bound at 0 the same way), then theme(aspect.ratio = 1)
+## draws every panel as a literal square -- matched data range + square
+## panel reproduces a true 45-degree reference line without coord_fixed().
+## Facet strips are enlarged to double as each panel's title, so the
+## color-by-category legend (redundant once every panel is already labeled)
+## is dropped entirely. Facets are ordered by total abundance (summed diver
+## + ROV counts across all 24 transects), most abundant taxon first, least
+## abundant last. The 1:1 reference line is a subtle gray dashed line,
+## deliberately distinct from the solid black axis lines (my.theme) so it
+## reads as a background reference rather than another data series.
+## `labels` optionally renames strip text only (e.g. shortening a taxon name
+## that would otherwise overflow its panel at this font size) -- a named
+## vector, category -> display text; the underlying `category` values (and
+## therefore color mapping / facet order) are untouched. Every panel also
+## gets a "(a)", "(b)", ... tag prepended on its own line above the taxon
+## name, in the same most-to-least-abundant order as the panels themselves,
+## so up to 26 taxa could be tagged this way before running out of letters
+## (only 10 in use here). The letter itself is bold, its surrounding
+## parentheses are not -- ggtext::element_markdown() (rather than plain
+## element_text()) renders the "(**a**)" markdown so those two weights can
+## coexist in one strip label; ggplot centers multi-line strip text by
+## default, so the tag lands centered above the name with no extra
+## positioning code
+visualize.abundance.pairs <- function(data, colors, ncol = 4, labels = NULL,
+                                      x_label = "Diver count",
+                                      y_label = "ROV count") {
+  category_order <- data %>%
+    group_by(category) %>%
+    summarise(total = sum(x) + sum(y), .groups = "drop") %>%
+    arrange(desc(total)) %>%
+    pull(category)
+
+  data <- data %>% mutate(category = factor(category, levels = category_order))
+
+  range_anchors <- data %>%
+    group_by(category) %>%
+    summarise(panel_max = max(c(x, y), na.rm = TRUE) * 1.05, .groups = "drop") %>%
+    mutate(x = panel_max, y = panel_max)
+
+  ## `labels` is allowed to be a partial rename map (as used here, renaming
+  ## only the taxa whose default names overflow their panel) -- missing
+  ## categories are backfilled with their own name (identity) before the
+  ## panel-letter tag is prepended, so as_labeller() never sees an NA
+  display_names <- setNames(category_order, category_order)
+  if (!is.null(labels)) display_names[names(labels)] <- labels
+  panel_tags <- paste0("(**", letters[seq_along(category_order)], "**)")
+  full_labels <- setNames(paste0(panel_tags, "\n", display_names[category_order]), category_order)
+  strip_labeller <- ggplot2::as_labeller(full_labels)
+
+  ggplot(data, aes(x = x, y = y, color = category)) +
+    geom_abline(slope = 1, intercept = 0, color = "grey50", linetype = "dashed", linewidth = 0.6) +
+    geom_point(size = 2.6) +
+    geom_blank(data = range_anchors, aes(x = x, y = y)) +
+    scale_x_continuous(limits = c(0, NA)) +
+    scale_y_continuous(limits = c(0, NA)) +
+    scale_color_manual(values = colors) +
+    facet_wrap(~ category, ncol = ncol, scales = "free", labeller = strip_labeller) +
+    guides(color = "none") +
+    labs(x = x_label, y = y_label) +
+    my.theme +
+    theme(strip.text = ggtext::element_markdown(size = 20, lineheight = 1.1),
+          axis.title.x = element_text(size = 25),
+          axis.title.y = element_text(size = 25),
+          axis.text = element_text(size = 16),
+          aspect.ratio = 1)
 }
 
 
-## build a hex color lookup for our head-to-head categories from the
-## Zooniverse labelset. Categories that map onto a single Zooniverse code
-## (`code_map`, a named vector of category -> short_label_code) get that
-## code's color directly. Categories built by combining several ROV columns
-## with no single Zooniverse code of their own (`combo_map`, a named list of
-## category -> character vector of short_label_codes) get the average RGB of
-## their constituent codes -- a best guess at a representative color, not an
-## authoritative one.
-get.category.colors <- function(json_path, code_map, combo_map = list()) {
-  rgb_mat <- get.zooniverse.rgb(json_path)
-
-  direct <- setNames(
-    rgb(rgb_mat[code_map, 1], rgb_mat[code_map, 2], rgb_mat[code_map, 3],
-        maxColorValue = 255),
-    names(code_map)
-  )
-
-  combined <- vapply(combo_map, function(codes) {
-    avg <- colMeans(rgb_mat[codes, , drop = FALSE])
-    rgb(avg[1], avg[2], avg[3], maxColorValue = 255)
-  }, character(1))
-
-  c(direct, combined)
+## build the long-form ROV-diver percent-cover head-to-head comparison data,
+## from results/combined/ROV_diver_percent_cover_combined.csv (one row per
+## transect x method, "key" uniquely identifying each of the 24 site/
+## transect/season sampling events -- see build_combined_percent_cover.R).
+## Reshapes into one row per key x category, joining that transect's diver
+## proportion (x) against its ROV proportion (y) by key, for each category in
+## `categories`, rescaling both from 0-1 up to 0-100 (%) for display. This
+## replaces the older build.head.to.head.data(), which independently re-
+## derived the same 8-category crosswalk straight from the raw ROV/diver
+## files rather than reusing the one already established for modeling in
+## build_combined_percent_cover.R -- two parallel copies of the same
+## crosswalk were an unnecessary drift risk
+build.percent.cover.pairs.data <- function(combined_df, categories) {
+  purrr::map_dfr(categories, function(cat) {
+    diver_slim <- combined_df %>% filter(type == "diver") %>% select(key, x = all_of(cat)) %>% mutate(x = x * 100)
+    rov_slim <- combined_df %>% filter(type == "ROV") %>% select(key, y = all_of(cat)) %>% mutate(y = y * 100)
+    inner_join(diver_slim, rov_slim, by = "key") %>%
+      mutate(category = cat, .before = 1)
+  })
 }
 
 
 ## visualize ROV vs. diver head-to-head percent-cover comparisons (one point
 ## per site/transect/season, faceted by category when more than one category
-## is present in `data`)
-visualize.head.to.head <- function(data, colors, axis_limit = 100,
-                                   x_label = "diver UPC percent-cover",
-                                   y_label = "ROV percent-cover") {
+## is present in `data`). Unlike visualize.abundance.pairs(), axes are fixed
+## (shared 0-100% range and a true coord_fixed() 1:1 aspect across every
+## panel, not free per panel) -- percent-cover is already a common 0-100%
+## unit across categories, so one shared scale keeps categories directly
+## comparable at a glance, at the cost of making the rarest categories look
+## small near the origin. `category_order` sets both the left-to-right/top-
+## to-bottom panel order and the "(a)", "(b)", ... tag sequence (see
+## visualize.abundance.pairs() for the tag/parenthesis markdown approach and
+## why letters -- not just the color -- are what makes the legend
+## unnecessary); defaults to whatever order `data$category` is already in if
+## not supplied. `labels` optionally renames strip text only, same partial-
+## rename-map behavior as visualize.abundance.pairs(). The 1:1 reference
+## line and axis/strip text sizing also match the abundance figure
+visualize.head.to.head <- function(data, colors, category_order = NULL, labels = NULL,
+                                   axis_limit = 100,
+                                   x_label = "Diver percent-cover (%)",
+                                   y_label = "ROV percent-cover (%)") {
+  if (is.null(category_order)) category_order <- unique(data$category)
+  data <- data %>% mutate(category = factor(category, levels = category_order))
+
   p <- ggplot(data, aes(x = x, y = y, color = category)) +
-    geom_point(size = 2) +
-    geom_abline(slope = 1, intercept = 0, color = "black") +
+    geom_abline(slope = 1, intercept = 0, color = "grey50", linetype = "dashed", linewidth = 0.6) +
+    geom_point(size = 2.6) +
     coord_fixed(ratio = 1, xlim = c(0, axis_limit), ylim = c(0, axis_limit)) +
     scale_color_manual(values = colors) +
-    labs(x = x_label, y = y_label, color = "category") +
-    my.theme
+    labs(x = x_label, y = y_label) +
+    my.theme +
+    theme(axis.title.x = element_text(size = 25),
+          axis.title.y = element_text(size = 25),
+          axis.text = element_text(size = 16))
 
-  if (length(unique(data$category)) > 1) {
-    p <- p + facet_wrap(~ category) + guides(color = "none")
+  if (length(category_order) > 1) {
+    display_names <- setNames(category_order, category_order)
+    if (!is.null(labels)) display_names[names(labels)] <- labels
+    panel_tags <- paste0("(**", letters[seq_along(category_order)], "**)")
+    full_labels <- setNames(paste0(panel_tags, "\n", display_names[category_order]), category_order)
+
+    p <- p +
+      facet_wrap(~ category, ncol = 4, labeller = ggplot2::as_labeller(full_labels)) +
+      guides(color = "none") +
+      theme(strip.text = ggtext::element_markdown(size = 20, lineheight = 1.1))
   }
 
   p

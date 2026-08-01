@@ -58,85 +58,105 @@ ROV_percent_cover_photo_level <- read_csv(file.path(ROV_output, "HSIL_percent-co
 
 ## ROV-diver percent-cover head-to-head comparisons ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## per github.com/Seattle-Aquarium/CCR_benthic_analyses/issues/7, the eight
-## focal category pairs of interest, and their approximate match-ups
-head_to_head_pairs <- tribble(
-  ~category,            ~rov_col,              ~diver_col,
-  "combined_red_algae",  "combined_red_algae",  "cover_red_algae",
-  "green_algae_ulva",    "green_algae_ulva",    "combined_green_algae",
-  "red_algae_cca",       "red_algae_cca",       "cover_crustose_coralline",
-  "boulder",             "boulder",             "combined_substrate_boulder",
-  "cobble",              "cobble",              "substrate_rock_(15-25cm-wa)",
-  "pebble",              "pebble",              "combined_substrate_pebble",
-  "sand_fine_shell",     "sand_fine_shell",     "substrate_sand",
-  "shell_hash",          "shell_hash",          "substrate_shell_hash"
+## focal category pairs of interest. Data now comes from
+## results/combined/ROV_diver_percent_cover_combined.csv (the same combined
+## file percent-cover_models.R models against), rather than independently
+## re-deriving the crosswalk from the raw ROV/diver files -- see
+## build.percent.cover.pairs.data() for why.
+combined_percent_cover <- read_csv(file.path("results/combined", "ROV_diver_percent_cover_combined.csv"),
+                                   show_col_types = FALSE)
+
+## panel order: the 3 algae categories first, in this fixed order, followed
+## by the 5 substrate categories ordered by diver mean percent-cover,
+## highest to lowest (computed from the data, not hardcoded, so this stays
+## correct if the underlying values ever change)
+algae_categories <- c("cover_red_algae", "combined_green_algae", "cover_crustose_coralline")
+substrate_categories <- c("combined_substrate_boulder", "substrate_rock_.15.25cm.wa.",
+                          "combined_substrate_pebble", "substrate_sand", "substrate_shell_hash")
+
+substrate_order <- combined_percent_cover %>%
+  filter(type == "diver") %>%
+  summarise(across(all_of(substrate_categories), mean)) %>%
+  pivot_longer(everything(), names_to = "category", values_to = "diver_mean") %>%
+  arrange(desc(diver_mean)) %>%
+  pull(category)
+
+percent_cover_categories <- c(algae_categories, substrate_order)
+
+## one color per category: red/green reserved for the two algae categories
+## they name, the rest hand-picked to avoid competing with that red/green
+## convention -- CCA a coralline pink, substrate categories an earth-tone
+## gradient (darkest = coarsest material, boulder, down to palest = shell
+## hash) since that grain-size ordering is thematically meaningful here in a
+## way it isn't for the unrelated abundance taxa
+percent_cover_colors <- c(
+  cover_red_algae              = "#A6323C",  # dark off-red
+  combined_green_algae         = "#4C9A2A",  # green
+  cover_crustose_coralline     = "#E07A9E",  # coralline pink
+  combined_substrate_boulder   = "#6B5B4F",  # dark brown-gray
+  "substrate_rock_.15.25cm.wa." = "#8C7A6B",  # medium brown-gray (cobble)
+  combined_substrate_pebble    = "#A89A8C",  # light brown-gray
+  substrate_sand                = "#D9C08C",  # sandy tan
+  substrate_shell_hash          = "#C7BFC2"   # pale gray
 )
 
-
-## join ROV + diver data by site/transect/season for each pair (24 points per
-## category: 2 sites x 6 transects x 2 seasons), rescaling ROV proportions
-## (0-1) up to the diver's 0-100 percentage scale so both axes -- and the 1:1
-## reference line -- are on the same footing
-head_to_head_data <- build.head.to.head.data(
-  rov_df = ROV_percent_cover_averaged,
-  diver_df = diver_UPC_percentage,
-  pairs = head_to_head_pairs
-)
-
-
-## pull point colors from the Zooniverse labelset (data/ROV/labelset_toolbox_
-## zooniverse.json), keyed by our category names. Categories with a direct
-## Zooniverse code use that code's color; combined_red_algae has no single
-## code of its own, so its color is our best guess -- the average RGB of its
-## four constituent ROV categories (red_algae_branching, red_algae_bushy,
-## red_algae_filamentous, red_algae_flat_leaf)
-category_codes <- c(
-  "green_algae_ulva" = "GR_ulva",
-  "red_algae_cca"    = "RE_CCA",
-  "boulder"          = "SU_bould",
-  "cobble"           = "SU_cob",
-  "pebble"           = "SU_peb",
-  "sand_fine_shell"  = "SU_sand",
-  "shell_hash"       = "SU_shell"
-)
-
-category_combos <- list(
-  combined_red_algae = c("RE_branch", "RE_bush", "RE_fil", "RE_leaf")
-)
-
-## BROKEN as of 2026-07-30, unrelated to the results/ folder reorg: both
-## get.category.colors() (defined in code/analyze_functions.R) and
-## data/ROV/labelset_toolbox_zooniverse.json were removed from the repo
-## (see "delete old scripts" commit) -- this call has no function to run and
-## no file to read. Needs a decision on where the replacement/equivalent
-## lives before this block can work again.
-category_colors <- get.category.colors(
-  json_path = file.path(ROV_input, "labelset_toolbox_zooniverse.json"),
-  code_map = category_codes,
-  combo_map = category_combos
-)
+## strip-label-only rename: the on-disk column name for "rock, 15-25cm" ends
+## up as substrate_rock_.15.25cm.wa. after base R's read.csv() sanitizes the
+## original "substrate_rock_(15-25cm-wa)" header -- not something to show
+## verbatim on a figure
+percent_cover_labels <- c("substrate_rock_.15.25cm.wa." = "substrate_rock_15-25cm")
 
 
 ## single-category example: combined red algae
+percent_cover_pairs_data <- build.percent.cover.pairs.data(combined_percent_cover, percent_cover_categories)
+
 red_algae_plot <- visualize.head.to.head(
-  data = filter(head_to_head_data, category == "combined_red_algae"),
-  colors = category_colors["combined_red_algae"]
+  data = filter(percent_cover_pairs_data, category == "cover_red_algae"),
+  colors = percent_cover_colors["cover_red_algae"]
 ) +
-  labs(title = "combined_red_algae")
+  labs(title = "cover_red_algae")
 red_algae_plot
 
-ggsave(file.path(figs, "head-to-head", "ROV_diver_combined_red_algae.png"),
+dir.create(file.path(figs, "percent-cover"), showWarnings = FALSE, recursive = TRUE)
+
+ggsave(file.path(figs, "percent-cover", "ROV_diver_combined_red_algae.png"),
       red_algae_plot, width = 6, height = 6, dpi = 300)
 
 
-## all eight focal categories, faceted within a single figure
+## all eight focal categories, faceted within a single figure -- both all-
+## season and winter-only versions, same category order/colors/formatting,
+## exported as both png and pdf
 head_to_head_plot <- visualize.head.to.head(
-  data = head_to_head_data,
-  colors = category_colors
+  data = percent_cover_pairs_data,
+  colors = percent_cover_colors,
+  category_order = percent_cover_categories,
+  labels = percent_cover_labels
 )
 head_to_head_plot
 
-ggsave(file.path(figs, "head-to-head", "ROV_diver_head_to_head.png"),
-      head_to_head_plot, width = 12, height = 10, dpi = 300)
+ggsave(file.path(figs, "percent-cover", "ROV_diver_percent_cover_head_to_head.png"),
+      head_to_head_plot, width = 16, height = 8, dpi = 300)
+ggsave(file.path(figs, "percent-cover", "ROV_diver_percent_cover_head_to_head.pdf"),
+      head_to_head_plot, width = 16, height = 8, dpi = 300)
+
+
+percent_cover_pairs_data_winter <- build.percent.cover.pairs.data(
+  combined_percent_cover %>% filter(season == "winter"),
+  percent_cover_categories
+)
+
+head_to_head_plot_winter <- visualize.head.to.head(
+  data = percent_cover_pairs_data_winter,
+  colors = percent_cover_colors,
+  category_order = percent_cover_categories,
+  labels = percent_cover_labels
+)
+head_to_head_plot_winter
+
+ggsave(file.path(figs, "percent-cover", "ROV_diver_percent_cover_head_to_head_winter.png"),
+      head_to_head_plot_winter, width = 16, height = 8, dpi = 300)
+ggsave(file.path(figs, "percent-cover", "ROV_diver_percent_cover_head_to_head_winter.pdf"),
+      head_to_head_plot_winter, width = 16, height = 8, dpi = 300)
 ## END percent-cover head-to-head comparisons ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -469,23 +489,64 @@ ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay_combine
 
 
 ## visualize abundances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## NOTE (updated 2026-07-30): the VIAME-derived abundance data mentioned below
-## as "forthcoming" has landed, but under a different name/shape than this
-## block expects -- results/ROV/abundance/HSIL_viame_abundance_corrected_
-## summed.csv (24 rows, one per site/transect/season/depth, full descriptive
-## species column names -- see build_HSIL_viame_abundance_corrected.R), not
-## ROV_invert_abundance.csv (which was never produced -- wrangle_ROV_
-## abundance_data.R's own source file, data/ROV/ROV_VIAME_abundance_data.csv,
-## doesn't exist either). visualize.abundance.pairs() is also gone (defined
-## in the deleted code/analyze_functions.R). This block needs to be rewired
-## to the new file/columns rather than just a path fix -- flagging rather
-## than guessing at the intended column mapping.
-ROV_abundance <- read_csv(file.path(ROV_output, "ROV_invert_abundance.csv"))
+## ROV vs. diver head-to-head, one panel per overlapping abundance taxon (see
+## build_combined_abundance.R for how the combined file / the 10-taxon
+## overlap list / "key" are constructed). Unlike the percent-cover head-to-
+## head figure above, each panel gets its own free axis scale (see
+## visualize.abundance.pairs() for why) and a 4-column x 3-row layout.
+combined_abundance <- read_csv(file.path("results/combined", "ROV_diver_abundance_combined.csv"))
 
-visualize.abundance.pairs(x_axis = ROV_abundance,
-                          y_axis = diver_invert_abundance,
-                          colname = "cancer_crab",
-                          axis_limit = 8)
+abundance_taxa <- c("ochre_mottled_star", "cancer_crab", "burrowing_sea_cucumber",
+                    "kelp_crab", "leather_star", "plumose_anemone",
+                    "green_white_urchin", "california_sea_cucumber",
+                    "blood_star", "large_anemone")
+
+## one color per taxon, purely to distinguish panels at a glance (no legend
+## is shown -- see visualize.abundance.pairs()); deliberately avoids red and
+## green, which are reserved for red algae / green algae throughout the rest
+## of this report's figures
+abundance_colors <- c(
+  ochre_mottled_star      = "#4E79A7",  # blue
+  cancer_crab              = "#F28E2B",  # orange
+  burrowing_sea_cucumber   = "#9C755F",  # brown
+  kelp_crab                = "#B07AA1",  # purple
+  leather_star             = "#D37295",  # rose
+  plumose_anemone          = "#76B7B2",  # teal
+  green_white_urchin       = "#59A5D8",  # sky blue
+  california_sea_cucumber  = "#EDC948",  # gold
+  blood_star                = "#BAB0AC",  # gray
+  large_anemone             = "#6B4C9A"   # violet
+)
+
+## strip-label-only renames (the underlying taxon/column names above are
+## unchanged everywhere else in the pipeline) -- burrowing_sea_cucumber and
+## california_sea_cucumber overflowed their panels at the larger strip-text
+## size, so they're shortened here to fit. orange_cucumber also matches this
+## taxon's actual Reef Check label ("Orange Cucumber" in invert_name_map,
+## wrangle_data_functions.R) more closely than the internal column name does
+abundance_labels <- c(
+  burrowing_sea_cucumber  = "orange_cucumber",
+  california_sea_cucumber = "CA_sea_cucumber"
+)
+
+abundance_pairs_data <- build.abundance.pairs.data(combined_abundance, abundance_taxa)
+
+abundance_head_to_head_plot <- visualize.abundance.pairs(
+  data = abundance_pairs_data,
+  colors = abundance_colors,
+  ncol = 4,
+  labels = abundance_labels
+)
+abundance_head_to_head_plot
+
+## polished figure -- exported as both a standard png and a high-quality pdf
+abundance_figs_dir <- file.path(figs, "abundance")
+dir.create(abundance_figs_dir, showWarnings = FALSE, recursive = TRUE)
+
+ggsave(file.path(abundance_figs_dir, "ROV_diver_abundance_head_to_head.png"),
+      abundance_head_to_head_plot, width = 16, height = 12, dpi = 300)
+ggsave(file.path(abundance_figs_dir, "ROV_diver_abundance_head_to_head.pdf"),
+      abundance_head_to_head_plot, width = 16, height = 12, dpi = 300)
 ## END abundance visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
