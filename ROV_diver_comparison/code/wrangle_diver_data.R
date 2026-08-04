@@ -135,10 +135,34 @@ UPC <- combine.cols(UPC, c("cover_red_algae",
                     "combined_red_algae")
 
 
-## combine green categories
-UPC <- combine.cols(UPC, c("cover_green_algae",
-                           "superlayer_green_algae"),
-                    "combined_green_algae")
+## combine green categories -- NOT a simple sum, unlike the other three
+## combine.cols() calls below. Cover and superlayer are two independent
+## UPC "mini-surveys" recorded at the same 30 points (cover = primary
+## substrate-level layer; superlayer = whether a >30cm canopy is ALSO
+## present, of a given algae type), not two mutually exclusive outcomes of
+## one draw -- so a point can in principle register green algae in BOTH,
+## and cover_green_algae + superlayer_green_algae can double-count it.
+## Superlayer's contribution is small for red algae (5% of the combined
+## total across all 24 core transects) but substantial for green algae
+## (38.5% of the combined total; superlayer > cover outright at Centennial
+## Park transect 5) -- so this matters in practice here, unlike for red
+## algae.
+##
+## No file in this pipeline (raw or wrangled) records which of the 30
+## points contributed to each tally, so a true per-point union (count of
+## points with green algae in cover OR superlayer, no double-counting) is
+## not reconstructable. As the best available approximation, this treats
+## cover and superlayer as independent per-point events and computes the
+## expected fraction of points registering in at least one:
+## P(cover or superlayer) = 1 - P(not cover) * P(not superlayer)
+## -- i.e. inclusion-exclusion under an assumed independence between the
+## two axes. This is a labeled statistical approximation, not a measured
+## quantity: it is bounded correctly at 100 (unlike a raw sum, which
+## cannot exceed 100 in this dataset but has no structural reason not to),
+## and reduces to approximately cover + superlayer when both are small
+## (negligible double-counting) while discounting the naive sum as either
+## grows large (more room for the same points to double-count).
+UPC$combined_green_algae <- 100 * (1 - (1 - UPC$cover_green_algae / 100) * (1 - UPC$superlayer_green_algae / 100))
 
 
 ## combine substrate boulder categories
