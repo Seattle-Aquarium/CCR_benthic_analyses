@@ -564,6 +564,37 @@ prep.kelp.standardized.data <- function(data, site_order, season_order) {
 }
 
 
+## build a single ggplot "panel" that renders a photo (jpg/png) as a raster
+## image with no axes/labels, for combining alongside a chart via patchwork
+## (e.g. visualize.kelp.standardized.overlay.stack()'s optional
+## photo_top_path/photo_bottom_path). The panel's aspect ratio is locked to
+## the source image's own width:height (theme(aspect.ratio = ...)) so
+## patchwork fits it into whatever grid cell it's given without stretching
+## or distorting the photo -- any leftover space in the cell is absorbed as
+## blank margin instead of warping the image.
+##
+## The source photo is downsampled to `max_width_px` before being handed to
+## rasterGrob(): our source camera JPEGs are ~4600px wide, but a PDF/PNG
+## rasterGrob embeds pixel data uncompressed, so passing the raw photo
+## through untouched previously bloated the output PDF to ~90MB for what
+## renders as a only few inches wide on the page. 1600px is comfortably
+## sharp at 300dpi printed at that size (1600px / 300dpi ~= 5.3in) while
+## keeping file size reasonable. Requires magick (image reading/resizing)
+## and grid (rasterGrob).
+build.photo.panel <- function(image_path, max_width_px = 1600) {
+  img <- magick::image_read(image_path)
+  info <- magick::image_info(img)
+  if (info$width > max_width_px) img <- magick::image_resize(img, paste0(max_width_px, "x"))
+
+  ggplot() +
+    annotation_custom(grid::rasterGrob(img, interpolate = TRUE),
+                      xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf) +
+    xlim(0, 1) + ylim(0, 1) +
+    theme_void() +
+    theme(aspect.ratio = info$height / info$width)
+}
+
+
 ## combine two standardized (z-score) overlay plots -- e.g. two kelp species --
 ## into a single one-column, two-row figure: a legend inset into the top
 ## panel's upper right, a single shared y-axis title, and a shared nested
@@ -573,26 +604,66 @@ prep.kelp.standardized.data <- function(data, site_order, season_order) {
 ## e.g. "*Saccharina latissima* (sugar kelp)" for italicized scientific names.
 ## Requires legendry (nested axis guide), patchwork (stacking + collecting
 ## the shared axis title), and ggtext (markdown/italic titles).
+##
+## Text sizing: axis titles at 25, matching the ROV-diver 1:1 head-to-head
+## figures (visualize.head.to.head(), visualize.abundance.pairs()). Axis
+## text, the legendry nested-axis subtitle (season/site bracket labels),
+## panel titles, and legend text share a single second-tier size (20,
+## title_size) -- deliberately louder than those two figures' own axis-text
+## size (16), since unlike them this figure has no x-axis title to anchor
+## against, so its tick/bracket labels need to read clearly next to a 25pt
+## y-axis title on their own. The color legend has no title (self-
+## explanatory "diver"/"ROV" entries); `method_labels` capitalizes "diver" to
+## "Diver" for display only, matching the "Diver"/"ROV" capitalization
+## convention used elsewhere (e.g. visualize.head.to.head()'s axis labels) --
+## the underlying "diver"/"ROV" data values (and therefore `colors`' names)
+## are untouched.
+##
+## `photo_top_path`/`photo_bottom_path` optionally add a representative photo
+## immediately to the right of each row (via build.photo.panel()), turning
+## the one-column stack into a two-column x two-row grid -- e.g. a sugar kelp
+## photo beside the top (sugar kelp) row, a sieve kelp photo beside the
+## bottom (sieve kelp) row. `main_width_ratio`/`photo_width_ratio` set the
+## relative column widths (chart column : photo column). Both paths must be
+## supplied together; if either is NULL, photos are omitted and the original
+## one-column stack is returned. The 2x2 grid is assembled as a *flat*
+## patchwork composition (plot_layout(ncol = 2, byrow = TRUE), not nested
+## `(a|b)/(c|d)` operators) -- nesting breaks axis_titles = "collect" (it
+## stopped merging the shared y-axis title across rows, leaving two
+## duplicate "standardized z-score" titles), while the flat form collects
+## correctly.
 visualize.kelp.standardized.overlay.stack <- function(data_top, data_bottom,
                                                        title_top, title_bottom,
                                                        colors,
                                                        site_order = c("Centennial_Park", "Elliott_Bay_Marina"),
                                                        season_order = c("summer", "winter"),
                                                        y_label = "standardized z-score",
-                                                       axis_text_size = 15,
-                                                       subtitle_text_size = 13,
-                                                       legend_position_inside = c(0.93, 0.90)) {
+                                                       axis_title_size = 25,
+                                                       axis_text_size = 20,
+                                                       subtitle_text_size = 20,
+                                                       title_size = 20,
+                                                       legend_text_size = 20,
+                                                       method_labels = c(diver = "Diver", ROV = "ROV"),
+                                                       legend_position_inside = c(0.93, 0.90),
+                                                       photo_top_path = NULL,
+                                                       photo_bottom_path = NULL,
+                                                       main_width_ratio = 2.75,
+                                                       photo_width_ratio = 1) {
   plot_top <- ggplot(
     prep.kelp.standardized.data(data_top, site_order, season_order),
     aes(x = x_nested, y = value, color = method, group = method)
   ) +
     geom_line() +
     geom_point(size = 2) +
-    scale_color_manual(values = colors) +
-    labs(x = NULL, y = y_label, color = "method", title = title_top) +
+    scale_color_manual(values = colors, labels = method_labels) +
+    labs(x = NULL, y = y_label, color = NULL, title = title_top) +
     my.theme +
     theme(axis.text.x = element_blank(),
-          plot.title = ggtext::element_markdown(size = 15),
+          axis.text.y = element_text(size = axis_text_size),
+          axis.title.x = element_text(size = axis_title_size),
+          axis.title.y = element_text(size = axis_title_size),
+          plot.title = ggtext::element_markdown(size = title_size),
+          legend.text = element_text(size = legend_text_size),
           legend.position = "inside",
           legend.position.inside = legend_position_inside,
           legend.background = element_blank())
@@ -603,14 +674,29 @@ visualize.kelp.standardized.overlay.stack <- function(data_top, data_bottom,
   ) +
     geom_line() +
     geom_point(size = 2) +
-    scale_color_manual(values = colors) +
+    scale_color_manual(values = colors, labels = method_labels) +
     guides(x = legendry::guide_axis_nested(key = legendry::key_range_auto(sep = "\\."))) +
-    labs(x = NULL, y = y_label, color = "method", title = title_bottom) +
+    labs(x = NULL, y = y_label, color = NULL, title = title_bottom) +
     my.theme +
     theme(axis.text.x = element_text(size = axis_text_size),
+          axis.text.y = element_text(size = axis_text_size),
+          axis.title.x = element_text(size = axis_title_size),
+          axis.title.y = element_text(size = axis_title_size),
           legendry.axis.subtitle = element_text(size = subtitle_text_size),
-          plot.title = ggtext::element_markdown(size = 15),
+          plot.title = ggtext::element_markdown(size = title_size),
           legend.position = "none")
+
+  if (!is.null(photo_top_path) && !is.null(photo_bottom_path)) {
+    photo_top <- build.photo.panel(photo_top_path)
+    photo_bottom <- build.photo.panel(photo_bottom_path)
+
+    return(
+      (plot_top + photo_top + plot_bottom + photo_bottom) +
+        patchwork::plot_layout(ncol = 2, byrow = TRUE,
+                               widths = c(main_width_ratio, photo_width_ratio),
+                               axes = "collect", axis_titles = "collect")
+    )
+  }
 
   (plot_top / plot_bottom) +
     patchwork::plot_layout(axes = "collect", axis_titles = "collect")

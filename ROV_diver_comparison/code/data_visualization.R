@@ -433,6 +433,31 @@ kelp_overlay_stack
 
 ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay.png"),
       kelp_overlay_stack, width = 12, height = 9, dpi = 300)
+ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay.pdf"),
+      kelp_overlay_stack, width = 12, height = 9, dpi = 300)
+
+
+## same figure, plus the representative sugar/sieve kelp photos
+## (figs/photos/sugar.jpg, figs/photos/sieve.jpg) inset immediately to the
+## right of each row -- saved separately from the plot-only version above
+## since adding the photo column changes the figure's overall proportions.
+## Exported as a vector PDF (photos embedded as raster within the vector
+## page, via build.photo.panel()) and a matching PNG.
+kelp_overlay_stack_with_photos <- visualize.kelp.standardized.overlay.stack(
+  data_top = kelp_sugar_comparison,
+  data_bottom = kelp_sieve_comparison,
+  title_top = sugar_kelp_name,
+  title_bottom = sieve_kelp_name,
+  colors = method_colors,
+  photo_top_path = file.path(figs, "photos", "sugar.jpg"),
+  photo_bottom_path = file.path(figs, "photos", "sieve.jpg")
+)
+kelp_overlay_stack_with_photos
+
+ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay_with_photos.pdf"),
+      kelp_overlay_stack_with_photos, width = 16, height = 9, dpi = 300)
+ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay_with_photos.png"),
+      kelp_overlay_stack_with_photos, width = 16, height = 9, dpi = 300)
 
 
 ## 2. bump/slope chart -- per-transect rank in each method, colored by site
