@@ -1,25 +1,30 @@
 """
 percent_cover_telemetry.py — Toolbox annotations → percent cover → telemetry join
-Version: 1.0
+Version: 2.0
 
 Combines two steps into one GUI tool:
-  1. Percent cover : groups a CoralNet-Toolbox annotation.csv by image (Name),
-                      counts points per Label, and divides by that image's
-                      own total point count (robust to images that don't
-                      have exactly 50 points).
+  1. Percent cover : groups one or more CoralNet-Toolbox annotation.csv files
+                      by image (Name), counts points per Label, and divides
+                      by that image's own total point count (robust to
+                      images that don't have exactly 50 points). Multiple
+                      annotation files are concatenated before grouping, so
+                      annotations from separate dives/exports can be combined
+                      into a single percent-cover table.
   2. Telemetry join: parses the YYYY_MM_DD_HH-MM-SS timestamp out of each
                       image name and left-joins the matching dive telemetry
                       row (matched on Date + Time) onto the percent-cover
-                      table. Every percent-cover row is kept even if no
+                      table. Multiple telemetry CSVs are concatenated first,
+                      so telemetry from several dives can be matched in one
+                      pass. Every percent-cover row is kept even if no
                       telemetry match is found.
 
 Usage:
     python percent_cover_telemetry.py
 
     A window opens to select:
-      1. Toolbox annotation.csv (required)
-      2. Telemetry CSV, with Date + Time columns (required)
-      3. Output folder
+      1. One or more Toolbox annotation.csv files (required)
+      2. One or more telemetry CSVs, with Date + Time columns (required)
+      3. Output CSV file
 
 Requirements:
     pip install pandas
@@ -83,43 +88,60 @@ def get_args_via_gui():
               font=("Helvetica", 13, "bold")).grid(
         row=0, column=0, columnspan=3, pady=(14, 2), padx=14)
     ttk.Label(root,
-              text="Select files, then click Run.",
+              text="Select one or more files per section, then click Run.",
               foreground="grey").grid(row=1, column=0, columnspan=3, pady=(0, 4))
     ttk.Separator(root, orient="horizontal").grid(
         row=2, column=0, columnspan=3, sticky="ew", padx=10, pady=4)
 
-    def make_file_row(row, label, filetypes, is_dir=False):
-        ttk.Label(root, text=label).grid(row=row, column=0, sticky="e", **pad)
-        var = tk.StringVar()
-        ttk.Entry(root, textvariable=var, width=55).grid(row=row, column=1, **pad)
+    def make_file_list_section(row, label, filetypes):
+        ttk.Label(root, text=label).grid(row=row, column=0, columnspan=3, sticky="w", padx=10, pady=(6, 0))
 
-        def browse():
-            if is_dir:
-                p = filedialog.askdirectory(title=f"Select {label}")
-            else:
-                p = filedialog.askopenfilename(title=f"Select {label}", filetypes=filetypes)
-            if p:
-                var.set(p)
+        list_frame = ttk.Frame(root)
+        list_frame.grid(row=row + 1, column=0, columnspan=3, padx=10, pady=(2, 0), sticky="ew")
 
-        ttk.Button(root, text="Browse...", command=browse).grid(row=row, column=2, **pad)
-        return var
+        scrollbar = ttk.Scrollbar(list_frame, orient="vertical")
+        listbox = tk.Listbox(list_frame, height=4, width=70, selectmode="extended",
+                              yscrollcommand=scrollbar.set)
+        scrollbar.config(command=listbox.yview)
+        listbox.pack(side="left", fill="x", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
-    annotation_var = make_file_row(3, "Toolbox annotation.csv:",
-                                   [("CSV files", "*.csv"), ("All files", "*.*")])
-    telemetry_var  = make_file_row(4, "Telemetry CSV:",
-                                   [("CSV files", "*.csv"), ("All files", "*.*")])
+        btn_row = ttk.Frame(root)
+        btn_row.grid(row=row + 2, column=0, columnspan=3, pady=(2, 8))
 
-    ttk.Label(root, text="Output CSV file:").grid(row=5, column=0, sticky="e", **pad)
+        def add_files():
+            paths = filedialog.askopenfilenames(title=f"Select {label}", filetypes=filetypes)
+            for p in paths:
+                if p not in listbox.get(0, "end"):
+                    listbox.insert("end", p)
+
+        def remove_selected():
+            for i in reversed(listbox.curselection()):
+                listbox.delete(i)
+
+        ttk.Button(btn_row, text="Add files...", command=add_files).pack(side="left", padx=4)
+        ttk.Button(btn_row, text="Remove selected", command=remove_selected).pack(side="left", padx=4)
+
+        return listbox
+
+    annotation_listbox = make_file_list_section(
+        3, "Toolbox annotation.csv file(s):",
+        [("CSV files", "*.csv"), ("All files", "*.*")])
+    telemetry_listbox = make_file_list_section(
+        6, "Telemetry CSV file(s):",
+        [("CSV files", "*.csv"), ("All files", "*.*")])
+
+    ttk.Label(root, text="Output CSV file:").grid(row=9, column=0, sticky="e", **pad)
     output_var = tk.StringVar()
-    ttk.Entry(root, textvariable=output_var, width=55).grid(row=5, column=1, **pad)
+    ttk.Entry(root, textvariable=output_var, width=55).grid(row=9, column=1, **pad)
 
     def browse_output():
         existing = output_var.get().strip()
         initial_dir = str(Path(existing).parent) if existing else str(Path.home())
         if existing:
             initial_file = Path(existing).name
-        elif annotation_var.get().strip():
-            initial_file = Path(annotation_var.get().strip()).stem + "_percent_cover_telemetry.csv"
+        elif annotation_listbox.size():
+            initial_file = Path(annotation_listbox.get(0)).stem + "_percent_cover_telemetry.csv"
         else:
             initial_file = "percent_cover_telemetry.csv"
         p = filedialog.asksaveasfilename(
@@ -132,36 +154,40 @@ def get_args_via_gui():
         if p:
             output_var.set(p)
 
-    ttk.Button(root, text="Browse...", command=browse_output).grid(row=5, column=2, **pad)
+    ttk.Button(root, text="Browse...", command=browse_output).grid(row=9, column=2, **pad)
 
-    # Restore last-used paths
-    annotation_var.set(cfg.get("annotation", ""))
-    telemetry_var.set(cfg.get("telemetry", ""))
+    # Restore last-used paths (only those that still exist on disk)
+    for p in cfg.get("annotation", []):
+        if Path(p).is_file():
+            annotation_listbox.insert("end", p)
+    for p in cfg.get("telemetry", []):
+        if Path(p).is_file():
+            telemetry_listbox.insert("end", p)
     output_var.set(cfg.get("output", ""))
 
     ttk.Separator(root, orient="horizontal").grid(
-        row=6, column=0, columnspan=3, sticky="ew", padx=10, pady=6)
+        row=10, column=0, columnspan=3, sticky="ew", padx=10, pady=6)
 
     btn_frame = ttk.Frame(root)
-    btn_frame.grid(row=7, column=0, columnspan=3, pady=(0, 14))
+    btn_frame.grid(row=11, column=0, columnspan=3, pady=(0, 14))
 
     def on_run():
-        annotation = annotation_var.get().strip()
-        telemetry  = telemetry_var.get().strip()
+        annotation = list(annotation_listbox.get(0, "end"))
+        telemetry  = list(telemetry_listbox.get(0, "end"))
         output     = output_var.get().strip()
 
         if not annotation:
-            messagebox.showerror("Missing input", "Please select the Toolbox annotation.csv.")
+            messagebox.showerror("Missing input", "Please add at least one Toolbox annotation.csv.")
             return
         if not telemetry:
-            messagebox.showerror("Missing input", "Please select the telemetry CSV.")
+            messagebox.showerror("Missing input", "Please add at least one telemetry CSV.")
             return
         if not output:
             messagebox.showerror("Missing input", "Please name the output CSV file.")
             return
-        for p, nm in [(annotation, "Toolbox annotation.csv"), (telemetry, "telemetry CSV")]:
+        for p in annotation + telemetry:
             if not Path(p).is_file():
-                messagebox.showerror("File not found", f"{nm} not found:\n{p}")
+                messagebox.showerror("File not found", f"File not found:\n{p}")
                 return
 
         result["annotation"] = annotation
@@ -274,18 +300,28 @@ def join_with_telemetry(percent_cover: pd.DataFrame, telemetry: pd.DataFrame) ->
 # ============================================================
 # ENTRY POINT
 # ============================================================
+def _load_and_concat_csvs(paths: list[str], what: str) -> pd.DataFrame:
+    frames = []
+    for p in paths:
+        log.info(f"Loading {what} from {p}…")
+        df = pd.read_csv(p)
+        log.info(f"  {len(df):,} rows")
+        frames.append(df)
+    return pd.concat(frames, ignore_index=True)
+
+
 def main():
     args = get_args_via_gui()
 
-    annotation_path = Path(args["annotation"])
-    telemetry_path  = Path(args["telemetry"])
-    out_path        = Path(args["output"])
+    annotation_paths = [Path(p) for p in args["annotation"]]
+    telemetry_paths  = [Path(p) for p in args["telemetry"]]
+    out_path         = Path(args["output"])
     if out_path.suffix.lower() != ".csv":
         out_path = out_path.with_suffix(".csv")
 
-    log.info(f"Loading Toolbox annotations from {annotation_path}…")
-    annotation_df = pd.read_csv(annotation_path)
-    log.info(f"Loaded {len(annotation_df):,} annotation points")
+    annotation_df = _load_and_concat_csvs(annotation_paths, "Toolbox annotations")
+    log.info(f"Loaded {len(annotation_df):,} annotation points total "
+             f"from {len(annotation_paths)} file(s)")
 
     try:
         percent_cover = annotations_to_percent_cover(annotation_df)
@@ -296,9 +332,22 @@ def main():
     log.info(f"Built percent cover for {len(percent_cover):,} images, "
              f"{len(percent_cover.columns) - 1} label columns")
 
-    log.info(f"Loading telemetry from {telemetry_path}…")
-    telemetry_df = pd.read_csv(telemetry_path)
-    log.info(f"Loaded {len(telemetry_df):,} telemetry rows")
+    if len(annotation_paths) > 1:
+        # Check whether the same image Name appears in more than one input file.
+        name_to_files = {}
+        for p in annotation_paths:
+            for name in pd.read_csv(p, usecols=["Name"])["Name"].unique():
+                name_to_files.setdefault(name, set()).add(str(p))
+        cross_file_dupes = [n for n, fs in name_to_files.items() if len(fs) > 1]
+        if cross_file_dupes:
+            log.warning(
+                f"{len(cross_file_dupes)} image name(s) appear in more than one "
+                "annotation file and were merged together in the percent-cover step."
+            )
+
+    telemetry_df = _load_and_concat_csvs(telemetry_paths, "telemetry")
+    log.info(f"Loaded {len(telemetry_df):,} telemetry rows total "
+             f"from {len(telemetry_paths)} file(s)")
 
     try:
         merged, stats = join_with_telemetry(percent_cover, telemetry_df)
