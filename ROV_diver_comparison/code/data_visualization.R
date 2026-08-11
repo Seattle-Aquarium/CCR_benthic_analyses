@@ -580,6 +580,65 @@ ggsave(file.path(abundance_figs_dir, "ROV_diver_abundance_head_to_head.pdf"),
 
 
 
+## ROV sampling schematic (methods figure) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## standalone schematic of the ROV outward-pass sampling protocol: 30 photos
+## across a 30m transect (1/m), each annotated at 50 randomly distributed
+## points, shown here as 5 illustrative "10-point" patches per photo (see
+## visualize.rov.sampling.schematic() in data_visualization_functions.R) --
+## plus that same schematic stacked directly under one real per-transect
+## proportion-across-space line (sieve kelp, Elliott Bay Marina, summer,
+## transect 4), reusing visualize.photo.level() -- the exact function/
+## styling/transect_density_colors already used by the proportion_across_space
+## figure family above -- so the schematic reads as "this is what generated
+## the line above."
+dir.create(file.path(figs, "schematic"), showWarnings = FALSE, recursive = TRUE)
+
+## exemplar/legend box left off for now (still available via show_exemplar =
+## TRUE) -- planned to come back for a larger combined figure later
+rov_schematic <- visualize.rov.sampling.schematic(show_exemplar = FALSE)
+rov_schematic
+
+ggsave(file.path(figs, "schematic", "rov_sampling_schematic.png"),
+      rov_schematic, width = 12, height = 1.1, dpi = 300)
+ggsave(file.path(figs, "schematic", "rov_sampling_schematic.pdf"),
+      rov_schematic, width = 12, height = 1.1, dpi = 300)
+
+
+## two real transects stacked above the schematic -- a shallow transect (4,
+## out pass) on top and a deep transect (3, return pass) directly above the
+## schematic -- both restricted to their first 30 photos in actual capture
+## order (see build.transect.pass.photos()), plotted by ordinal photo
+## position (1..30) rather than distance_m so they align exactly with the
+## schematic's 30 boxes. Colors follow transect_density_colors: shallow
+## transect 4 keeps its existing orange, deep transect 3 uses its existing
+## blue.
+sieve_transect4_shallow_out <- build.transect.pass.photos(
+  ROV_percent_cover_photo_level, "Elliott_Bay_Marina", "summer",
+  transect_num = 4, pass_name = "out", n_photos = 30
+)
+sieve_transect3_deep_return <- build.transect.pass.photos(
+  ROV_percent_cover_photo_level, "Elliott_Bay_Marina", "summer",
+  transect_num = 3, pass_name = "return", n_photos = 30
+)
+
+sieve_two_transect_schematic_fig <- visualize.rov.sampling.with.transects(
+  transects = list(
+    list(data = sieve_transect4_shallow_out, color = transect_density_colors[["4"]]),
+    list(data = sieve_transect3_deep_return, color = transect_density_colors[["3"]])
+  ),
+  category = "kelp_sieve"
+)
+sieve_two_transect_schematic_fig
+
+ggsave(file.path(figs, "schematic", "kelp_sieve_Elliott_Bay_Marina_transect3-deep_transect4-shallow_summer_with_schematic.png"),
+      sieve_two_transect_schematic_fig, width = 14, height = 8, dpi = 300)
+ggsave(file.path(figs, "schematic", "kelp_sieve_Elliott_Bay_Marina_transect3-deep_transect4-shallow_summer_with_schematic.pdf"),
+      sieve_two_transect_schematic_fig, width = 14, height = 8, dpi = 300)
+## END ROV sampling schematic ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## END of script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

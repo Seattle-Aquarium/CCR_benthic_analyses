@@ -17,16 +17,15 @@ my.theme = theme(panel.grid.major = element_blank(),
 
 
 ## display names for site/season, and the 2-color site palette used by the
-## site-only and site x depth figures (site mapped to color; depth handled
-## via facets there -- see visualize.nmds()'s `facets` argument)
+## site-only (+ category correlation) figure
 site_display_names <- c(Centennial_Park = "Centennial Park",
                         Elliott_Bay_Marina = "Elliott Bay Marina")
 season_display_names <- c(summer = "Summer", winter = "Winter")
 
 ## blue = Elliott Bay Marina, orange = Centennial Park -- same hue convention
 ## as transect_density_colors in data_visualization.R and
-## site_depth_season_colors below (mid-tones, since these 2 figures show site
-## alone/site x depth rather than the full site x depth x season breakdown)
+## site_depth_season_colors below (mid-tones, since this figure shows site
+## alone rather than the full site x depth x season breakdown)
 site_colors <- c("Centennial Park" = "#E6550D", "Elliott Bay Marina" = "#3182BD")
 
 
@@ -67,16 +66,11 @@ prep.nmds.data <- function(data){
 }
 
 
-## base NMDS scatter + 95% ellipses, colored by `color_by`, optionally
-## faceted via `facets` (a facet_wrap()/facet_grid() layer, e.g.
-## facet_wrap(~ depth) or facet_grid(season ~ depth)) -- the shared building
-## block behind every grouped NMDS figure, since the site-only, site x depth,
-## and single-panel site x depth x season figures differ only in which
-## columns are mapped to color/ellipse-grouping vs. facets. `group_by`
-## defaults to `color_by` (one ellipse per color, as in the first 2 figures)
-## but can be set finer -- e.g. site_depth_season -- so multiple groups
-## sharing one color (site not being color-coded) still get separate ellipses
-visualize.nmds <- function(data, color_by, colors, group_by = color_by, facets = NULL,
+## base NMDS scatter + 95% ellipses, colored by `color_by` -- used for the
+## site x depth x season figure. `group_by` defaults to `color_by` but can be
+## set finer -- e.g. site_depth_season -- so multiple groups sharing one
+## color (site not being color-coded there) still get separate ellipses
+visualize.nmds <- function(data, color_by, colors, group_by = color_by,
                           point_alpha = 0.35, point_size = 1.5,
                           ellipse_linewidth = 1, title = NULL, legend_name = color_by){
   p <- ggplot(data, aes(x = MDS1, y = MDS2, color = .data[[color_by]])) +
@@ -87,7 +81,6 @@ visualize.nmds <- function(data, color_by, colors, group_by = color_by, facets =
     xlab("NMDS1") + ylab("NMDS2") +
     my.theme
 
-  if (!is.null(facets)) p <- p + facets
   if (!is.null(title)) p <- p + ggtitle(title)
 
   p
@@ -98,10 +91,11 @@ visualize.nmds <- function(data, color_by, colors, group_by = color_by, facets =
 ## the spp_scores saved alongside the ordination in NMDS.R) on top of a
 ## faded, site-colored NMDS scatter -- shows which categories pull ordination
 ## space in which direction. `categories`, if given, subsets spp_scores down
-## to just those category names (the full 30-category set gets crowded; see
-## NMDS_category_scores.png for that unfiltered reference). Labels are placed
-## via ggrepel::geom_label_repel rather than plain geom_label so they nudge
-## apart instead of stacking illegibly on top of each other -- `seed` is
+## to just those category names (the full 30-category set gets crowded --
+## see NMDS_spp_scores_photo-level.csv for the complete, unfiltered set).
+## Labels are placed via ggrepel::geom_label_repel rather than plain
+## geom_label so they nudge apart instead of stacking illegibly on top of
+## each other -- `seed` is
 ## fixed so repositioning is reproducible across re-runs. `ellipses = TRUE`
 ## adds the same per-site 95% ellipse as visualize.nmds(), letting this
 ## double as an annotated version of the site-only figure. `legend_position`,
@@ -145,6 +139,69 @@ visualize.nmds.categories <- function(data, spp_scores, colors, categories = NUL
   }
 
   p
+}
+
+
+## manually draw a compact title + color-key/label block directly on the
+## panel at data coordinates (x, y_top) -- used to split the 8-entry
+## site_depth_season legend into two site-specific mini-legends positioned
+## under each site's own point cluster (see NMDS_visualization.R), instead of
+## one shared ggplot legend wide enough to double the figure's overall width
+## once placed next to the category-correlation figure in the report. Not a
+## real ggplot legend/guide -- just annotate() layers -- so it works with
+## legend.position = "none" and is free to sit on top of a few data points,
+## which is expected/acceptable here.
+add.legend.block <- function(p, x, y_top, title, labels, colors,
+                            line_height = 0.12, segment_length = 0.16,
+                            text_size = 3.6, title_size = 4, gap = 0.05){
+  p <- p + annotate("text", x = x, y = y_top, label = title, hjust = 0,
+                    fontface = "bold", size = title_size, color = "black")
+
+  for (i in seq_along(labels)) {
+    y <- y_top - gap - i * line_height
+    p <- p +
+      annotate("segment", x = x, xend = x + segment_length, y = y, yend = y,
+              color = colors[i], linewidth = 1.3) +
+      annotate("text", x = x + segment_length + 0.04, y = y, label = labels[i],
+              hjust = 0, size = text_size, color = "black")
+  }
+
+  p
+}
+
+
+## crop a PDF's surrounding whitespace down to its content bounding box via
+## pdfcrop (ships with MiKTeX/TeX Live). ggsave's PDF canvas is the full
+## requested width x height, but coord_fixed() -- used by every NMDS figure
+## here -- often leaves uneven blank strips on the sides (or top/bottom) once
+## the panel's forced 1:1 data aspect doesn't exactly fill that canvas;
+## pdfcrop trims all of that down to just the actual ink (axis titles
+## included), plus a small `margins` buffer (points) so text isn't clipped
+## right at the edge -- this matters when placing figures side-by-side in a
+## LaTeX report. Silently skipped, with a message, if pdfcrop isn't on the
+## PATH (e.g. no TeX distribution installed).
+crop.pdf <- function(path, margins = 3){
+  if (!nzchar(Sys.which("pdfcrop"))) {
+    message("pdfcrop not found on PATH -- left ", path, " uncropped")
+    return(invisible(NULL))
+  }
+  tmp <- paste0(path, ".cropped.pdf")
+  system2("pdfcrop", args = c("--margins", margins, shQuote(path), shQuote(tmp)),
+         stdout = FALSE, stderr = FALSE)
+  if (file.exists(tmp)) file.rename(tmp, path)
+  invisible(NULL)
+}
+
+
+## save a plot as both PNG (quick previews) and PDF (vector, for the
+## technical report -- cropped tight via crop.pdf() above) with one call --
+## mirrors save.plot() in community_analyses/code/visualization_functions.R
+save.plot <- function(plot, path, filename, width, height, dpi = 300){
+  ggsave(file.path(path, paste0(filename, ".png")), plot, width = width, height = height, dpi = dpi)
+
+  pdf_path <- file.path(path, paste0(filename, ".pdf"))
+  ggsave(pdf_path, plot, width = width, height = height)
+  crop.pdf(pdf_path)
 }
 
 

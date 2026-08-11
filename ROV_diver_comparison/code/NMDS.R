@@ -93,10 +93,6 @@ ord$stress
 png(file.path(figs, "NMDS", "NMDS_stressplot.png"), width = 6, height = 6, units = "in", res = 300)
 stressplot(ord)
 dev.off()
-
-png(file.path(figs, "NMDS", "NMDS_base_plot.png"), width = 7, height = 7, units = "in", res = 300)
-plot(ord)
-dev.off()
 ## END NMDS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
