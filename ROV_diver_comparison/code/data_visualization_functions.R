@@ -782,3 +782,320 @@ visualize.kelp.scatter <- function(data, color_by = "site",
     labs(x = x_label, y = y_label, color = color_by) +
     my.theme
 }
+
+
+## ROV sampling schematic (methods figure) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## a "filmstrip" of the 30 photos taken along one 30m outward-pass transect
+## (1 photo/meter), each drawn as a small outlined box holding 5 randomly-
+## placed smaller boxes -- each small box stands in for one group of 10 of
+## the 50 points HSIL/VIAME randomly distributes per photo for percent-cover
+## annotation (5 groups x 10 points = 50). Individual points aren't drawn
+## (illegible at filmstrip scale); a separate, larger "exemplar" panel
+## repeats the same box/patch design at a size where it's actually legible,
+## serving as a de facto legend. Meant to be stacked (via patchwork) directly
+## under a real per-transect line plot -- e.g. visualize.photo.level() for a
+## single transect -- sharing the same 0-30m x range, so the schematic reads
+## as "this is what generated the data above."
+
+## rejection-sample `n` 2D points within a box centered on the origin with
+## half-widths (half_w, half_h), keeping any pair at least `min_dist` apart
+## -- used to scatter the 5 "10-point" patches inside a photo box without
+## them overlapping each other. A patch box is small relative to a photo
+## box, so in practice all 5 fit within a handful of tries; if a point still
+## can't find a free spot after `max_tries`, its last (rejected) candidate is
+## kept anyway rather than erroring, since this is an illustrative diagram,
+## not real annotation data -- a rare, slightly-too-close pair is a
+## acceptable cosmetic compromise, not a correctness issue.
+sample.non.overlapping.points <- function(n, half_w, half_h, min_dist, max_tries = 200) {
+  pts <- matrix(nrow = 0, ncol = 2)
+  for (i in seq_len(n)) {
+    for (try in seq_len(max_tries)) {
+      candidate <- c(runif(1, -half_w, half_w), runif(1, -half_h, half_h))
+      if (nrow(pts) == 0 || all(sqrt(rowSums(sweep(pts, 2, candidate)^2)) >= min_dist)) break
+    }
+    pts <- rbind(pts, candidate)
+  }
+  pts
+}
+
+
+## build one "photo" box (outline) + its n_patches randomly placed smaller
+## "10-point" boxes, centered at (center_x, center_y). Returns a list of two
+## data frames (photo, patches), both with xmin/xmax/ymin/ymax + an id column
+## -- ready to be row-bound across many photos and drawn with a couple of
+## geom_rect() calls (one call for all photo outlines, one for all patches,
+## rather than one geom_rect() per box).
+build.photo.schematic.geometry <- function(center_x, center_y, photo_w, photo_h,
+                                           n_patches = 5, patch_frac = 0.17,
+                                           min_dist_frac = 0.3, photo_id = 1) {
+  half_w <- photo_w / 2
+  half_h <- photo_h / 2
+  patch_w <- photo_w * patch_frac
+  patch_h <- photo_h * patch_frac
+
+  photo <- data.frame(
+    photo_id = photo_id,
+    xmin = center_x - half_w, xmax = center_x + half_w,
+    ymin = center_y - half_h, ymax = center_y + half_h
+  )
+
+  ## keep patch centers within the photo box, inset by half a patch so no
+  ## patch pokes outside the photo outline
+  usable_half_w <- half_w - patch_w / 2
+  usable_half_h <- half_h - patch_h / 2
+  offsets <- sample.non.overlapping.points(
+    n_patches, usable_half_w, usable_half_h,
+    min_dist = min_dist_frac * min(photo_w, photo_h)
+  )
+
+  patches <- data.frame(
+    photo_id = photo_id,
+    patch_id = seq_len(n_patches),
+    xmin = center_x + offsets[, 1] - patch_w / 2,
+    xmax = center_x + offsets[, 1] + patch_w / 2,
+    ymin = center_y + offsets[, 2] - patch_h / 2,
+    ymax = center_y + offsets[, 2] + patch_h / 2
+  )
+
+  list(photo = photo, patches = patches)
+}
+
+
+## the 30-photo filmstrip: one photo box per meter along a `transect_length`
+## m transect (default 30, 1/m -- the ROV outward-pass protocol), each with
+## `n_patches` randomly placed "10-point" boxes per build.photo.schematic.geometry().
+## `photo_aspect` (width:height) defaults to the real ROV photo aspect ratio
+## (sugar.jpg/sieve.jpg are 4606x4030px, ~1.143:1) so the schematic boxes
+## read as photo-shaped rather than arbitrary squares. `seed` fixes the
+## patch layout so the figure is reproducible run to run (the patch
+## positions are illustrative, not real annotation data, but a figure that
+## redraws differently every render is a bad look in a manuscript).
+## coord_fixed(ratio = 1) is used deliberately: x and y are the same
+## "meters" unit, so a literal 1:1 aspect keeps each photo box visually
+## photo_aspect-shaped rather than whatever the panel's own width/height
+## happens to stretch it to -- this also naturally produces a short, wide
+## "filmstrip" panel that lines up under a same-x-range line plot.
+## `x_expand` defaults to 0 (no scale padding beyond the explicit xlim) so
+## the rendered x=0..transect_length+photo_spacing range matches *exactly*
+## when this panel is stacked under a real data panel using the same hard
+## range (see visualize.rov.sampling.with.transects()) -- otherwise the two
+## panels' default 5%-ish auto-padding would differ and photo box #1/#n
+## wouldn't land under the real data's first/last point. `plot_margin` is
+## exposed so a caller stacking this under another panel can zero out the
+## top margin to pull the boxes up flush against whatever's above.
+visualize.rov.photo.filmstrip <- function(transect_length = 30, photo_spacing = 1,
+                                          n_patches = 5, photo_aspect = 4606 / 4030,
+                                          photo_w = 0.62, seed = 42,
+                                          photo_color = "black", patch_color = "grey35",
+                                          patch_fill = "grey85",
+                                          x_label = "Distance along 30m transect",
+                                          x_breaks = c(1, seq(5, transect_length, 5)),
+                                          x_expand = 0,
+                                          axis_title_size = 25, axis_text_size = 16,
+                                          plot_margin = margin(5.5, 5.5, 5.5, 5.5)) {
+  set.seed(seed)
+  photo_h <- photo_w / photo_aspect
+  centers <- seq(photo_spacing, transect_length, by = photo_spacing)
+
+  geoms <- purrr::map(seq_along(centers), function(i) {
+    build.photo.schematic.geometry(centers[i], 0, photo_w, photo_h,
+                                   n_patches = n_patches, photo_id = i)
+  })
+  photos <- purrr::map_dfr(geoms, "photo")
+  patches <- purrr::map_dfr(geoms, "patches")
+
+  ggplot() +
+    geom_rect(data = patches, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+             fill = patch_fill, color = patch_color, linewidth = 0.3) +
+    geom_rect(data = photos, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+             fill = NA, color = photo_color, linewidth = 0.6) +
+    coord_fixed(ratio = 1, xlim = c(0, transect_length + photo_spacing), clip = "off") +
+    scale_x_continuous(breaks = x_breaks, expand = expansion(mult = x_expand)) +
+    labs(x = x_label, y = NULL) +
+    my.theme +
+    theme(axis.line.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.title.x = element_text(size = axis_title_size),
+          axis.text.x = element_text(size = axis_text_size),
+          panel.border = element_blank(),
+          plot.margin = plot_margin)
+}
+
+
+## a single, enlarged version of the same photo/patch design, meant as a
+## legend/callout explaining what the tiny filmstrip boxes represent -- e.g.
+## combined alongside visualize.rov.photo.filmstrip() via patchwork
+## (`filmstrip | exemplar`). `label` is placed below the box (via plot.title
+## on an otherwise unlabeled void panel).
+visualize.rov.photo.exemplar <- function(n_patches = 5, photo_aspect = 4606 / 4030,
+                                         photo_w = 3, seed = 1,
+                                         photo_color = "black", patch_color = "grey35",
+                                         patch_fill = "grey85",
+                                         label = "each small square =\n10 random points\n(5 x 10 = 50 pts/photo)") {
+  set.seed(seed)
+  photo_h <- photo_w / photo_aspect
+  geom <- build.photo.schematic.geometry(0, 0, photo_w, photo_h, n_patches = n_patches)
+
+  ggplot() +
+    geom_rect(data = geom$patches, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+             fill = patch_fill, color = patch_color, linewidth = 0.5) +
+    geom_rect(data = geom$photo, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+             fill = NA, color = photo_color, linewidth = 1) +
+    labs(title = label) +
+    coord_fixed(ratio = 1, clip = "off") +
+    theme_void() +
+    theme(plot.title = element_text(size = 11, hjust = 0.5, lineheight = 1.1,
+                                    margin = margin(t = 8)),
+          plot.margin = margin(t = 5, r = 10, b = 5, l = 10))
+}
+
+
+## combine the filmstrip + exemplar into one schematic figure, filmstrip on
+## the left (most of the width) and the enlarged exemplar box on the right
+## as a legend -- matching the two-part sketch this was designed from. Ready
+## to stack (via patchwork's `/`) directly under a same-x-range per-transect
+## line plot, e.g. visualize.photo.level() for a single transect.
+## `n_patches` is shared between the filmstrip and exemplar so the "5 boxes =
+## 50 points" story stays consistent between them; other filmstrip-only
+## styling args (photo_w, colors, seed, etc.) pass through via `...`.
+## `show_exemplar = FALSE` drops the legend/callout box and returns just the
+## filmstrip -- kept as a toggle (rather than deleting the exemplar code)
+## since the plan is to bring it back for a larger combined figure later.
+visualize.rov.sampling.schematic <- function(transect_length = 30, n_patches = 5,
+                                             main_width_ratio = 3.2, exemplar_width_ratio = 1,
+                                             show_exemplar = TRUE,
+                                             ...) {
+  filmstrip <- visualize.rov.photo.filmstrip(transect_length = transect_length,
+                                             n_patches = n_patches, ...)
+
+  if (!show_exemplar) return(filmstrip)
+
+  exemplar <- visualize.rov.photo.exemplar(n_patches = n_patches)
+
+  (filmstrip | exemplar) +
+    patchwork::plot_layout(widths = c(main_width_ratio, exemplar_width_ratio))
+}
+
+
+## build one transect x pass's first `n_photos` photos, in actual capture
+## order (Time), for use with visualize.rov.sampling.with.transects() below.
+## `photo_index` (1, 2, 3, ...) is what that function plots against -- *not*
+## distance_m -- because the schematic's 30 boxes represent an idealized "1
+## photo/meter" model, not these particular photos' real (noisy, unevenly-
+## spaced, sometimes direction-reversing-on-the-return-leg) GPS distances.
+## distance_m is still computed (via add.transect.distance(), grouped across
+## both passes so it stays anchored to the transect's true start) and kept
+## in the output for reference/inspection, just not used for x-position.
+build.transect.pass.photos <- function(data, site_name, season_name, transect_num, pass_name, n_photos = 30) {
+  data %>%
+    filter(site == site_name, season == season_name, transect %in% 1:6) %>%
+    add.transect.distance() %>%
+    filter(transect == transect_num, pass == pass_name) %>%
+    arrange(Time) %>%
+    mutate(photo_index = dplyr::row_number()) %>%
+    filter(photo_index <= n_photos)
+}
+
+
+## stack one or more real transects' photo-level proportion lines -- via
+## visualize.photo.level(), the same function/styling used by the
+## proportion_across_space figure family (data_visualization.R), so colors/
+## point-and-line style/theme match exactly -- directly above
+## visualize.rov.sampling.schematic(), so the schematic reads as "this is
+## what generated the lines above."
+##
+## `transects` is a list of row specs, each `list(data = <from
+## build.transect.pass.photos()>, color = <hex>)`, drawn top to bottom in the
+## order given; the *last* one sits directly above the schematic. Each row's
+## `transect` column must hold a single, constant value (one transect per
+## row) -- that value both picks the row's facet-strip label ("Transect N",
+## via visualize.photo.level()'s existing labeller) and is matched against
+## `color`.
+##
+## Alignment: every row plots `photo_index` (1..n) on x, matching the
+## schematic's box centers (also 1..transect_length) exactly by
+## construction -- photo #1 lands under box #1's center, photo #30 under box
+## #30's, with no distance-based fudging needed. All rows and the schematic
+## share the identical unpadded x range (`coord_*(xlim = c(0,
+## transect_length + photo_spacing), expand = FALSE` / `x_expand = 0`), so
+## nothing drifts out of alignment panel to panel. (An earlier distance_m-
+## based version of this figure had the real line appear to "start at zero"
+## before the first box -- that was because a transect's very first photo is
+## distance_m = 0 by definition, one full meter left of where box #1 -- at
+## x = 1 -- was centered. Indexing by ordinal photo position instead of
+## distance removes that mismatch entirely.)
+##
+## Spacing: the schematic gets a fixed absolute height (`schematic_height_in`)
+## rather than a share of the total figure height, and the seam between the
+## last data row and the schematic has both margins pulled to 0, so the
+## filmstrip sits flush against that row's x-axis line regardless of the
+## overall ggsave() height requested; default ggplot spacing is left between
+## stacked data rows themselves. `show_exemplar` is left off (FALSE) here by
+## default -- the legend/callout box isn't part of this stacked view for now
+## (still available by passing schematic_args = list(show_exemplar = TRUE)).
+##
+## Text sizing matches the ROV-diver 1:1 head-to-head figures
+## (visualize.head.to.head(), visualize.abundance.pairs()): axis titles at
+## 25, axis text at 16, strip-style "Transect N" row labels at 20.
+visualize.rov.sampling.with.transects <- function(transects, category,
+                                                   transect_length = 30, photo_spacing = 1,
+                                                   y_label = paste("proportion", gsub("_", " ", category)),
+                                                   axis_title_size = 25, axis_text_size = 16,
+                                                   strip_text_size = 20,
+                                                   y_limits = c(0, 1),
+                                                   schematic_height_in = 0.4,
+                                                   schematic_args = list()) {
+  x_range <- c(0, transect_length + photo_spacing)
+  x_breaks <- c(1, seq(5, transect_length, 5))
+
+  row_plots <- purrr::map(transects, function(tr) {
+    ## reuse visualize.photo.level()'s existing distance_m-keyed x mapping/
+    ## styling/strip-labelling machinery by handing it photo_index under the
+    ## distance_m name -- confined to this local copy, doesn't touch tr$data
+    plot_data <- tr$data %>% mutate(distance_m = photo_index)
+    transect_num <- unique(plot_data$transect)
+    stopifnot(length(transect_num) == 1)
+
+    visualize.photo.level(
+      data = plot_data,
+      category = category,
+      transect_order = transect_num,
+      colors = setNames(tr$color, transect_num),
+      ncol = 1,
+      x_label = NULL,
+      y_label = y_label,
+      strip_text_size = strip_text_size,
+      y_limits = y_limits
+    ) +
+      scale_x_continuous(breaks = x_breaks) +
+      coord_cartesian(xlim = x_range, ylim = y_limits, expand = FALSE) +
+      theme(axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.y = element_text(size = axis_title_size),
+            axis.text.y = element_text(size = axis_text_size))
+  })
+
+  ## tight seam only between the last data row and the schematic; default
+  ## spacing preserved between stacked data rows above it
+  n <- length(row_plots)
+  row_plots[[n]] <- row_plots[[n]] + theme(plot.margin = margin(t = 5.5, r = 5.5, b = 0, l = 5.5))
+
+  schematic_defaults <- list(transect_length = transect_length, photo_spacing = photo_spacing,
+                             x_label = "Distance along 30m transect", x_breaks = x_breaks,
+                             axis_title_size = axis_title_size, axis_text_size = axis_text_size,
+                             x_expand = 0, show_exemplar = FALSE,
+                             plot_margin = margin(t = 0, r = 5.5, b = 5.5, l = 5.5))
+  schematic <- do.call(visualize.rov.sampling.schematic, utils::modifyList(schematic_defaults, schematic_args))
+
+  ## flat (non-nested) stack -- required for axis_titles = "collect" to
+  ## actually collapse the repeated "proportion ..." y-axis title into one
+  ## shared label (nesting via `/`/`|` operators breaks that collection; see
+  ## visualize.kelp.standardized.overlay.stack()'s with-photos branch for the
+  ## same fix applied there)
+  patchwork::wrap_plots(c(row_plots, list(schematic)), ncol = 1) +
+    patchwork::plot_layout(heights = c(rep(grid::unit(1, "null"), n), grid::unit(schematic_height_in, "in")),
+                           axes = "collect", axis_titles = "collect")
+}
+## END ROV sampling schematic ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
