@@ -1,57 +1,77 @@
-# ROVs and scuba divers: a 1:1 methods comparison
+# ROVs and scuba divers: a paired methods comparison
 
 ## Background
-For the past several decades, scientific scuba divers have been the primary avenue for collecting abundance and percent-cover data along the seafloor (with percent-cover being a method of quantifying coverage of aggregate taxa that cannot be individually counted, such as red and green algae). 
-However, significant limitations to scuba diving exist: it is logistically very challenging, and divers can only cover relatively small areas. ROVs have traditionally been large, expensive, and used to explore deep areas of the ocean, but the latest generation of small ROVs are suited for nearshore, coastal operations. It remains unknown however how ROV-derived data compare to diver-data, thus we are uncertain how best to integrate ROV methods into the broader framework of coastal monitoring. This study was designed to gather both ROV and scuba diver data from the same survey locations on the same day, using a broadly accepted standardized diver methodology---Reef Check’s Kelp Forest Monitoring Program. 
+Scientific SCUBA divers have long been the primary means of monitoring benthic kelp forest communities, but diver-based survey capacity is inherently constrained by safety, bottom time, and the area a single dive team can realistically cover. Small, modular remotely operated vehicles (ROVs) offer a practical way to expand that capacity — extending visual access to greater depths and spatial extents while capturing standardized, georeferenced imagery that can be annotated well after the survey itself. Since 2022 the Seattle Aquarium has developed a comparatively low-cost, open-source framework for conducting benthic ROV surveys in Washington's kelp forests, but until now no systematic, quantitative comparison of ROV- and diver-derived data existed for Puget Sound kelp forests — a gap explicitly flagged by the Puget Sound Kelp Conservation and Recovery Plan workgroup as a priority next step.
+
+This repository contains the code, data, and results for a direct, paired comparison of ROV- and diver-derived data, collected from the same locations, depths, and days, at two structurally distinct sites in Elliott Bay: a soft-sediment site at **Centennial Park** and a boulder/riprap site along the **Elliott Bay Marina breakwater**. We compare (**1**) abundance of discrete macroinvertebrates and (**2**) percent-cover of macroalgae and substrate between the ROV and scientific divers following Reef Check's Kelp Forest Monitoring Program protocol, and use the ROV's much higher-resolution percent-cover data to explore patterns in benthic community structure that a diver-scale summary can't resolve.
+
+### Full technical report
+The complete write-up — methods, statistical modeling, results, discussion, and all figures/tables — lives at [`report/main/main.tex`](report/main/main.tex) (LaTeX; compile with `latexmk -pdf main.tex`, or open `main.pdf` once built). The `report/` folder is excluded from version control (`.gitignore`) because it embeds hundreds of full-resolution survey photographs; it's available to the team via the Aquarium's Dropbox. This README summarizes that report's design, pipeline, and headline results for anyone working in this repo's code/data.
 
 ## Sampling design
-- We surveyed x2 “sites" in distinct locations of Elliott Bay: one along Centennial Park, another along the Elliott Bay Marina breakwater (see "Elliott Bay Marina" and "Sirens of Spring" below, with "Sirens of Spring" part of Centennial Park, and referred to henceforth as Centennial Park). 
-- Each site has x6 “transects” (individual surveys).
-- The transects are 30m long by 2m wide, and each transect is delineated by a “transect tape” (a surveyors tape laid along the seafloor, denoting the specific area to be surveyed). 
-- All transects are parallel to shore, with x3 laid at a depth of 10m and x3 laid at a depth of 5m. 
-- The transects within a depth are laid back-to-back with a 5m spacing between each one (with 5m being required for approximate statistical independence, per the benthic ecology literature). We consider the x3 transects within a depth to be replicates. 
+- We surveyed **2 sites** in Elliott Bay: **Centennial Park** (soft-sediment; the site is also referred to as "Sirens of Spring" in some raw files) and the **Elliott Bay Marina breakwater** (boulder/riprap).
+- At each site we surveyed **6 replicate transects**: 3 at a **shallow** (5 m) depth and 3 at a **deep** (10 m) depth, laid parallel to shore and back-to-back with 5 m spacing between transects within a depth (the minimum spacing for approximate statistical independence, per the benthic ecology literature).
+- Each transect is 30 m long, delineated by a surveyor's tape laid along the seafloor; divers survey a 1 m-wide swath on each side of the tape (2 m total), and the ROV is flown at a fixed altitude of 0.8 m to generate imagery of comparable width.
+- Every one of the 12 physical transect locations (2 sites × 2 depths × 3 replicates) was surveyed **twice** — once in **summer 2024** and once in **winter 2025** — giving **24 total site × transect × season combinations** (n = 24), each surveyed by both platforms on the same day.
 
 <p align="center">
-<img width="575" height="622" alt="updated_map" src="https://github.com/user-attachments/assets/8452c796-6ef0-4bde-94ba-6784af9c8e9b" />
+<img width="575" height="622" alt="site map" src="https://github.com/user-attachments/assets/8452c796-6ef0-4bde-94ba-6784af9c8e9b" />
 </p>
 
-There are two different benthic environments captured by our two sites: soft sediment (Centennial Park) and boulder structure (Elliott Bay Marina breakwater); we know benthic community structure will differ between the two sites, and within each site based on depth. 
+<p align="center">
+<img width="700" alt="ROV sampling schematic" src="figs/schematic/rov_sampling_schematic.png" />
+</p>
 
-## Analytical priorities
-We are most interested in understanding: (**1**) how abundance and percent-cover data differ between ROVs and divers. We would secondarily be interested in seeing how the answer to the former question varies depending upon (**2**) site and (**3**) depth (if possible). (with site and depth as random effects?). 
-In terms of inference, we are not trying in trying to comprehensively make statements about the sites themselves, or the broader location (Centennial Park vs the breakwater); rather, we want to prioritize how the ROV vs diver methodologies differ.  
+The two sites capture structurally distinct benthic environments — soft sediment vs. boulder/reef structure — and we expect (and don't try to erase) real differences in community composition between sites and depths. The point of this study is not to characterize the sites themselves, but to ask how the two survey **methods** compare when pointed at the same seafloor on the same day.
 
-We want to statistically compare the differences/similarities between (1) abundances (individuals: sea stars, crabs, etc.) captured by both platforms, and (2) percent-cover (proportion data). 
-Comparing abundances should be reasonably straight forward. 
-Comparing percent-cover, however, could be more challenging; the diver gathers several data points at each meter along the 30 meter transect; 
-in contrast, the ROV gathers high-resolution photos, and we annotate x50 data points per photo. 
-With 1 photo per meter, we have 1500 percent-cover data points. 
-So, to facilitate a comparison, we have averaged the ROV percent-cover data (across photos) to a single proportion value per transect. In some cases, we have combined categories of the ROV data (e.g., as the Reef Check protocols only record a single category of "red algae," we combined our x4 distinct categories of red algae into a single, sum total "red algae" category, and averaged those values across the photos within a single transect.   
+## Field methods
+- **Divers:** Reef Check's Kelp Forest Monitoring Program protocol — a 1 m swath count of discrete macroinvertebrates on each side of the tape, plus a uniform point-contact (UPC) percent-cover survey at 30 points (one per meter) along the transect.
+- **ROV:** Blue Robotics BlueROV2, flown at 0.8 m altitude, with a GoPro HERO 12 downward-facing camera capturing 27.3 MP RAW photographs (roughly one photo per meter of forward movement, selected via an EKF-fused telemetry pipeline — DVL altitude/velocity + USBL position + IMU — to minimize photo overlap along a transect). Full hardware and telemetry-processing detail lives in the companion field methods manuscript/repo, [`CCR_ROV_survey_methods`](https://github.com/Seattle-Aquarium/CCR_ROV_survey_methods).
 
-## Data
-### Reef Check diver data
-See [wrangle_diver_data.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/wrangle_diver_data.R) and [wrangle_diver_functions.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/wrangle_data_functions.R) for the code used to process the diver data, producing data with summary values per transect (per row). 
+## Data processing pipeline
+Most longer-workflow R scripts in `code/` `source()` a companion `..._functions.R` file (not listed separately below).
 
-- [diver_algae_abundance.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/diver/diver_algae_abundance.csv)
-- [diver_invert_abundance.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/diver/diver_invert_abundance.csv)
-- [diver_UPC_percentage.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/diver/diver_UPC_percentage.csv)
+### Abundance (discrete macroinvertebrates)
+1. Diver counts are wrangled by [`wrangle_diver_data.R`](code/wrangle_diver_data.R) into [`results/diver/diver_invert_abundance.csv`](results/diver/diver_invert_abundance.csv).
+2. ROV abundance comes from manual VIAME annotations of every visible macroinvertebrate. [`annotate_viame_detections.R`](code/annotate_viame_detections.R) and [`build_HSIL_viame_abundance_corrected.R`](code/build_HSIL_viame_abundance_corrected.R) parse the raw VIAME JSON exports (`data/ROV/VIAME_JSON_export_abundances/`), resolve each detection to its true transect via a ground-truth folder crosswalk (`data/ROV/HSIL_viame_transect_ground_truth.csv` — the VIAME export's own transect ID is unreliable), and write both a QA/QC annotated-image folder and per-photo/per-transect counts to [`results/ROV/abundance/`](results/ROV/abundance/).
+3. [`build_combined_abundance.R`](code/build_combined_abundance.R) joins the two into [`results/combined/ROV_diver_abundance_combined.csv`](results/combined/ROV_diver_abundance_combined.csv) (48 rows: 24 transects × 2 methods), restricted to the 10 taxa recorded by both platforms.
+4. [`abundance_models.R`](code/abundance_models.R) fits a negative binomial GLMM (`count ~ type + site + season + depth + (1|transect_id)`) per taxon, writing results to `results/combined/abundance_model_results*.csv`.
 
-### ROV abundance data
-See [wrangle_ROV_abundance_data.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/wrangle_ROV_abundance_data.R) and [wrangle_data_functions.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/wrangle_data_functions.R) for the code used to process VIAME-derived ROV object-detection data, producing:
+### Percent-cover (macroalgae and substrate)
+1. Diver UPC data is wrangled by [`wrangle_diver_data.R`](code/wrangle_diver_data.R) into [`results/diver/diver_UPC_percentage.csv`](results/diver/diver_UPC_percentage.csv).
+2. ROV percent-cover comes from a YOLO11s-cls classification model trained and deployed in [CoralNet-Toolbox](https://github.com/Jordan-Pierce/CoralNet-Toolbox) (27 trained categories; overall test-set accuracy 99.9%), applied to 50 randomly distributed patches per photo. [`wrangle_HSIL_percent-cover_data.R`](code/wrangle_HSIL_percent-cover_data.R) processes the raw photo-level export (`data/ROV/HSIL_percent_cover.csv`, 30 percent-cover category columns) into [`results/ROV/percent_cover/`](results/ROV/percent_cover/) at photo-level, long-format, and transect-averaged resolutions.
+3. Toolbox model predictions are manually verified by trained volunteers via **Kelp Quest**, our Zooniverse citizen-science project (as of this writing: 4,111 volunteers, 582,458 classifications) — see the technical report's Methods for the full workflow.
+4. [`build_combined_percent_cover.R`](code/build_combined_percent_cover.R) crosswalks ROV and diver category names (combining/joining categories where resolution differs between platforms — see comments in that script) into [`results/combined/ROV_diver_percent_cover_combined.csv`](results/combined/ROV_diver_percent_cover_combined.csv), restricted to the 8 categories directly comparable between platforms.
+5. [`percent-cover_models.R`](code/percent-cover_models.R) fits a beta-binomial GLMM (`proportion ~ type + site + season + depth + (1|transect_id)`) per category, writing results to `results/combined/percent_cover_model_results*.csv` (all-season and winter-only refits).
 
-- [ROV_invert_abundance.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/ROV_invert_abundance.csv)
+### Community structure and full-resolution exploration
+- [`NMDS.R`](code/NMDS.R) / [`NMDS_functions.R`](code/NMDS_functions.R) run a non-metric multidimensional scaling ordination on the full photo-level percent-cover matrix (all 30 categories, n = 1,436 photos), writing to [`results/ROV/NMDS/`](results/ROV/NMDS/); [`NMDS_visualization.R`](code/NMDS_visualization.R) builds the ordination plots.
+- [`data_visualization.R`](code/data_visualization.R) generates the head-to-head, violin, z-score, correlogram, and proportion-across-space figures used in the report, written to `figs/`.
 
-(New VIAME abundance data is forthcoming; this script needs to be re-run once it lands.)
+A few earlier, exploratory scripts (`data_analyses.R`, `wrangle_ROV_abundance_data.R`, `wrangle_HSIL_viame_abundance_data.R`) remain in `code/` for reference but predate the pipeline above and are no longer part of it — see the comments at the top of each for why.
 
-### ROV percent-cover data (HSIL export)
-See [wrangle_HSIL_percent-cover_data.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/wrangle_HSIL_percent-cover_data.R) for the code used to process `HSIL_percent_cover.csv` -- the full photo-level percent-cover export (both sites, all 6 transects, both seasons), which supersedes the single-season `short_percent_t4.csv`/`short_percent_t6.csv` inputs used above. It produces:
+## Statistical approach
+- **Abundance:** negative binomial GLMM (log link), reported as **rate ratios** (ROV relative to a diver reference level).
+- **Percent-cover:** beta-binomial GLMM (logit link), reported as **odds ratios** — chosen over a standard binomial to absorb spatial autocorrelation in benthic cover within a photo/transect that a naive binomial would understate.
+- **Sugar kelp (*Saccharina*) and sieve kelp (*Agarum*):** these can't be compared in absolute units (diver density counts vs. ROV percent-cover), so we z-score each platform's series independently and use the Pearson correlation between the two as a test of agreement in *relative* pattern across transects.
+- **Community structure:** NMDS ordination (Bray-Curtis dissimilarity) on the ROV's full photo-level percent-cover data, used as a preliminary look at what the ROV's much higher sampling resolution can reveal beyond the platform head-to-head comparison.
 
-- [HSIL_percent-cover_photo-level.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_percent-cover_photo-level.csv) -- cleaned, one row per photo
-- [HSIL_percent-cover_long.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_percent-cover_long.csv) -- long format (photo x category)
-- [HSIL_percent-cover_transect-averaged.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_percent-cover_transect-averaged.csv) -- mean percent cover per site/transect/depth/season
-- [HSIL_points_photo-level.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_points_photo-level.csv), [HSIL_points_transect-sums.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_points_transect-sums.csv), [HSIL_points_transect-average.csv](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/results/ROV/HSIL_points_transect-average.csv) -- the same data expressed as point counts (each photo's cover is generated from 50 randomly distributed points), which are additive in a way percentages are not
+## Key results
+- Across all 10 overlapping macroinvertebrate taxa (2,200 total observations: 994 diver, 1,206 ROV), **no taxon showed a statistically significant abundance difference** between platforms; rate ratios ranged 0.75–1.51, clustering 1.12–1.41 among the six taxa whose models converged cleanly.
+- Rock crab was the one taxon meaningfully sensitive to a single high-density transect (Centennial Park, winter, T1: 62 diver / 130 ROV) — a density-dependent artifact discussed at length in the report, not a sign the platforms disagree systematically.
+- **Red and green algae percent-cover** showed no meaningful method effect (green: OR = 0.92, p = 0.705; red: OR = 0.73, p = 0.062).
+- **Substrate percent-cover** differed significantly for 5 of 6 categories, with the ROV consistently recording *lower* odds than divers (CCA, boulder, pebble, sand, shell hash) — a structural difference in how the two platforms sample substrate under vegetation, not a classification error. Restricting to winter (when vegetation is senesced) resolved or substantially weakened 2 of the 5 gaps.
+- ROV and diver kelp metrics were **strongly correlated in relative pattern** despite measuring fundamentally different quantities (*Saccharina*: r = 0.96; *Agarum*: r = 0.88).
+- At full resolution (1,436 photos, 71,800 percent-cover data points across 30 categories), the ROV's photograph-level data resolves spatial and depth-related structure invisible to a single transect-scale average, and an NMDS ordination cleanly separates community composition by site and, within a site, by depth (stress = 0.134).
 
-We have a started some scripts to visualize and analyze both ROV and diver data, e.g.,
+See the technical report's Results and Discussion for full detail, caveats, and next-step recommendations for tightening the ROV methodology.
 
-- [analyze.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/analyze.R)
-- [analyze_functions.R](https://github.com/Seattle-Aquarium/CCR_benthic_analyses/blob/main/ROV_diver_comparison/code/analyze_functions.R)
+## Repository structure
+```
+ROV_diver_comparison/
+├── code/     R scripts: wrangling, combining, modeling, NMDS, visualization (see Data processing pipeline above)
+├── data/     Raw diver (Reef Check) and ROV (VIAME, CoralNet-Toolbox) exports
+├── results/  Processed outputs: results/diver, results/ROV (abundance, percent_cover, NMDS), results/combined
+├── figs/     Report-ready figures generated by code/*visualization*.R
+└── report/   Full technical report source (LaTeX); not tracked in git, see above
+```
