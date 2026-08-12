@@ -1,4 +1,6 @@
-/ROV_diver_comparison/report/
+/ROV_diver_comparison/report/main/main.pdf
+# too large for GitHub (144 MB, exceeds the 100 MB push limit); see README for the Dropbox link
+/ROV_diver_comparison/report/figs/categories.png
 
 # -----------------------------------------------------------------------------
 # LaTeX build files to ignore
