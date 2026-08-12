@@ -24,6 +24,11 @@
 *.mtc0
 
 # -----------------------------------------------------------------------------
+# Machine-specific notes (local paths, not relevant to other collaborators)
+# -----------------------------------------------------------------------------
+CLAUDE_R_ENVIRONMENT.md
+
+# -----------------------------------------------------------------------------
 # Editor/IDE specific files
 # -----------------------------------------------------------------------------
 *.swp
@@ -53,4 +58,3 @@ build/
 
 data_output/patches/
 results/patches/
-/ROV_diver_comparison/report
