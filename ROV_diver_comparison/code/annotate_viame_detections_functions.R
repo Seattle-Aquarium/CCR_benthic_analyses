@@ -31,9 +31,8 @@
 ##
 ## IMPORTANT: this file's own "Transect ID" column is NOT used to pick out
 ## the transect -- confirmed 2026-07-29 it carries the same unreliable
-## VIAME-side labeling as the original HSIL_viame_export.csv (see
-## wrangle_HSIL_viame_abundance_data.R header: 31% correct against the real
-## folder structure). E.g. 13 of the 63 rows tagged "Centennial"/"T1" for
+## VIAME-side labeling as the original HSIL_viame_export.csv (only 31%
+## correct against the real folder structure). E.g. 13 of the 63 rows tagged "Centennial"/"T1" for
 ## 2024-10-08 are physically stored in the T3_deep folder, one with 3 real
 ## ochre-star detections -- not just zero-detection noise. Instead, every
 ## candidate photo (matched on Site ID + survey date only) is cross-checked

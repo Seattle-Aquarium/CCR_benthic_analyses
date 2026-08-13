@@ -46,44 +46,6 @@ dat_abundance <- dat_abundance %>% mutate(type = factor(type, levels = c("diver"
 
 
 
-## abundance visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ggplot(dat_abundance, aes(x = transect_id, y = ochre_mottled_star, col = type)) +
-  geom_point() +
-  theme(
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
-  )
-
-ggplot(dat_abundance, aes(x = transect_id, y = cancer_crab, col = type)) +
-  geom_point() +
-  theme(
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
-  )
-
-ggplot(dat_abundance, aes(x = transect_id, y = kelp_crab, col = type)) +
-  geom_point()+
-  theme(
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
-  )
-## END visualization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-## abundance models: ochre mottled star example ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ochre_mod <- glmer(ochre_mottled_star ~ type + site + season + depth + (1|transect_id),
-                   data = dat_abundance,
-               family = poisson(link = "log"))
-summary(ochre_mod)
-
-# Check nb
-ochre_mod_disp <- glmer.nb(ochre_mottled_star ~ type + site + season + depth + (1|transect_id),
-                   data = dat_abundance)
-summary(ochre_mod_disp)
-## END ochre mottled star example ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
 ## abundance models across all 10 overlapping taxa ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## negative binomial GLMM, extending the ochre mottled star example above to
 ## every taxon in dat_abundance, extracting the type (ROV vs. diver)
