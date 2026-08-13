@@ -1,6 +1,6 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## visualize data for ROV-diver comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## (formal statistical analyses live in data_analyses.R instead) ~~~~~~~~~~~~~~~
+## (formal statistical analyses live in abundance_models.R / percent-cover_models.R instead)
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -324,70 +324,6 @@ for (site_name in names(site_display_names)) {
 
 
 
-## spatial structure (trial): TTLQV & correlogram ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## first trial of two classic patchiness/spatial-structure techniques (see
-## compute.ttlqv() / compute.correlogram() / visualize.spatial.structure() in
-## data_visualization_functions.R), computed on the same outward-pass, <=30m
-## data as the spatial line plots above -- never on both passes combined
-## (they're physically different tracks, ~2m apart across the tape, not
-## repeat samples of the same line) and never stitched end-to-end across the
-## three replicate transects within a depth (they're separate 30m tracks with
-## an unsurveyed ~5m gap between them, so concatenating them would inject a
-## fake discontinuity every 30m).
-##
-## Instead, TTLQV/the correlogram are computed separately per transect, then
-## the three replicates within a depth are pooled by averaging their curves
-## at each shared block-size/lag (the bold black line in each panel) -- the
-## three thin, transect-colored lines underneath show how much the replicates
-## agree or disagree, which is itself informative (tight agreement = a robust
-## depth-level signal; wide spread = patchiness that varies a lot even within
-## a nominally uniform depth stratum).
-##
-## Trialed for our two focal kelp species only, at the site where each
-## dominates: sugar kelp at Centennial Park, sieve kelp at Elliott Bay Marina
-## (both summer).
-dir.create(file.path(figs, "TTLQV"), showWarnings = FALSE, recursive = TRUE)
-dir.create(file.path(figs, "correlogram"), showWarnings = FALSE, recursive = TRUE)
-
-spatial_structure_trials <- list(
-  list(site_name = "Centennial_Park", category = "kelp_sugar", category_label = sugar_kelp_name),
-  list(site_name = "Elliott_Bay_Marina", category = "kelp_sieve", category_label = sieve_kelp_name)
-)
-
-for (trial in spatial_structure_trials) {
-  site_out_photos <- prep.outward.pass.photos(ROV_percent_cover_photo_level, trial$site_name, "summer")
-  site_title <- site_display_names[[trial$site_name]]
-
-  ttlqv_by_transect <- compute.spatial.structure.by.transect(
-    site_out_photos, trial$category, compute.ttlqv
-  )
-  ttlqv_plot <- visualize.spatial.structure(
-    ttlqv_by_transect, x_col = "block_size_m", y_col = "ttlqv",
-    colors = transect_density_colors,
-    x_label = "block size (m)", y_label = "TTLQV (block variance)",
-    title = paste(site_title, "summer --", trial$category_label, "-- TTLQV")
-  )
-  ggsave(file.path(figs, "TTLQV", paste0(trial$category, "_", trial$site_name, "_summer.png")),
-        ttlqv_plot, width = 10, height = 6, dpi = 300)
-
-  correlogram_by_transect <- compute.spatial.structure.by.transect(
-    site_out_photos, trial$category, compute.correlogram
-  )
-  correlogram_plot <- visualize.spatial.structure(
-    correlogram_by_transect, x_col = "lag_mid", y_col = "correlation",
-    colors = transect_density_colors,
-    x_label = "distance lag (m)", y_label = "spatial autocorrelation",
-    title = paste(site_title, "summer --", trial$category_label, "-- correlogram")
-  ) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "gray40")
-  ggsave(file.path(figs, "correlogram", paste0(trial$category, "_", trial$site_name, "_summer.png")),
-        correlogram_plot, width = 10, height = 6, dpi = 300)
-}
-## END spatial structure (trial): TTLQV & correlogram ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
 ## kelp density (diver) vs. percent-cover (ROV) concordance ~~~~~~~~~~~~~~~~~~~
 ## diver density (individuals, extrapolated/standardized per transect) and
 ## ROV cover (proportion of photo points) are not the same unit and can't be
@@ -415,34 +351,16 @@ kelp_sieve_comparison <- build.kelp.comparison.data(
 )
 
 
-## 1. standardized overlay -- both series z-scored onto one shared axis,
-## sugar kelp (top) and sieve kelp (bottom) combined into a single figure:
-## transects ordered site (Centennial Park, then Elliott Bay Marina) > season
-## (summer, then winter) > transect (1-6); legend inset into the top panel,
-## a single shared y-axis title, and the nested transect/season/site x-axis
-## label shown only on the bottom row (top row keeps its tick marks,
-## unlabeled, so the two rows still align)
-kelp_overlay_stack <- visualize.kelp.standardized.overlay.stack(
-  data_top = kelp_sugar_comparison,
-  data_bottom = kelp_sieve_comparison,
-  title_top = sugar_kelp_name,
-  title_bottom = sieve_kelp_name,
-  colors = method_colors
-)
-kelp_overlay_stack
-
-ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay.png"),
-      kelp_overlay_stack, width = 12, height = 9, dpi = 300)
-ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay.pdf"),
-      kelp_overlay_stack, width = 12, height = 9, dpi = 300)
-
-
-## same figure, plus the representative sugar/sieve kelp photos
-## (figs/photos/sugar.jpg, figs/photos/sieve.jpg) inset immediately to the
-## right of each row -- saved separately from the plot-only version above
-## since adding the photo column changes the figure's overall proportions.
-## Exported as a vector PDF (photos embedded as raster within the vector
-## page, via build.photo.panel()) and a matching PNG.
+## standardized overlay -- both series z-scored onto one shared axis, sugar
+## kelp (top) and sieve kelp (bottom) combined into a single figure: transects
+## ordered site (Centennial Park, then Elliott Bay Marina) > season (summer,
+## then winter) > transect (1-6); legend inset into the top panel, a single
+## shared y-axis title, and the nested transect/season/site x-axis label
+## shown only on the bottom row (top row keeps its tick marks, unlabeled, so
+## the two rows still align). Includes the representative sugar/sieve kelp
+## photos (figs/photos/sugar.jpg, figs/photos/sieve.jpg) inset immediately to
+## the right of each row. Exported as a vector PDF (photos embedded as raster
+## within the vector page, via build.photo.panel()) and a matching PNG.
 kelp_overlay_stack_with_photos <- visualize.kelp.standardized.overlay.stack(
   data_top = kelp_sugar_comparison,
   data_bottom = kelp_sieve_comparison,
@@ -460,57 +378,6 @@ ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay_with_ph
       kelp_overlay_stack_with_photos, width = 16, height = 9, dpi = 300)
 
 
-## 2. bump/slope chart -- per-transect rank in each method, colored by site
-kelp_sugar_bump_plot <- visualize.kelp.bump.chart(
-  data = kelp_sugar_comparison,
-  rank_color_by = "site"
-) +
-  labs(title = paste0(sugar_kelp_name, ":<br>diver vs. ROV rank agreement by transect")) +
-  theme(plot.title = ggtext::element_markdown())
-kelp_sugar_bump_plot
-
-ggsave(file.path(figs, "z-score", "kelp_sugar_bump_chart.png"),
-      kelp_sugar_bump_plot, width = 6, height = 8, dpi = 300)
-
-
-## 3. scatter -- diver density vs. ROV cover, colored by site, with loess trend
-kelp_sugar_scatter_plot <- visualize.kelp.scatter(
-  data = kelp_sugar_comparison,
-  color_by = "site"
-) +
-  labs(title = paste0(sugar_kelp_name, ": diver density vs. ROV cover")) +
-  theme(plot.title = ggtext::element_markdown())
-kelp_sugar_scatter_plot
-
-ggsave(file.path(figs, "head-to-head", "kelp_sugar_scatter.png"),
-      kelp_sugar_scatter_plot, width = 7, height = 6, dpi = 300)
-
-
-## 4. standardized overlay, sugar + sieve kelp combined into a single row --
-## an alternative to the two-row stack above: 4 lines (diver/ROV x sugar/sieve)
-## in one panel instead of 2 panels of 2 lines each. Diver gets two shades of
-## blue (one per species); ROV gets two shades of orange -- blue's complement
-## on the color wheel, chosen so the ROV pair reads as a distinct-but-related
-## counterpart to the diver pair rather than clashing with it. Both pairs are
-## drawn from ColorBrewer's "Paired" qualitative palette, so the light/dark
-## relationship within each color family is perceptually consistent.
-kelp_combined_colors <- c(
-  "diver_sugar" = "#1F78B4",  # dark blue
-  "diver_sieve" = "#A6CEE3",  # light blue
-  "ROV_sugar"   = "#FF7F00",  # dark orange
-  "ROV_sieve"   = "#FDBF6F"   # light orange
-)
-
-kelp_overlay_combined <- visualize.kelp.standardized.overlay.combined(
-  data_sugar = kelp_sugar_comparison,
-  data_sieve = kelp_sieve_comparison,
-  title = paste(sugar_kelp_name, "&", sieve_kelp_name),
-  colors = kelp_combined_colors
-)
-kelp_overlay_combined
-
-ggsave(file.path(figs, "z-score", "kelp_sugar_sieve_standardized_overlay_combined.png"),
-      kelp_overlay_combined, width = 13, height = 6, dpi = 300)
 ## END kelp density vs. percent-cover concordance ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
