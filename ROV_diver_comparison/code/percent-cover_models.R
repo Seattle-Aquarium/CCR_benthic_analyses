@@ -17,7 +17,6 @@ rm(list=ls())
 
 ## add libraries
 library(tidyverse)
-library(lme4)
 library(glmmTMB)
 
 
@@ -47,30 +46,10 @@ dat_pc <- dat_pc %>% mutate(type = factor(type, levels = c("diver", "ROV")))
 
 
 
-## percent-cover models (logistic example) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dat_pc <- dat_pc %>%
-  mutate(cover_red_algae_ind = if_else(cover_red_algae > 0, 1, 0),
-         combined_green_algae_ind = if_else(combined_green_algae > 0, 1, 0),
-         cover_crustose_coralline_ind = if_else(cover_crustose_coralline > 0, 1, 0),
-         combined_substrate_boulder_ind = if_else(combined_substrate_boulder > 0, 1, 0),
-         substrate_rock_.15.25cm.wa._ind = if_else(substrate_rock_.15.25cm.wa. > 0, 1, 0),
-         combined_substrate_pebble_ind = if_else(combined_substrate_pebble > 0, 1, 0),
-         substrate_sand_ind = if_else(substrate_sand > 0, 1, 0),
-         substrate_shell_hash_ind = if_else(substrate_shell_hash > 0 , 1, 0)
-         )
-
-mod_ssh <- glmer(substrate_shell_hash_ind ~ type + site + season + depth + (1|transect_id),
-                 data = dat_pc,
-               family = binomial)
-
-summary(mod_ssh)
-## END logistic example ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-## percent-cover models (binomial examples) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Note that it may be better to compute the numerators directly from detections out of n
+## prep binomial numerators for each category ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## converts each category's transect-level proportion back into a point count
+## (numerator) out of n classified points, for use in the beta-binomial models
+## below
 dat_pc <- dat_pc %>%
   mutate(cover_red_algae_num = ceiling(cover_red_algae * n),
          combined_green_algae_num = ceiling(combined_green_algae * n),
@@ -81,29 +60,7 @@ dat_pc <- dat_pc %>%
          substrate_sand_num = ceiling(substrate_sand * n),
          substrate_shell_hash_num = ceiling(substrate_shell_hash * n)
          )
-
-mod_cra <- glmmTMB(
-  cbind(cover_red_algae_num, n - cover_red_algae_num) ~ type + site + season + depth + (1|transect_id),
-  family = binomial,
-  data = dat_pc
-)
-
-summary(mod_cra)
-
-mod_cra_disp <- glmmTMB(
-  cbind(cover_red_algae_num, n - cover_red_algae_num) ~ type + site + season + depth + (1|transect_id),
-  family = betabinomial(link = "logit"),
-  data = dat_pc
-)
-summary(mod_cra_disp) # preferred
-
-mod_cga_disp <- glmmTMB(
-  cbind(combined_green_algae_num, n - combined_green_algae_num) ~ type + site + season + depth + (1|transect_id),
-  family = betabinomial(link = "logit"),
-  data = dat_pc
-)
-summary(mod_cga_disp)
-## END binomial examples ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END numerator prep ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -260,69 +217,6 @@ print(pc_results_winter, width = Inf)
 
 write.csv(pc_results_winter, file.path(combined_output, "percent_cover_model_results_winter_substrate.csv"), row.names = FALSE)
 ## END winter-only models ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-## shell hash annotator sanity check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## Every ROV percent-cover point was manually reviewed/corrected by one of
-## three annotators, assigned by transect number and applied consistently
-## across site and season: transects 1 & 4 -> annotator A, 2 & 5 -> annotator
-## B, 3 & 6 -> annotator C.
-##
-## Caveat up front: annotator is entirely a recoding of transect number (each
-## transect number maps to exactly one annotator), so it is crossed cleanly
-## with site, season, and depth (each annotator group spans one deep and one
-## shallow transect, both sites, both seasons) but is necessarily confounded
-## with any REAL ecological difference between those same transect-number
-## pairs. This design can flag whether an annotator-linked pattern exists,
-## but on its own cannot cleanly separate "annotator artifact" from
-## "transects 1/4, 2/5, and 3/6 just have different true shell hash
-## abundance." The diver-side comparison below (divers were never reviewed by
-## these three annotators) helps triangulate: if the same transect-number
-## grouping also predicts diver shell hash, that argues for a real
-## ecological pattern rather than an annotation artifact specific to the ROV
-## review process.
-dat_pc <- dat_pc %>%
-  mutate(annotator = case_when(
-    transect %in% c(1, 4) ~ "A",
-    transect %in% c(2, 5) ~ "B",
-    transect %in% c(3, 6) ~ "C"
-  ))
-
-mod_ssh_annotator <- glmmTMB(
-  cbind(substrate_shell_hash_num, n - substrate_shell_hash_num) ~ type + site + season + depth + annotator + (1|transect_id),
-  family = betabinomial(link = "logit"),
-  data = dat_pc
-)
-summary(mod_ssh_annotator)
-
-ssh_annotator_coefs <- summary(mod_ssh_annotator)$coefficients$cond %>%
-  as.data.frame() %>%
-  rownames_to_column("term")
-write.csv(ssh_annotator_coefs, file.path(combined_output, "shell_hash_annotator_model_coefficients.csv"), row.names = FALSE)
-
-## does adding annotator meaningfully improve fit, or change the type (ROV
-## vs. diver) effect, relative to the no-annotator model already fit above?
-mod_ssh_no_annotator <- pc_models[["substrate_shell_hash"]]
-
-ssh_aic_comparison <- AIC(mod_ssh_no_annotator, mod_ssh_annotator) %>%
-  rownames_to_column("model") %>%
-  mutate(model = c("no_annotator", "with_annotator"))
-write.csv(ssh_aic_comparison, file.path(combined_output, "shell_hash_annotator_AIC_comparison.csv"), row.names = FALSE)
-print(ssh_aic_comparison)
-
-## descriptive triangulation: mean shell hash % by annotator's transect-
-## number grouping, separately for each platform. A pattern present in BOTH
-## columns points to real transect-linked ecology; a pattern present only
-## in the ROV column points toward an annotation artifact.
-ssh_by_annotator <- dat_pc %>%
-  group_by(annotator, type) %>%
-  summarise(mean_shell_hash_pct = mean(substrate_shell_hash) * 100, .groups = "drop") %>%
-  pivot_wider(names_from = type, values_from = mean_shell_hash_pct)
-write.csv(ssh_by_annotator, file.path(combined_output, "shell_hash_by_annotator_and_type.csv"), row.names = FALSE)
-print(ssh_by_annotator)
-## END annotator check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
