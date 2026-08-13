@@ -130,13 +130,6 @@ remove_summer_2025 <- function(df) {
   )
 }
 
-## function to rename factor 
-rename.factor <- function(df, col, old, new) {
-  df[[col]] <- forcats::fct_recode(df[[col]], !!new := old)
-  return(df)
-}
-
-
 ## function to strip n characters off a column
 remove.chars <- function(df, col, n) {
   df %>% mutate(
@@ -217,12 +210,6 @@ calculate.density <- function(df, start_col = NULL, end_col = NULL, divisor, col
   df[cols] <- round(df[cols] / divisor, 2)
 
   return(df)
-}
-
-
-## retain every nth row
-nth.row <- function(df, n) {
-  df[seq(1, nrow(df), by = n), ]
 }
 
 
@@ -334,17 +321,7 @@ save.csv <- function(df, path, filename){
 }
 
 
-## populate ROV dataframe with columns from diver data
-add.Reef.Check.inverts <- function(source_df, receiver_df) {
-  cols_to_add <- setdiff(names(source_df), names(receiver_df))
-  for (col in cols_to_add) {
-    receiver_df[[col]] <- 0
-  }
-  return(receiver_df)
-}
-
-
-## function to re-order cols by total 
+## function to re-order cols by total
 reorder.by.total <- function(df, start_col, end_col) {
   
   start_idx <- match(start_col, names(df))
@@ -487,30 +464,6 @@ rov_invert_name_map <- c(
   "fish_flat"   = "flat_fish",
   "fish_wolf"   = "wolf_eel"
 )
-# for use with ROV data: 
-#invert <- rename.columns(invert, rov_invert_name_map)
-
-
-## function to stack dataframes and fill in the missing info with 0's
-stack.dfs <- function(df1, df2) {
-  all_cols <- union(names(df1), names(df2))
-  
-  for (col in setdiff(all_cols, names(df1))) {
-    df1[[col]] <- 0
-  }
-  
-  for (col in setdiff(all_cols, names(df2))) {
-    df2[[col]] <- 0
-  }
-  
-  df1 <- df1[, all_cols]
-  df2 <- df2[, all_cols]
-  
-  combined <- rbind(df1, df2)
-  
-  return(combined)
-}
-
 
 
 combine.cols <- function(df, cols_to_combine, new_col_name) {
@@ -548,47 +501,9 @@ rename.metadata <- function(df) {
 }
 
 
-## summarize by site / transect 
-summarize.by.site.transect <- function(df, start_col, end_col) {
-  start_idx <- which(names(df) == start_col)
-  end_idx <- which(names(df) == end_col)
-  
-  if (length(start_idx) == 0 || length(end_idx) == 0 || start_idx > end_idx) {
-    stop("Invalid start_col or end_col")
-  }
-  
-  cols_to_sum <- names(df)[start_idx:end_idx]
-  
-  # Group and summarize
-  df %>%
-    group_by(site, transect) %>%
-    summarise(across(all_of(cols_to_sum), ~ sum(.x, na.rm = TRUE)), .groups = "drop")
-}
-
-
-## average by site / transect, rounded to 2 decimal places
-average.by.site.transect <- function(df, start_col, end_col) {
-  start_idx <- which(names(df) == start_col)
-  end_idx <- which(names(df) == end_col)
-  
-  if (length(start_idx) == 0 || length(end_idx) == 0 || start_idx > end_idx) {
-    stop("Invalid start_col or end_col")
-  }
-  
-  cols_to_avg <- names(df)[start_idx:end_idx]
-  
-  # Group, calculate mean, and round to 2 decimal places
-  df %>%
-    group_by(site, transect) %>%
-    summarise(across(all_of(cols_to_avg), ~ round(mean(.x, na.rm = TRUE), 3)), .groups = "drop")
-}
-
-
 ## average by arbitrary grouping cols (e.g. site/transect/depth/season), rounded
 ## to 3 decimal places; also reports how many rows (photos) went into each mean.
-## generalizes average.by.site.transect for datasets w/ more than one grouping
-## factor (e.g. HSIL data, which has repeat surveys of the same site/transect
-## across two seasons). Takes an explicit vector of column names (`cols`)
+## Takes an explicit vector of column names (`cols`)
 ## rather than a start/end range, since a start/end range silently breaks if
 ## the columns were previously reordered (e.g. by reorder.by.total()).
 average.by.group <- function(df, group_cols, cols) {
@@ -623,90 +538,6 @@ sum.by.group <- function(df, group_cols, cols) {
       .groups = "drop"
     )
 }
-
-
-## function to combine columns
-# Requires: dplyr, tidyr (and optionally forcats if you want factor handling)
-
-combine_with_zero_fill <- function(df_a, df_b, fill_value = 0) {
-  stopifnot(is.data.frame(df_a), is.data.frame(df_b))
-  
-  # Columns unique to each input
-  only_a <- setdiff(names(df_a), names(df_b))
-  only_b <- setdiff(names(df_b), names(df_a))
-  cols_to_fill <- c(only_a, only_b)
-  
-  # Row-bind; dplyr::bind_rows will create missing columns with NA
-  out <- dplyr::bind_rows(df_a, df_b)
-  
-  # Replace NAs **only** in columns that were absent in one of the inputs
-  if (length(cols_to_fill) > 0) {
-    out <- out |>
-      dplyr::mutate(dplyr::across(
-        dplyr::all_of(cols_to_fill),
-        ~ {
-          # Fill with 0 while respecting column type
-          if (is.integer(.x)) {
-            tidyr::replace_na(.x, as.integer(fill_value))
-          } else if (is.numeric(.x)) {
-            tidyr::replace_na(.x, as.numeric(fill_value))
-          } else if (is.logical(.x)) {
-            # Interpret 0/"0"/FALSE as FALSE, otherwise TRUE
-            fv <- if (is.character(fill_value)) tolower(fill_value) else fill_value
-            tidyr::replace_na(.x, isTRUE(fv) || (!is.character(fv) && fv != 0))
-          } else {
-            # For character/factor/other types, fill with "0"
-            # (Adjust here if you'd prefer to leave these as NA instead)
-            tidyr::replace_na(as.character(.x), "0")
-          }
-        }
-      ))
-  }
-  
-  out
-}
-
-
-## add columns and name them
-add_column <- function(df, col_name, col_value, position) {
-
-  n_cols <- ncol(df)
-    new_col <- rep(col_value, nrow(df))
-  
-  before <- df[ , seq_len(position - 1), drop = FALSE]
-  after  <- df[ , seq(from = position, to = n_cols), drop = FALSE]
-  
-  new_df <- cbind(before, setNames(list(new_col), col_name), after)
-  rownames(new_df) <- rownames(df)  # preserve rownames if any
-  
-  return(new_df)
-}
-
-
-## add depth
-add_depth_column <- function(df, position) {
-  stopifnot("transect" %in% names(df))
-  
-  n_cols <- ncol(df)
-  if (position < 1 || position > (n_cols + 1)) {
-    stop("Position must be between 1 and ", n_cols + 1)
-  }
-  
-  # create depth column based on transect values
-  depth <- ifelse(df$transect %in% 1:3, "deep",
-                  ifelse(df$transect %in% 4:6, "shallow", NA))
-  
-  # split before/after & insert depth
-  before <- df[ , seq_len(position - 1), drop = FALSE]
-  after  <- df[ , seq(from = position, to = n_cols), drop = FALSE]
-  
-  new_df <- cbind(before, depth = depth, after)
-  rownames(new_df) <- rownames(df)
-  
-  return(new_df)
-}
-
-
 
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

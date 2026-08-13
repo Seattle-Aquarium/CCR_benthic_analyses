@@ -169,51 +169,31 @@ range(row_totals)
 
 
 
-## build long-form + transect-averaged versions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## long form: one row per photo x category (useful for faceted plots / models)
-HSIL_long <- HSIL %>%
-  pivot_longer(cols = all_of(category_cols),
-              names_to = "category",
-              values_to = "percent_cover")
-
-
+## build transect-averaged version ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## transect-level means (grouped by site/transect/depth/season, since each
 ## site x transect was surveyed in both S24 and W25)
 HSIL_avg <- average.by.group(HSIL,
                              group_cols = c("site", "transect", "depth", "season"),
                              cols = c(category_cols, combined_cols))
-## END long-form + averaging ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END averaging ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 
-## point-count versions of the 30 raw percent-cover columns ~~~~~~~~~~~~~~~~~~~
+## point-count version of the 30 raw percent-cover columns ~~~~~~~~~~~~~~~~~~~~
 ## each photo's percent-cover values were generated from 50 randomly
 ## distributed points (e.g. 0.38 cover == 19/50 points), so multiplying by 50
-## recovers the underlying point counts, which can be summed (unlike percentages)
-## step 1: per-photo point counts (drop the percent-scale combined_* cols,
-## since those aren't part of the raw 30-category point-count accounting --
-## and, being sums of other categories, would double-count if left in)
+## recovers the underlying point counts, which can be summed (unlike percentages).
+## Per-photo point counts (drop the percent-scale combined_* cols, since those
+## aren't part of the raw 30-category point-count accounting -- and, being
+## sums of other categories, would double-count if left in). Used downstream
+## by build_combined_percent_cover.R to derive each transect's "n" (total
+## classified points) for the beta-binomial models.
 HSIL_points_photo <- HSIL %>%
   select(-all_of(combined_cols)) %>%
   mutate(across(all_of(category_cols), ~ round(.x * 50)))
-
-
-## step 2: sum point counts within each transect, and add total_points
-## (n_photos x 50 points/photo) -- the denominator for step 3
-HSIL_points_sum <- sum.by.group(HSIL_points_photo,
-                                group_cols = c("site", "transect", "depth", "season"),
-                                cols = category_cols) %>%
-  mutate(total_points = n_photos * 50, .after = n_photos)
-
-
-## step 3: each category's transect sum divided by total_points -- recovers
-## the transect-average percent cover (equivalent to HSIL_avg's raw category
-## means above, since every photo contributes exactly 50 points)
-HSIL_points_avg <- HSIL_points_sum %>%
-  mutate(across(all_of(category_cols), ~ round(.x / total_points, 3)))
-## END point-count versions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## END point-count version ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -221,12 +201,8 @@ HSIL_points_avg <- HSIL_points_sum %>%
 
 ## save the new dataframes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 save.csv(HSIL, ROV_output, "HSIL_percent-cover_photo-level.csv")
-save.csv(HSIL_long, ROV_output, "HSIL_percent-cover_long.csv")
 save.csv(HSIL_avg, ROV_output, "HSIL_percent-cover_transect-averaged.csv")
-
 save.csv(HSIL_points_photo, ROV_output, "HSIL_points_photo-level.csv")
-save.csv(HSIL_points_sum, ROV_output, "HSIL_points_transect-sums.csv")
-save.csv(HSIL_points_avg, ROV_output, "HSIL_points_transect-average.csv")
 ## END save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

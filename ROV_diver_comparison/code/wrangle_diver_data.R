@@ -126,7 +126,6 @@ invert <- standardize.invert.cols(invert)
 ## highest/lowest by total after reordering
 meta_cols <- c("Date", "season", "site", "transect", "depth")
 algae_cols <- setdiff(names(algae), meta_cols)
-invert_cols <- setdiff(names(invert), meta_cols)
 
 
 ## combine red algae categories
@@ -188,12 +187,6 @@ invert <- reorder.by.total(invert, "bat_star", "ochre_mottled_star")
 algae_density <- calculate.density(df = algae,
                                    cols = algae_cols,
                                    divisor = 60)
-
-
-## calculate density for invert abundances
-invert_density <- calculate.density(df = invert,
-                                    cols = invert_cols,
-                                    divisor = 60)
 ## END diver data wrangling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -201,13 +194,11 @@ invert_density <- calculate.density(df = invert,
 
 
 ## save files ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## save csvs of diver abundances 
+## save csv of diver invert abundances
 save.csv(invert, diver_output, "diver_invert_abundance.csv")
-save.csv(algae, diver_output, "diver_algae_abundance.csv")
 
 
-## save csvs of diver densities
-save.csv(invert_density, diver_output, "diver_invert_density.csv")
+## save csv of diver algae density
 save.csv(algae_density, diver_output, "diver_algae_density.csv")
 
 
