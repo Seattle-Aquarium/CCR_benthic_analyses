@@ -252,9 +252,8 @@ Seattle, Washington, USA
 %% DATA AVAILABILITY
 %% --------------------------------------------------------------------
 \newcommand{\dataavailability}{%
-	All derived ROV and diver data, code, and results associated with this
-	ROV-diver methods comparison are publicly accessible at the GitHub
-	repository:
+	All ROV and diver data and code associated with this report are publicly 
+	accessible at the GitHub repository:
 	\url{https://github.com/Seattle-Aquarium/CCR_benthic_analyses/tree/main/ROV_diver_comparison}.
 }
 
@@ -346,7 +345,7 @@ Seattle, Washington, USA
 			% LOGO
 			% ---------------------------------------------------------------
 			\includegraphics[
-			width=0.35\textwidth,
+			width=0.3\textwidth,
 			keepaspectratio
 			]{SEAQ\_logo\_blue.pdf}
 			
@@ -625,13 +624,11 @@ We additionally provide self-contained information about the processing of ROV
 telemetry and imagery, as well as data extraction and validation.
 However, each of these ROV imagery/data processing topics could be a standalone 
 report, so these latter post-processing ROV \textit{Methods} sections will 
-provide a high-level overview of the problem, our approach, how these steps 
-helped us generate and validate the data necessary for this methods 
-comparison. 
+provide a high-level overview of the problem, our approach, and how these steps 
+helped us generate and validate the data necessary for this methods comparison. 
 Having established the contextual foundation, for the remainder of this 
-report 
-we turn to our core focus: the analytical methods of the ROV-diver comparison, 
-and the subsequent \textit{Results} and \textit{Discussion}. 
+report we turn to our core focus: the analytical methods of the ROV-diver 
+comparison, and the subsequent \textit{Results} and \textit{Discussion}. 
 It is our intent and hope that these findings prove useful when considering how 
 to structure future deployments of comparatively low-cost, modular ROVs such 
 that their complementary strengths can be leveraged beyond what either platform 
@@ -731,6 +728,8 @@ Divers additionally conducted fish surveys along each transect, recording
 species and size-class counts across 41 species and life-stages spanning 
 rockfishes, young-of-year rockfishes, perches, greenlings, and other bottom 
 fish.
+See \figref{fig:data_sheets} for the 2024 Reef Check invert/algae and UPC data 
+sheets utilized as part of this comparison. 
 Both platforms gathered fish observations, but because fish sightings were
 comparatively rare and our primary focus was macroalgae, invertebrates, and
 substrate, we did not analyze fish data in this report.
@@ -754,7 +753,7 @@ the companion field methods manuscript \citep{Randell:2026aa}).
 These four ROV versions are distinguished primarily by power supply and benthic 
 lighting; 
 for the data collected for this comparison we used both a battery-powered 
-($V2$) and topside-powered ($V3$) ROV configurations, each paired with a GoPro 
+($V2$) and topside-powered ($V3$) ROV configuration, each paired with a GoPro 
 HERO 12 downward-facing camera and four 18,000-lumen Kraken lights to capture 
 $27.3~\mathrm{MP}$ RAW (.GPR) photographs of the benthos.
 Camera settings were configured via GoPro Labs flashed to the GoPro's SD card, a firmware extension enabling more extensive customization of GoPro cameras than is available through the standard interface.
@@ -842,7 +841,8 @@ firmware, that combines multiple noisy sensor inputs into a single, smoothed
 estimate of the ROV's position over time.
 All of this sensor and positioning information was recorded in the ROV's telemetry logs (tlogs) throughout each survey.
 
-We developed custom code to process these tlogs, along with the corresponding survey imagery, into the transect-level geospatial data used in this report.
+We developed Python code to process these tlogs, along with the corresponding 
+survey imagery, into the transect-level geospatial data used in this report.
 Before each survey, we used GoPro Labs to synchronize the GoPro cameras' clocks 
 with the topside laptop, and ROV pilots recorded the start and end time of each 
 transect; 
@@ -874,7 +874,7 @@ hand-editing workflow).
 
 Abundance data of individually conspicuous invertebrates were manually gathered 
 via making annotations in Video and Image Analytics for Multiple Environments 
-(VIAME), specifically the online version. 
+(VIAME), specifically the online version \citep{dawkins2017viame,viame_web}.
 We uploaded all ROV survey imagery to VIAME, and Seattle Aquarium AI Teachers 
 trained to identify our specific taxa reviewed each image and generated 
 annotations around every observed instance of a visible macro-invertebrate. 
@@ -900,7 +900,7 @@ and Segment Anything Model (SAM)-based segmentation.
 Toolbox's classification and detection models are themselves built on 
 open-source computer vision models from Ultralytics \citep{Jocher:2024aa}, 
 allowing us to draw on actively maintained, state-of-the-art YOLO (You Only 
-Look Once) models.
+Look Once) architectures.
 
 A key advantage of Toolbox over CoralNet's native annotation workflow is direct 
 control over training data composition.
@@ -958,7 +958,11 @@ Finally, this trained Toolbox model was used to generate data across all 24
 transects associated with this methods comparison. 
 Specifically, we used Toolbox to create 50 randomly distributed percent-cover 
 patches per photo, then applied the trained model to classify each and every 
-patch within the data set. 
+patch within the data set.
+See \figref{fig:image_sampling} for a visual example of these 50 randomly 
+distributed percent-cover image patches, including a single data point 
+highlighted to demonstrate how our Kelp Quest volunteers (see below) reviewed 
+and QAQC'd each and every data point.  
 Across the 24 transects, we had 1,436 photos, totaling 71,800 percent-cover 
 patches classified by our model. 
 
@@ -968,8 +972,8 @@ patches classified by our model.
 %% --------------------------------------------------------------------
 
 Despite solid performance from our trained Toolbox model, it still makes 
-mistakes, and its predictions must be manually reviewed and, in many cases, 
-corrected.
+mistakes when applied to unseen imagery, and its predictions must be manually 
+reviewed and, in many cases, corrected.
 This review step serves two purposes: it finalizes data for downstream 
 analysis, including the ROV-diver comparison presented in this report, and it 
 generates additional verified training data that can be used to further improve 
@@ -988,7 +992,10 @@ converting individually noisy volunteer input into a robust, measurable output.
 We created Kelp Quest 
 (\url{https://www.zooniverse.org/projects/zhrandell/kelp-quest-seattle-aquarium})
 as our Zooniverse project for this purpose.
-In Kelp Quest, each subject is a cropped image centered on a single 
+In Kelp Quest, we ask volunteers to familiarize themselves with 28 distinct 
+categories of algae, invertebrates, and substrate 
+\figref{fig:kelpquest_categories}.
+Each subject is a cropped image centered on a single 
 percent-cover data point: the crop shows the green $224 \times 224$-pixel patch 
 reviewed by the Toolbox model, a red crosshair marking the exact point 
 volunteers are asked to evaluate, the model's predicted category printed as 
@@ -1058,9 +1065,10 @@ improve Toolbox model performance, we consider public engagement with
 Washington's kelp forests to be an equally worthwhile, parallel benefit of the 
 project.
 As of this writing, Kelp Quest has drawn 4{,}111 volunteers who have together
-contributed 582{,}458 classifications since the project's launch on March 24,
-2026, and its Talk discussion board is active with volunteers asking questions 
-and sharing their own photos and species encounters.
+contributed 582{,}458 classifications \figref{fig:kelpquest_volume} since the 
+project's launch on March 24, 2026, and its Talk discussion board is active 
+with volunteers asking questions and sharing their own photos and species 
+encounters.
 Kelp Quest is intended by the Seattle Aquarium to be maintained as a long-term 
 project, continuing to support both ongoing model refinement and public 
 engagement with Washington's kelp forest ecosystems well beyond this project.
@@ -1337,7 +1345,6 @@ estimates of \textit{Agarum} and \textit{Saccharina}, we can still evaluate
 whether the two methods vary in the same manner across transects. 
 Specifically, we stripped away each method's native units by normalizing the 
 data via a z-score calculation. 
-%
 The z-score re-expresses a value as the number of standard deviations it falls 
 from its own series' mean, which discards that series' original units entirely 
 and leaves a dimensionless quantity that can be directly compared against any 
@@ -1362,10 +1369,10 @@ own typical value, allowing the two series to be plotted on one shared,
 unitless axis and compared for agreement in relative pattern rather than
 magnitude.
 Although the two platforms' raw units cannot be compared directly, the
-strength of their agreement in relative pattern can be: because standardization
-is a linear transformation, the Pearson correlation between the two platforms'
-raw values is numerically identical to the correlation between their
-z-scores.
+strength of their agreement in relative pattern can be --- because 
+standardization is a linear transformation, the Pearson correlation between the 
+two platforms' raw values is numerically identical to the correlation between 
+their z-scores.
 We therefore use this correlation, computed across the 24 transects separately
 for each species, as a formal test of whether the ROV and diver series track
 one another, without requiring the two platforms' underlying units to be
@@ -1642,7 +1649,8 @@ site and depth.
 
 Our overarching results validate the ROV as a reliable benthic monitoring tool 
 capable of generating inference that is by and large statistically 
-indistinguishable from the data gathered by divers. 
+indistinguishable from the data gathered by divers with the exception of 
+percent-cover metrics of substrate, especially in the summer. 
 However, these results obscure some complexity and nuance regarding how the 
 downward-facing photographs are gathered by the ROV, and additional details are 
 warranted to properly contextualize and understand our results. 
@@ -1650,11 +1658,8 @@ As follows is a good-faith effort to scrutinize and criticize the ROV
 methodology as it pertains to taking photographs and generating inference 
 relative to divers. 
 This \textit{Discussion} section is oriented around the two focal derived data 
-types from the ROV: 
-(\textbf{1}) 
-abundances of macro invertebrates, and
-(\textbf{2})
-percent-cover of macrophytes and substrate. 
+types from the ROV abundances of macro invertebrates, and percent-cover of 
+macrophytes and substrate. 
 Our intent is to pick apart any aspects that might contribute to error or bias 
 in an effort to identify ways to improve the overarching methodology --- 
 towards this end, we extract lessons and next-steps wherever possible, and 
@@ -1686,9 +1691,9 @@ With the ROV at an altitude of $0.8~m$ above the seafloor, the
 approximate width of the photograph captured by the GoPro (once it has been 
 cropped) is approximately $1.2~m$, though the exact image width will covary 
 with fluctuations in ROV altitude throughout a survey. 
-Our surftrak software locks in ROV altitude as best as possible, but there will 
-always still be some degree of variation in ROV altitude, and thereby ROV 
-photograph width and area. 
+Our surftrak software \citep{McQueen2025} locks in ROV altitude as best as 
+possible, but there will always still be some degree of variation in ROV 
+altitude, and thereby ROV photograph width and area. 
 We anticipate the effects in terms of photographed benthos of this $\sim 0.2~m$ 
 extra width will come in two flavors: linear, and non-linear. 
 Stretches of the benthos that are largely flat will net a linear $\sim 0.2~m$ 
@@ -1821,7 +1826,7 @@ significant differences for most substrate and CCA categories ($n=5$
 categories: CCA, boulder, pebble, sand, shell hash,
 \tabref{tab:pc_all_models}),
 whereas fitting to only the winter data reduced the number of significant 
-categories down ($n=3$ categories: CCA, boulder, and shell hash 
+categories ($n=3$ categories: CCA, boulder, and shell hash 
 \tabref{tab:pc_winter_substrate}). 
 We do not believe this is evidence of how Toolbox classifies (or misclassifies) 
 substrate, or the ability to differentiate substrate categories from 
@@ -1852,7 +1857,8 @@ This compositional constraint introduces a degree of correlation, or
 non-independence, between our categories within a photograph;
 for example, knowing the proportion of branching red algae within a
 photograph, $\pi_{jk}$, inherently constrains what remaining proportion,
-$1-\pi_{jk}$, could possibly be attributed to the boulder substrate category. 
+$1-\pi_{jk}$, could possibly be attributed to, e.g., the boulder substrate 
+category. 
 In other words, the proportions of branching red algae and boulder within
 the same photograph are not statistically independent.
 One immediate implication of this non-independence is that we would likely not
@@ -2063,7 +2069,7 @@ Despite this overall parity, our abundance comparison surfaced several
 sources of error worth addressing for future ROV surveys:
 
 \begin{itemize}
-\item \textbf{Image width and altitude control.} The ROV's approximately
+\item \textit{Image width and altitude control}. The ROV's approximately
 $1.2~m$ image width slightly exceeds the diver's $1~m$ swath, an effect that
 is usually negligible but can become non-linear along complex, sloped
 terrain.
@@ -2071,14 +2077,14 @@ Refining our telemetry-derived seafloor-area calculations, or incorporating
 photogrammetry-derived scale directly into each image, would let us quantify and
 correct for this effect explicitly, rather than treat it as an unresolved
 source of uncertainty.
-\item \textbf{Photo overlap and double-counting.} Occasional overlap between
+\item \textit{Photo overlap and double-counting}. Occasional overlap between
 sequential photographs can double-count individuals, an effect that is
 negligible at low-to-moderate densities but became substantial in the one
 transect where rock crabs were unusually clumped.
 Triggering the camera by distance traveled rather than a fixed time interval,
 or reconstructing a full-transect orthomosaic, would both make double-counting 
 structurally impossible.
-\item \textbf{Minimum size cutoff and off-transect drift.} Invertebrates
+\item \textit{Minimum size cutoff and off-transect drift}. Invertebrates
 below Reef Check's $2.5~cm$ size cutoff, and occasional ROV drift onto the
 other half of the transect likely contributed to higher than expected
 ROV-derived invertebrate abundances, though these are only anticipated to be
@@ -2294,6 +2300,32 @@ to conduct ROV surveys.
 \vfil
 \begin{figure}[H]
 \centering
+\begin{subfigure}[t]{0.48\textwidth}
+\centering
+\textbf{(a)}\par
+\includegraphics[width=\linewidth]{InvertKelp.pdf}
+\end{subfigure}
+\hspace{0.01\textwidth}
+\begin{subfigure}[t]{0.48\textwidth}
+\centering
+\textbf{(b)}\par
+\includegraphics[width=\linewidth]{UPC.pdf}
+\end{subfigure}
+\caption{
+Reef Check Washington's (a) 2024 kelp/invert swath and (b) UPC data sheets used 
+as part of this methods comparison.
+}
+\label{fig:data_sheets}
+\end{figure}
+\vfil
+}
+
+\clearpage
+
+\vbox to \textheight{%
+\vfil
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \clip (0,0) rectangle (0.63\textwidth,0.42\textwidth);
 \node[anchor=center,inner sep=0] at (0.315\textwidth,0.21\textwidth)
@@ -2367,6 +2399,31 @@ category scheme that has since been revised to the 27 categories in
 reported there.
 }
 \label{fig:toolbox_confusion}
+\end{figure}
+\vfil
+}
+
+\clearpage
+
+\vbox to \textheight{
+\vfil
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{image_sampling.png}
+\caption{
+(a) A single ROV photograph with 50 randomly distributed percent-cover patches, 
+each of which is comprised of 224 x 224 pixels.
+(b) A single ``subject" --- the individual percent-cover data point we provide 
+to Kelp Quest volunteers to review. 
+Each subject is comprised of a red target that provides the point-sampling 
+visual guide, a green box delineating the 224 x 224 patch of pixels viewed by 
+the ML algorithm, and a surrounding image area that we use to provide context 
+to help visually identify the subject.  
+Note that this figure was created in PowerPoint to serve as a visual example, 
+and therefore the images patches were ``haphazardly" placed, not truly randomly 
+generated, as they are for our real ROV survey imagery.
+}
+\label{fig:image_sampling}
 \end{figure}
 \vfil
 }
