@@ -4,11 +4,13 @@
 """
 Zooniverse (up to 4 workflows) -> Toolbox dataset.csv + annotation JSON linker
 
-Workflows:
-  Yes/No          (30787): crowd confirm/deny
-  Yes/No Expert   (31534): expert confirm/deny
-  Multi           (30752): crowd species classification
-  Multi Expert    (31535): expert species classification
+Workflows (each ID set below covers a workflow and any later duplicates of it
+that share the same task structure, e.g. "Part 2" continuations — verify
+against the live Zooniverse project before assuming this list is complete):
+  Yes/No          (30787, 32022): crowd confirm/deny
+  Yes/No Expert   (31534):        expert confirm/deny
+  Multi           (30752, 32023): crowd species classification
+  Multi Expert    (31535):        expert species classification
 
 Label determination rules (applied in priority order):
 
@@ -88,10 +90,15 @@ import pandas as pd
 import numpy as np
 
 # ---------- Workflow IDs ----------
-WORKFLOW_YESNO        = 30787
-WORKFLOW_YESNO_EXPERT = 31534
-WORKFLOW_MULTI        = 30752
-WORKFLOW_MULTI_EXPERT = 31535
+# Each maps to a set because Zooniverse workflows have been duplicated over
+# the project's lifetime (e.g. "Part 2" continuations) while keeping the same
+# task structure — all IDs in a set are treated as the same logical workflow
+# for vote aggregation. Verify current IDs against the Zooniverse project
+# before assuming this list is complete for a new export.
+WORKFLOW_YESNO        = {30787, 32022}   # Yes/No crowd (30787 original, 32022 "Part 2")
+WORKFLOW_YESNO_EXPERT = {31534}          # Yes/No expert review
+WORKFLOW_MULTI        = {30752, 32023}   # Multi-choice crowd (30752 original, 32023 "Part 2")
+WORKFLOW_MULTI_EXPERT = {31535}          # Multi-choice expert review
 
 # YES/NO workflow thresholds
 YESNO_AGREE_MIN_N    = 5
@@ -201,13 +208,15 @@ def get_args_via_gui():
     use_m_var      = tk.BooleanVar(value=cfg.get("use_multi",     True))
     use_m_exp_var  = tk.BooleanVar(value=cfg.get("use_multi_exp", True))
 
-    ttk.Checkbutton(wf_frame, text=f"Yes/No crowd       ({WORKFLOW_YESNO})",
+    def _ids(ws): return ", ".join(str(w) for w in sorted(ws))
+
+    ttk.Checkbutton(wf_frame, text=f"Yes/No crowd       ({_ids(WORKFLOW_YESNO)})",
                     variable=use_yn_var).grid(row=0, column=0, sticky="w", padx=(0, 20))
-    ttk.Checkbutton(wf_frame, text=f"Yes/No expert      ({WORKFLOW_YESNO_EXPERT})",
+    ttk.Checkbutton(wf_frame, text=f"Yes/No expert      ({_ids(WORKFLOW_YESNO_EXPERT)})",
                     variable=use_yn_exp_var).grid(row=0, column=1, sticky="w")
-    ttk.Checkbutton(wf_frame, text=f"Multi-choice crowd ({WORKFLOW_MULTI})",
+    ttk.Checkbutton(wf_frame, text=f"Multi-choice crowd ({_ids(WORKFLOW_MULTI)})",
                     variable=use_m_var).grid(row=1, column=0, sticky="w", padx=(0, 20))
-    ttk.Checkbutton(wf_frame, text=f"Multi-choice expert ({WORKFLOW_MULTI_EXPERT})",
+    ttk.Checkbutton(wf_frame, text=f"Multi-choice expert ({_ids(WORKFLOW_MULTI_EXPERT)})",
                     variable=use_m_exp_var).grid(row=1, column=1, sticky="w")
 
     ttk.Separator(root, orient="horizontal").grid(
@@ -449,9 +458,10 @@ def extract_multi_chosen_label(annotations_str):
 # ============================================================
 # Vote aggregation helpers
 # ============================================================
-def aggregate_yesno_votes(z: pd.DataFrame, workflow_id: int, prefix: str):
-    """Return per-(source_image, row, col) vote summary for one yes/no workflow."""
-    wf = z[z["workflow_id"] == workflow_id].copy()
+def aggregate_yesno_votes(z: pd.DataFrame, workflow_ids: set, prefix: str):
+    """Return per-(source_image, row, col) vote summary for one yes/no workflow
+    (or set of duplicate workflow IDs sharing the same task structure)."""
+    wf = z[z["workflow_id"].isin(workflow_ids)].copy()
     wf["T0"]     = wf["annotations"].apply(extract_T0_yes_no)
     wf["is_yes"] = wf["T0"].eq("yes")
     wf["is_no"]  = wf["T0"].eq("no")
@@ -470,9 +480,10 @@ def aggregate_yesno_votes(z: pd.DataFrame, workflow_id: int, prefix: str):
     votes[f"{prefix}_no_frac"]  = votes[f"{prefix}_no"]  / total
     return votes
 
-def aggregate_multi_votes(z: pd.DataFrame, workflow_id: int, prefix: str):
-    """Return per-(source_image, row, col) top-label summary for one multi workflow."""
-    wf = z[z["workflow_id"] == workflow_id].copy()
+def aggregate_multi_votes(z: pd.DataFrame, workflow_ids: set, prefix: str):
+    """Return per-(source_image, row, col) top-label summary for one multi workflow
+    (or set of duplicate workflow IDs sharing the same task structure)."""
+    wf = z[z["workflow_id"].isin(workflow_ids)].copy()
     wf["chosen_label"] = wf["annotations"].apply(extract_multi_chosen_label)
     wf = wf[wf["chosen_label"].astype(str).str.len() > 0].copy()
 

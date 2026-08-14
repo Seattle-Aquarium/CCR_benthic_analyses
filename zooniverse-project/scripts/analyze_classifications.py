@@ -1,18 +1,38 @@
 """
 analyse_classifications.py  —  Summarise a Zooniverse classification export
-Version: 1.1
+Version: 1.2
 
 Produces a multi-sheet Excel report covering:
-  - Overview            : file-level counts, date range, workflow list
+  - Overview            : file-level counts, date range, workflow list, confirmation-rule summary
   - Workflow Summary    : per-workflow classification & subject stats
-  - Subject Summary     : per-subject retirement status, reason, vote counts
+  - Subject Summary     : per-subject retirement status, reason, vote counts, Outcome
   - User Summary        : per-user classification counts, non-logged-in flag, device mix
   - Answer Breakdown    : vote distribution per answer option per workflow
-  - Source Image        : classifications rolled up by source transect image
+  - Source Image        : classifications rolled up by source transect image, with
+                           per-image patch counts for Verified / Needs Toolbox Review /
+                           Zooniverse — Needs More Votes
   - Time Stats          : classification duration statistics per workflow
   - Transect Completion : per-transect (source_image) progress through the two-workflow pipeline
-      Yes/No workflows (30787, 31534): subjects confirmed (yes) or denied (no/not sure)
-      Multi workflows  (30752, 31535): subjects denied in yes/no are classified here
+      Yes/No workflows (30787, 32022, 31534): subjects confirmed (yes) or denied (no/not sure)
+      Multi workflows  (30752, 32023, 31535): subjects denied in yes/no are classified here
+
+Outcome status — three buckets, and "Toolbox" is reserved for exactly one:
+  - Verified …            : Zooniverse crowd/expert consensus made the call. This
+                             is what gets written into Toolbox's Verified=TRUE field,
+                             but the decision itself happened on Zooniverse.
+  - Zooniverse — Needs More Votes : still active on Zooniverse, waiting on the
+                             crowd/expert queue — not a Toolbox concern, may
+                             resolve on its own.
+  - Needs Toolbox Review   : Zooniverse is done and produced no verdict (explicit
+                             "not sure", or retired from a pipeline stage without
+                             reaching threshold) — bring it into Toolbox for a
+                             human/expert to decide.
+  "Outcome" / "consensus_status" (Subject Summary, Source Image, Transect
+  Completion) is computed with the exact same vote-threshold rules and priority
+  order used by zooni_to_toolbox_annot.py to decide Verified vs Label="Review" —
+  see compute_consensus(). This is intentionally distinct from "Is Retired
+  (Zooniverse)", which only reflects the platform's own retirement rules
+  (e.g. classification_count) and can disagree with the confirmation outcome.
 
 Works on the raw Zooniverse export CSV (no prior flattening needed).
 
@@ -49,6 +69,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
@@ -74,10 +95,63 @@ WHITE      = "FFFFFF"
 GREY_H     = "F2F3F4"
 
 # ── Workflow IDs ──────────────────────────────────────────────────────────────
-YESNO_WORKFLOW_IDS        = {30787, 31534}   # confirm/deny workflows
+YESNO_WORKFLOW_IDS        = {30787, 32022}   # confirm/deny workflows
 YESNO_EXPERT_WORKFLOW_IDS = {31534}          # expert confirm/deny
-MULTI_WORKFLOW_IDS        = {30752, 31535}   # multiple-choice classification workflows
+MULTI_WORKFLOW_IDS        = {30752, 32023}   # multiple-choice classification workflows
 MULTI_EXPERT_WORKFLOW_IDS = {31535}          # expert multiple-choice
+
+# ── Confirmation thresholds ─────────────────────────────────────────────────
+# Must mirror zooni_to_toolbox_annot.py exactly — "Verified" here is a
+# Zooniverse-side consensus decision and means the same thing "Verified"
+# means once written into the Toolbox import; "Needs Toolbox Review" here
+# means the row will land with Label="Review" in Toolbox.
+YESNO_AGREE_MIN_N    = 5
+YESNO_AGREE_MIN_FRAC = 0.75
+MULTI_AGREE_MIN_N    = 3
+MULTI_AGREE_MIN_FRAC = 0.67
+EXPERT_MIN_N         = 1
+
+NOT_SURE_RE = re.compile(r"not sure", re.IGNORECASE)
+
+# consensus_status -> (short outcome label, detail text).
+#
+# Three buckets, and the "Toolbox" word is reserved for exactly one of them:
+#   - Verified …           : Zooniverse crowd/expert consensus made the call.
+#                             Nothing for a person to do — this is what gets
+#                             written into Toolbox's Verified=TRUE field, but
+#                             the decision itself happened on Zooniverse, not
+#                             in Toolbox.
+#   - Zooniverse — Needs More Votes : still active on Zooniverse, waiting on
+#                             the crowd/expert queue. Also not a Toolbox
+#                             concern — it may still resolve on its own.
+#   - Needs Toolbox Review  : Zooniverse is done and produced no verdict
+#                             (explicit "not sure", or retired from a stage
+#                             without reaching threshold). This is the only
+#                             bucket that means "bring it into Toolbox for a
+#                             human/expert to decide."
+#
+# Being denied in Yes/No is NOT by itself a reason for Toolbox review — a
+# "No" consensus is exactly what routes a subject into the Multi-choice
+# workflow next. It only becomes "Needs Toolbox Review" once that next stage
+# has also run its course (retired without reaching Multi-choice consensus)
+# or has returned an explicit "not sure". Until then it's
+# "pending_multi_review": still on Zooniverse's pipeline, no human action
+# needed yet.
+CONSENSUS_OUTCOME_MAP = {
+    "multi_expert":     ("Verified — Multi-choice (expert)", "Expert multi-choice consensus"),
+    "multi_consensus":  ("Verified — Multi-choice (crowd)",  "Volunteer multi-choice consensus"),
+    "confirm_expert":   ("Verified — Yes/No (expert)",       "Confirmed by expert yes/no vote"),
+    "confirm_pred":     ("Verified — Yes/No (crowd)",        "Confirmed by volunteer yes/no vote"),
+    "voted_review":     ("Needs Toolbox Review",             "Volunteers voted 'not sure' in Multi-choice — "
+                                                               "bring into Toolbox for expert review"),
+    "stalled_no_consensus": ("Needs Toolbox Review",         "Retired on Zooniverse without reaching the "
+                                                               "confirmation threshold — no more votes are coming; "
+                                                               "bring into Toolbox for expert review"),
+    "pending_multi_review": ("Zooniverse — Needs More Votes", "Denied in Yes/No; awaiting Multi-choice consensus "
+                                                               "on Zooniverse"),
+    "needs_more_votes": ("Zooniverse — Needs More Votes",    "Still active on Zooniverse and may reach consensus "
+                                                               "on its own"),
+}
 
 
 # ============================================================
@@ -124,7 +198,7 @@ def get_args_via_gui():
     )
 
     ttk.Label(root, text="Output folder:").grid(row=4, column=0, sticky="e", **pad)
-    output_dir_var = tk.StringVar(value="reports")
+    output_dir_var = tk.StringVar()
     ttk.Entry(root, textvariable=output_dir_var, width=55).grid(row=4, column=1, **pad)
 
     def browse_output_dir():
@@ -330,19 +404,259 @@ def parse_subject_data(series: pd.Series) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def parse_annotations(series: pd.Series) -> pd.Series:
-    """Return the first task answer for each classification (cleaned)."""
+def _annotation_value_to_string(v) -> str:
+    """Coerce a Zooniverse annotation `value` (str/num/bool/list/dict) to text."""
+    if v is None:
+        return ""
+    if isinstance(v, str):
+        return v.strip()
+    if isinstance(v, (int, float, bool)):
+        return str(v)
+    if isinstance(v, list):
+        return ", ".join(str(x).strip() for x in v if str(x).strip())
+    if isinstance(v, dict):
+        for key in ("choice", "label", "value", "answers"):
+            if key in v:
+                s = _annotation_value_to_string(v.get(key))
+                if s:
+                    return s
+        try:
+            return json.dumps(v, ensure_ascii=False)
+        except Exception:
+            return str(v)
+    return str(v).strip()
+
+
+def parse_annotations(series: pd.Series, workflow_ids: pd.Series) -> pd.Series:
+    """
+    Return the answer used for consensus for each classification.
+
+    Yes/No workflows: the single task's answer (cleaned).
+    Multi-choice workflows: most-specific answered task wins (T3 > T2 > T1 > T0),
+    mirroring extract_multi_chosen_label() in zooni_to_toolbox_annot.py so that
+    "top answer" here means the same thing as the consensus label that drives
+    the Toolbox import — a follow-up sub-choice (T1/T2/T3), not the broad T0
+    category, decides the vote.
+    """
+    multi_ids = MULTI_WORKFLOW_IDS | MULTI_EXPERT_WORKFLOW_IDS
     answers = []
-    for val in series:
+    for val, wf_id in zip(series, workflow_ids):
         try:
             ann = json.loads(val)
-            if ann and isinstance(ann, list):
-                answers.append(clean_answer(ann[0].get("value", "")))
-            else:
-                answers.append("")
         except Exception:
             answers.append("")
+            continue
+        if not isinstance(ann, list) or not ann:
+            answers.append("")
+            continue
+
+        if wf_id in multi_ids:
+            by_task = {d.get("task"): d.get("value", "")
+                       for d in ann if isinstance(d, dict) and "task" in d}
+            chosen = ""
+            for t in ("T3", "T2", "T1", "T0"):
+                v = _annotation_value_to_string(by_task.get(t, ""))
+                if v:
+                    chosen = v
+                    break
+            answers.append(clean_answer(chosen))
+        else:
+            answers.append(clean_answer(_annotation_value_to_string(ann[0].get("value", ""))))
     return pd.Series(answers, dtype=str)
+
+
+# ============================================================
+# CONSENSUS (mirrors zooni_to_toolbox_annot.py)
+# ============================================================
+def compute_consensus(flat: pd.DataFrame) -> pd.DataFrame:
+    """
+    Per-subject confirmation status, using the exact workflow groupings and
+    vote thresholds from zooni_to_toolbox_annot.py, extended to reflect the
+    two-stage Zooniverse pipeline (Yes/No, then Multi-choice for subjects
+    denied in Yes/No):
+
+      1. Multi expert consensus  (n>=1, agreement>=67%)   -> multi_expert
+      2. Multi crowd consensus   (n>=3, agreement>=67%)   -> multi_consensus
+         (either multi step above overrides a yes/no denial;
+          a "not sure" consensus label -> voted_review instead)
+      3. Yes/No expert confirm   (n>=1, >=75% yes)         -> confirm_expert
+      4. Yes/No crowd confirm    (n>=5, >=75% yes)         -> confirm_pred
+         (only if no multi consensus, and expert didn't deny)
+      5. Denied in yes/no (expert or crowd, >=75% no), AND
+         it has since been retired from every Multi-choice
+         workflow it was sent to without reaching Multi
+         consensus there either (dead end)                 -> stalled_no_consensus
+      6. Denied in yes/no, but Multi-choice hasn't reached a
+         verdict yet (still active there, or not yet queued
+         into a Multi subject set) — this is expected
+         pipeline routing, not a problem                    -> pending_multi_review
+      7. Never confirmed/denied in Yes/No, and retired from
+         every Yes/No workflow it was sent to (hit the
+         classification-count cap before reaching either
+         threshold)                                         -> stalled_no_consensus
+      8. Otherwise (still active on Zooniverse)              -> needs_more_votes
+
+    consensus_status values 1-4 correspond to Toolbox Verified=TRUE. Of the
+    rest, only needs_more_votes/pending_multi_review are subjects that could
+    still resolve on their own with more Zooniverse votes — voted_review and
+    stalled_no_consensus are dead ends that need a human decision in Toolbox.
+    Being denied in Yes/No is deliberately NOT treated as "needs review" by
+    itself: a "No" consensus is exactly what's supposed to route a subject
+    into the Multi-choice workflow next, so it only becomes a review case
+    once that next stage has also stalled without a verdict.
+
+    Returns one row per subject_ids seen in `flat`, so callers can merge this
+    back onto any subject-level view (subject summary, source image rollups,
+    transect completion).
+    """
+    def _yn_votes(ids: set) -> pd.DataFrame:
+        g = flat[flat["workflow_id"].isin(ids)]
+        cols = ["subject_ids", "n", "yes_frac", "no_frac"]
+        if g.empty:
+            return pd.DataFrame(columns=cols).set_index("subject_ids")
+        ans = g["answer"].astype(str).str.strip().str.lower()
+        is_yes = ans.eq("yes")
+        is_no  = ans.str.contains("no") & ~is_yes
+        tmp = pd.DataFrame({"subject_ids": g["subject_ids"].values,
+                            "is_yes": is_yes.values, "is_no": is_no.values})
+        agg = tmp.groupby("subject_ids").agg(n=("is_yes", "size"),
+                                             yes=("is_yes", "sum"),
+                                             no=("is_no", "sum"))
+        agg["yes_frac"] = agg["yes"] / agg["n"]
+        agg["no_frac"]  = agg["no"] / agg["n"]
+        return agg[["n", "yes_frac", "no_frac"]]
+
+    def _multi_votes(ids: set) -> pd.DataFrame:
+        g = flat[flat["workflow_id"].isin(ids)]
+        g = g[g["answer"].astype(str).str.len() > 0]
+        cols = ["subject_ids", "n", "top_label", "top_count", "agreement"]
+        if g.empty:
+            return pd.DataFrame(columns=cols).set_index("subject_ids")
+        counts = (g.groupby(["subject_ids", "answer"]).size()
+                   .reset_index(name="count"))
+        counts = counts.sort_values(["subject_ids", "count", "answer"],
+                                    ascending=[True, False, True])
+        top = (counts.drop_duplicates("subject_ids", keep="first")
+                     .set_index("subject_ids")
+                     .rename(columns={"answer": "top_label", "count": "top_count"}))
+        n = g.groupby("subject_ids").size().rename("n")
+        out = top.join(n)
+        out["agreement"] = out["top_count"] / out["n"]
+        return out[["n", "top_label", "top_count", "agreement"]]
+
+    yn     = _yn_votes(YESNO_WORKFLOW_IDS)
+    yn_exp = _yn_votes(YESNO_EXPERT_WORKFLOW_IDS)
+    m      = _multi_votes(MULTI_WORKFLOW_IDS)
+    m_exp  = _multi_votes(MULTI_EXPERT_WORKFLOW_IDS)
+
+    ids = pd.Index(flat["subject_ids"].dropna().unique(), name="subject_ids")
+    out = pd.DataFrame(index=ids)
+
+    def _num(series, default=0.0):
+        return pd.to_numeric(series, errors="coerce").fillna(default)
+
+    out["yn_n"]            = _num(yn.reindex(ids)["n"]).astype(int)
+    out["yn_yes_frac"]     = _num(yn.reindex(ids)["yes_frac"])
+    out["yn_no_frac"]      = _num(yn.reindex(ids)["no_frac"])
+    out["yn_exp_n"]        = _num(yn_exp.reindex(ids)["n"]).astype(int)
+    out["yn_exp_yes_frac"] = _num(yn_exp.reindex(ids)["yes_frac"])
+    out["yn_exp_no_frac"]  = _num(yn_exp.reindex(ids)["no_frac"])
+    out["m_n"]             = _num(m.reindex(ids)["n"]).astype(int)
+    out["m_top_label"]     = m.reindex(ids)["top_label"]
+    out["m_agreement"]     = _num(m.reindex(ids)["agreement"])
+    out["m_exp_n"]         = _num(m_exp.reindex(ids)["n"]).astype(int)
+    out["m_exp_top_label"] = m_exp.reindex(ids)["top_label"]
+    out["m_exp_agreement"] = _num(m_exp.reindex(ids)["agreement"])
+
+    yn_confirm     = (out["yn_n"]     >= YESNO_AGREE_MIN_N) & (out["yn_yes_frac"]     >= YESNO_AGREE_MIN_FRAC)
+    yn_deny        = (out["yn_n"]     >= YESNO_AGREE_MIN_N) & (out["yn_no_frac"]      >= YESNO_AGREE_MIN_FRAC)
+    yn_exp_confirm = (out["yn_exp_n"] >= EXPERT_MIN_N)      & (out["yn_exp_yes_frac"] >= YESNO_AGREE_MIN_FRAC)
+    yn_exp_deny    = (out["yn_exp_n"] >= EXPERT_MIN_N)      & (out["yn_exp_no_frac"]  >= YESNO_AGREE_MIN_FRAC)
+
+    m_consensus     = (out["m_n"]     >= MULTI_AGREE_MIN_N) & (out["m_agreement"]     >= MULTI_AGREE_MIN_FRAC)
+    m_exp_consensus = (out["m_exp_n"] >= EXPERT_MIN_N)      & (out["m_exp_agreement"] >= MULTI_AGREE_MIN_FRAC)
+
+    m_not_sure     = out["m_top_label"].astype(str).str.contains(NOT_SURE_RE)
+    m_exp_not_sure = out["m_exp_top_label"].astype(str).str.contains(NOT_SURE_RE)
+
+    yn_denied = yn_deny | yn_exp_deny
+
+    # ── Retirement, scoped per pipeline stage ───────────────────────────
+    # "Retired everywhere" needs to be checked separately for the Yes/No
+    # stage and the Multi-choice stage, because a subject denied in Yes/No
+    # is *expected* to still be active (or not yet queued) in Multi-choice —
+    # that's the pipeline working normally, not a dead end. A stage counts
+    # as exhausted only when the subject appeared in it and is retired in
+    # every workflow of that stage it appeared in.
+    def _stage_retirement(workflow_ids: set):
+        stage = flat[flat["workflow_id"].isin(workflow_ids)]
+        if stage.empty:
+            empty = pd.Series(False, index=ids)
+            return empty, empty.copy()
+        retired_by_wf = stage.groupby(["subject_ids", "workflow_id"])["is_retired"].first()
+        has_data       = retired_by_wf.groupby("subject_ids").size().reindex(ids, fill_value=0).gt(0)
+        retired_all    = retired_by_wf.groupby("subject_ids").all().reindex(ids, fill_value=False)
+        return has_data, has_data & retired_all
+
+    yn_ids_set    = YESNO_WORKFLOW_IDS | YESNO_EXPERT_WORKFLOW_IDS
+    multi_ids_set = MULTI_WORKFLOW_IDS | MULTI_EXPERT_WORKFLOW_IDS
+
+    yn_has_data, yn_stage_exhausted       = _stage_retirement(yn_ids_set)
+    multi_has_data, multi_stage_exhausted = _stage_retirement(multi_ids_set)
+    overall_has_data, overall_exhausted   = _stage_retirement(yn_ids_set | multi_ids_set)
+
+    out["zooniverse_active"]             = overall_has_data & ~overall_exhausted
+    out["zooniverse_retired_everywhere"] = overall_has_data & overall_exhausted
+
+    denied_multi_stalled = yn_denied & multi_has_data & multi_stage_exhausted
+    denied_pending       = yn_denied & ~denied_multi_stalled
+    yn_only_stalled       = (~yn_denied) & yn_has_data & yn_stage_exhausted
+
+    out["consensus_status"] = np.select(
+        [m_exp_consensus & m_exp_not_sure,
+         m_exp_consensus,
+         m_consensus & m_not_sure,
+         m_consensus,
+         yn_exp_confirm,
+         yn_confirm & ~yn_exp_deny,
+         denied_multi_stalled,
+         denied_pending,
+         yn_only_stalled],
+        ["voted_review",
+         "multi_expert",
+         "voted_review",
+         "multi_consensus",
+         "confirm_expert",
+         "confirm_pred",
+         "stalled_no_consensus",
+         "pending_multi_review",
+         "stalled_no_consensus"],
+        default="needs_more_votes"
+    )
+
+    out["zooniverse_verified"] = out["consensus_status"].isin(
+        ["multi_expert", "multi_consensus", "confirm_expert", "confirm_pred"])
+    outcome = out["consensus_status"].map(CONSENSUS_OUTCOME_MAP)
+    out["consensus_outcome"] = outcome.map(lambda t: t[0] if isinstance(t, tuple) else "Zooniverse — Needs More Votes")
+    out["consensus_detail"]  = outcome.map(lambda t: t[1] if isinstance(t, tuple) else "Insufficient votes")
+
+    # Refine detail text with the specific reason for the two multi-stage buckets.
+    stalled_after_denial = out["consensus_status"].eq("stalled_no_consensus") & denied_multi_stalled
+    out.loc[stalled_after_denial, "consensus_detail"] = (
+        "Denied in Yes/No, then retired from the Multi-choice workflow without "
+        "reaching consensus there either; will not receive more votes automatically")
+
+    pending = out["consensus_status"].eq("pending_multi_review")
+    multi_votes_so_far = out["m_n"] + out["m_exp_n"]
+    has_votes = pending & (multi_votes_so_far > 0)
+    no_votes  = pending & ~has_votes
+    out.loc[has_votes, "consensus_detail"] = (
+        "Denied in Yes/No; awaiting Multi-choice consensus on Zooniverse ("
+        + multi_votes_so_far[has_votes].astype(int).astype(str) + " vote(s) so far)")
+    out.loc[no_votes, "consensus_detail"] = (
+        "Denied in Yes/No; not yet classified in the Multi-choice workflow")
+
+    return out.reset_index()
 
 
 # ============================================================
@@ -374,7 +688,7 @@ def load_and_flatten(csv_path: str,
     log.info("Parsing JSON columns…")
     subj_df = parse_subject_data(raw["subject_data"])
     meta_df = parse_metadata(raw["metadata"])
-    answers  = parse_annotations(raw["annotations"])
+    answers  = parse_annotations(raw["annotations"], raw["workflow_id"])
 
     flat = pd.concat([
         raw[["classification_id", "user_name", "user_id",
@@ -431,6 +745,22 @@ def load_and_flatten(csv_path: str,
         sys.exit(1)
 
     log.info(f"Flat table: {len(flat):,} rows, {len(flat.columns)} columns")
+
+    if workflow_id is not None or date_from is not None or date_to is not None:
+        log.warning("Workflow/date filters are active — the Verified / Needs Toolbox "
+                    "Review status below is computed only from the votes present in "
+                    "this filtered export and may not reflect the true outcome once "
+                    "all workflows and classifications are counted.")
+
+    log.info("Computing Zooniverse consensus / Toolbox review status per subject "
+             "(same thresholds as zooni_to_toolbox_annot.py)…")
+    consensus = compute_consensus(flat)
+    flat = flat.merge(
+        consensus[["subject_ids", "consensus_status", "zooniverse_verified",
+                   "consensus_outcome", "consensus_detail",
+                   "zooniverse_active", "zooniverse_retired_everywhere"]],
+        on="subject_ids", how="left")
+
     return flat
 
 
@@ -444,14 +774,34 @@ def build_overview(flat: pd.DataFrame, filters: dict) -> pd.DataFrame:
                        + " — " + d["workflow_name"])
                ["combined"].tolist())
 
+    subjects = flat.drop_duplicates("subject_ids")
+    outcome_counts = subjects["consensus_outcome"].value_counts()
+
     rows = [
         ("Export file rows analysed",   len(flat)),
         ("Unique subjects",             flat["subject_ids"].nunique()),
         ("Unique classifiers (named)",  flat.loc[~flat["is_anonymous"], "user_name"].nunique()),
         ("Non-logged-in classifications", flat["is_anonymous"].sum()),
         ("Non-logged-in %",             f"{flat['is_anonymous'].mean()*100:.1f}%"),
-        ("Retired subjects",            flat.drop_duplicates("subject_ids")["is_retired"].sum()),
-        ("Not yet retired subjects",    (~flat.drop_duplicates("subject_ids")["is_retired"]).sum()),
+        ("Retired subjects (all subject sets exhausted)", int(subjects["zooniverse_retired_everywhere"].sum())),
+        ("Active subjects (still on Zooniverse somewhere)", int(subjects["zooniverse_active"].sum())),
+        ("Verified — Yes/No (Zooniverse consensus)",     int(subjects["consensus_status"].isin(["confirm_pred", "confirm_expert"]).sum())),
+        ("Verified — Multi-choice (Zooniverse consensus)", int(subjects["consensus_status"].isin(["multi_consensus", "multi_expert"]).sum())),
+        ("Zooniverse — Needs More Votes (still active, may resolve on its own)",
+         int(outcome_counts.get("Zooniverse — Needs More Votes", 0))),
+        ("—   of which denied in Yes/No, awaiting Multi-choice",
+         int((subjects["consensus_status"] == "pending_multi_review").sum())),
+        ("Needs Toolbox Review (Zooniverse exhausted, no verdict — bring to Toolbox)",
+         int(outcome_counts.get("Needs Toolbox Review", 0))),
+        ("—   of which voted 'not sure' in Multi-choice",
+         int((subjects["consensus_status"] == "voted_review").sum())),
+        ("—   of which stalled (retired, no consensus reached)",
+         int((subjects["consensus_status"] == "stalled_no_consensus").sum())),
+        ("Confirmation thresholds (match zooni_to_toolbox_annot.py)",
+         f"Yes/No: n≥{YESNO_AGREE_MIN_N} & ≥{YESNO_AGREE_MIN_FRAC:.0%} yes | "
+         f"Yes/No expert: n≥{EXPERT_MIN_N} & ≥{YESNO_AGREE_MIN_FRAC:.0%} yes | "
+         f"Multi: n≥{MULTI_AGREE_MIN_N} & ≥{MULTI_AGREE_MIN_FRAC:.0%} agreement | "
+         f"Multi expert: n≥{EXPERT_MIN_N} & ≥{MULTI_AGREE_MIN_FRAC:.0%} agreement"),
         ("Date range (first)",          str(flat["created_at"].min())[:19] if flat["created_at"].notna().any() else "—"),
         ("Date range (last)",           str(flat["created_at"].max())[:19] if flat["created_at"].notna().any() else "—"),
         ("Workflows in this file",      ", ".join(wf_list)),
@@ -493,12 +843,35 @@ def build_workflow_summary(flat: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_subject_summary(flat: pd.DataFrame) -> pd.DataFrame:
-    """One row per unique subject with retirement info and vote counts."""
+    """
+    One row per unique subject (image patch) with retirement info, vote
+    counts, and the classification outcome (see compute_consensus).
+
+    "Outcome" is one of three things — and only one of them is a Toolbox
+    concern:
+      - Verified …             : Zooniverse crowd/expert consensus decided
+                                  it. Nothing to do; this is what will be
+                                  written into Toolbox's Verified=TRUE field.
+      - Zooniverse — Needs More Votes : still active, may resolve on its own.
+      - Needs Toolbox Review    : Zooniverse produced no verdict and won't
+                                  produce one automatically — bring this
+                                  subject into Toolbox for a human decision.
+
+    "Zooniverse Status" is "Retired" only if the subject has been retired in
+    *every* tracked workflow/subject set it was sent to (won't receive any
+    more votes); otherwise "Active" (still circulating somewhere and could
+    still gain votes). A subject can show "Zooniverse — Needs More Votes" +
+    "Active" (genuinely still pending) or "Needs Toolbox Review" + "Retired"
+    (Zooniverse is done with it, but our threshold was never reached) —
+    those are the two ends of the same axis.
+    """
     rows = []
     for subj_id, g in flat.groupby("subject_ids"):
-        # Retirement info comes from any row for this subject (all carry same data)
-        r      = g.iloc[0]
-        retired = r["is_retired"]
+        r = g.iloc[0]
+        # "any row retired" is just informational context for the reason/date
+        # below — the authoritative retirement signal is zooniverse_retired_everywhere.
+        retired_any = bool(g["is_retired"].any())
+        retired_everywhere = bool(r["zooniverse_retired_everywhere"])
 
         top_answer = g["answer"].mode().iloc[0] if not g["answer"].empty else ""
 
@@ -511,16 +884,21 @@ def build_subject_summary(flat: pd.DataFrame) -> pd.DataFrame:
             "Model Prediction Name":            r["model_pred_name"],
             "Total Classifications":            len(g),
             "Top Answer (most votes)":          top_answer,
-            "Is Retired":                       retired,
-            "Retirement Reason":                r["retirement_reason"] if retired else "—",
-            "Classifications at Retirement":    r["classifications_count_at_retire"] if retired else "—",
-            "Retired At":                       str(r["retired_at"])[:19] if retired and r["retired_at"] else "—",
+            "Outcome":                          r["consensus_outcome"],
+            "Outcome Detail":                   r["consensus_detail"],
+            "Zooniverse Status":                "Retired (all subject sets)" if retired_everywhere else "Active",
+            "Retirement Reason":                r["retirement_reason"] if retired_any else "—",
+            "Classifications at Retirement":    r["classifications_count_at_retire"] if retired_any else "—",
+            "Retired At":                       str(r["retired_at"])[:19] if retired_any and r["retired_at"] else "—",
             "Workflow(s)":                      ", ".join(g["workflow_id"].astype(str).unique()),
         })
     df = pd.DataFrame(rows)
-    # Sort: retired first, then by total classifications desc
-    df = df.sort_values(["Is Retired", "Total Classifications"],
-                        ascending=[False, False]).reset_index(drop=True)
+    # Sort: Needs Toolbox Review first (this is the only bucket needing human
+    # action), then still-pending-on-Zooniverse, then Verified last.
+    outcome_priority = {"Needs Toolbox Review": 0, "Zooniverse — Needs More Votes": 1}
+    df["_sort"] = df["Outcome"].map(lambda o: outcome_priority.get(o, 2))
+    df = df.sort_values(["_sort", "Total Classifications"],
+                        ascending=[True, False]).drop(columns=["_sort"]).reset_index(drop=True)
     return df
 
 
@@ -563,24 +941,40 @@ def build_answer_breakdown(flat: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_source_image_summary(flat: pd.DataFrame) -> pd.DataFrame:
+    """
+    Per source (transect) image: how many patches (subjects) are retired on
+    the Zooniverse platform, and — separately — how many of those patches
+    have actually been confirmed via the Yes/No or Multi-choice workflow
+    consensus rules (Verified), vs are still active and waiting on more
+    volunteer votes (Zooniverse's job, not Toolbox's), vs have exhausted
+    Zooniverse without a verdict and need a human to review them in Toolbox.
+    Platform retirement and Verified status can disagree (e.g. a subject can
+    be platform-retired on classification_count before reaching our
+    agreement threshold — that's exactly the "Needs Toolbox Review" case).
+    """
     rows = []
     for src, g in flat.groupby("source_image"):
         subjects  = g.drop_duplicates("subject_ids")
-        retired   = subjects[subjects["is_retired"]]
+        status    = subjects["consensus_status"]
         rows.append({
             "Source Image":                 src,
-            "Total Subjects":               len(subjects),
-            "Retired":                      len(retired),
-            "Not Retired":                  len(subjects) - len(retired),
-            "Retired — consensus":          (retired["retirement_reason"] == "consensus").sum(),
-            "Retired — classification_count": (retired["retirement_reason"] == "classification_count").sum(),
+            "Total Subjects (patches)":     len(subjects),
+            "Retired (all subject sets)":   int(subjects["zooniverse_retired_everywhere"].sum()),
+            "Active on Zooniverse":         int(subjects["zooniverse_active"].sum()),
+            "Verified — Yes/No":            int(status.isin(["confirm_pred", "confirm_expert"]).sum()),
+            "Verified — Multi-choice":      int(status.isin(["multi_consensus", "multi_expert"]).sum()),
+            "Zooniverse — Needs More Votes": int(status.isin(["needs_more_votes", "pending_multi_review"]).sum()),
+            "— Denied in Yes/No, awaiting Multi-choice": int((status == "pending_multi_review").sum()),
+            "Needs Toolbox Review":         int(status.isin(["voted_review", "stalled_no_consensus"]).sum()),
+            "— Voted Not Sure (Multi)":     int((status == "voted_review").sum()),
+            "— Stalled (retired, no consensus)": int((status == "stalled_no_consensus").sum()),
             "Total Classifications":        len(g),
             "Avg Classifications/Subject":  f"{len(g)/len(subjects):.2f}" if len(subjects) else "—",
             "Unique Users":                 g.loc[~g["is_anonymous"], "user_name"].nunique(),
             "Non-logged-in Classifications": g["is_anonymous"].sum(),
             "Workflow(s)":                  ", ".join(g["workflow_id"].astype(str).unique()),
         })
-    df = pd.DataFrame(rows).sort_values("Total Subjects", ascending=False).reset_index(drop=True)
+    df = pd.DataFrame(rows).sort_values("Total Subjects (patches)", ascending=False).reset_index(drop=True)
     return df
 
 
@@ -608,135 +1002,93 @@ def build_time_stats(flat: pd.DataFrame) -> pd.DataFrame:
 
 def build_transect_completion(flat: pd.DataFrame) -> pd.DataFrame:
     """
-    One row per transect showing pipeline completion.
+    One row per transect showing pipeline completion, using the same vote
+    thresholds as zooni_to_toolbox_annot.py (see compute_consensus) rather
+    than Zooniverse's own platform retirement flag.
 
     Groups by transect_id when present in subject metadata (stamped by
     import_subjects.py / patch_subject_metadata.py). Falls back to
     source_image for older subjects that pre-date that field.
 
-    A subject is considered *done* when:
-      - Retired in a yes/no workflow with a Yes consensus  → confirmed_yn
-      - Retired in a multi workflow (was denied in yes/no) → multi_done
+    A subject is *Resolved* once it has a determination — either Verified
+    (Zooniverse crowd/expert consensus, Yes/No or Multi-choice) or flagged
+    Needs Toolbox Review (crowd voted "not sure" in Multi-choice, or
+    Stalled: retired from every workflow of a pipeline stage without ever
+    reaching our threshold there — Zooniverse is done and produced no
+    verdict, so a human needs to open Toolbox and decide). Being denied in
+    Yes/No is NOT by itself a review case — it's the expected trigger for
+    the Multi-choice stage, so those subjects count as *Pending* (see
+    "awaiting Multi-choice") right along with subjects still collecting
+    Yes/No votes — Zooniverse's job, not Toolbox's — unless Multi-choice has
+    also stalled without a verdict.
 
-    Subjects denied in yes/no but not yet retired in multi are *pending*.
-    Subjects not yet retired in yes/no are also *pending*.
+    "Retired (all subject sets)" is reported alongside for reference, since
+    the platform can retire a subject (e.g. on classification_count) before
+    or after our agreement threshold is reached — the two do not always
+    agree, which is exactly what the Stalled bucket above is for.
     """
-    # Resolve the grouping key per subject: prefer transect_id, fall back to source_image
     flat = flat.copy()
     flat["_transect_key"] = flat["transect_id"].where(
         flat["transect_id"].notna() & (flat["transect_id"].astype(str).str.strip() != ""),
         other=flat["source_image"]
     )
 
-    yn_flat    = flat[flat["workflow_id"].isin(YESNO_WORKFLOW_IDS)]
-    multi_flat = flat[flat["workflow_id"].isin(MULTI_WORKFLOW_IDS)]
-
-    # Sets of subject_ids that appeared in expert workflows
     yn_expert_subjects    = set(flat.loc[flat["workflow_id"].isin(YESNO_EXPERT_WORKFLOW_IDS), "subject_ids"])
     multi_expert_subjects = set(flat.loc[flat["workflow_id"].isin(MULTI_EXPERT_WORKFLOW_IDS), "subject_ids"])
 
-    # Build per-subject lookup for yes/no workflow
-    subj_yn: dict = {}
-    for subj_id, g in yn_flat.groupby("subject_ids"):
-        r        = g.iloc[0]
-        top_ans  = g["answer"].mode().iloc[0] if not g["answer"].empty else ""
-        subj_yn[subj_id] = {
-            "transect_key":    r["_transect_key"],
-            "retired":         bool(r["is_retired"]),
-            "top_answer":      top_ans,
-            "is_yes":          "yes" in str(top_ans).lower(),
-            "n_classifications": len(g),
-        }
+    subj = flat.drop_duplicates("subject_ids")[
+        ["subject_ids", "_transect_key", "is_retired", "consensus_status",
+         "zooniverse_retired_everywhere"]
+    ].copy()
+    subj = subj[subj["_transect_key"].notna() & (subj["_transect_key"].astype(str).str.strip() != "")]
+    subj["sent_to_yn_expert"]    = subj["subject_ids"].isin(yn_expert_subjects)
+    subj["sent_to_multi_expert"] = subj["subject_ids"].isin(multi_expert_subjects)
 
-    # Build per-subject lookup for multi workflow
-    subj_multi: dict = {}
-    for subj_id, g in multi_flat.groupby("subject_ids"):
-        r = g.iloc[0]
-        subj_multi[subj_id] = {
-            "transect_key":    r["_transect_key"],
-            "retired":         bool(r["is_retired"]),
-            "n_classifications": len(g),
-        }
-
-    all_transects = flat["_transect_key"].dropna().unique()
     rows = []
-
-    for src in sorted(all_transects):
-        yn_src    = {sid: v for sid, v in subj_yn.items()    if v["transect_key"] == src}
-        multi_src = {sid: v for sid, v in subj_multi.items() if v["transect_key"] == src}
-        all_ids   = set(yn_src) | set(multi_src)
-
-        confirmed_yn          = 0  # retired in yn, yes consensus
-        denied_yn_multi_done  = 0  # denied in yn, then retired in multi
-        denied_yn_multi_pend  = 0  # denied in yn, in multi but not yet retired
-        denied_yn_awaiting    = 0  # denied in yn, not yet seen in multi
-        pending_yn            = 0  # in yn but not yet retired
-        multi_only_done       = 0  # only in multi, retired
-        multi_only_pend       = 0  # only in multi, not yet retired
-        sent_to_yn_expert     = 0  # appeared in expert yes/no workflow
-        sent_to_multi_expert  = 0  # appeared in expert multi workflow
-
-        for sid in all_ids:
-            if sid in yn_expert_subjects:
-                sent_to_yn_expert += 1
-            if sid in multi_expert_subjects:
-                sent_to_multi_expert += 1
-
-            in_yn    = sid in yn_src
-            in_multi = sid in multi_src
-
-            if in_yn and not in_multi:
-                info = yn_src[sid]
-                if info["retired"]:
-                    if info["is_yes"]:
-                        confirmed_yn += 1
-                    else:
-                        denied_yn_awaiting += 1
-                else:
-                    pending_yn += 1
-            elif in_yn and in_multi:
-                if multi_src[sid]["retired"]:
-                    denied_yn_multi_done += 1
-                else:
-                    denied_yn_multi_pend += 1
-            else:  # multi only
-                if multi_src[sid]["retired"]:
-                    multi_only_done += 1
-                else:
-                    multi_only_pend += 1
-
-        total   = len(all_ids)
-        done    = confirmed_yn + denied_yn_multi_done + multi_only_done
-        pending = total - done
-        pct     = done / total * 100 if total > 0 else 0.0
-        status  = "Complete" if done == total else "In Progress"
+    for key, g in subj.groupby("_transect_key"):
+        status_col   = g["consensus_status"]
+        total        = len(g)
+        confirmed_yn = int(status_col.isin(["confirm_pred", "confirm_expert"]).sum())
+        confirmed_m  = int(status_col.isin(["multi_consensus", "multi_expert"]).sum())
+        not_sure     = int((status_col == "voted_review").sum())
+        stalled      = int((status_col == "stalled_no_consensus").sum())
+        needs_review = not_sure + stalled
+        awaiting_multi = int((status_col == "pending_multi_review").sum())
+        needs_votes  = int((status_col == "needs_more_votes").sum())
+        pending      = needs_votes + awaiting_multi
+        resolved     = confirmed_yn + confirmed_m + needs_review
+        pct          = resolved / total * 100 if total > 0 else 0.0
+        status       = "Complete" if resolved == total else "In Progress"
 
         rows.append({
-            "Transect":                         src,
-            "Status":                           status,
-            "Completion %":                     round(pct, 1),
-            "Total Subjects":                   total,
-            "Done":                             done,
-            "Pending":                          pending,
-            # ── Yes/No breakdown ──────────────────────────────
-            "YesNo — Subjects":                 len(yn_src),
-            "YesNo — Confirmed Yes (retired)":  confirmed_yn,
-            "YesNo — Denied, sent to Multi":    denied_yn_awaiting + denied_yn_multi_done + denied_yn_multi_pend,
-            "YesNo — Pending (not retired)":    pending_yn,
-            # ── Multi breakdown ───────────────────────────────
-            "Multi — Subjects":                 len(multi_src),
-            "Multi — Retired (done)":           denied_yn_multi_done + multi_only_done,
-            "Multi — Pending (not retired)":    denied_yn_multi_pend + multi_only_pend,
+            "Transect":                        key,
+            "Status":                          status,
+            "Resolved %":                      round(pct, 1),
+            "Total Subjects":                  total,
+            "Resolved":                        resolved,
+            "Zooniverse — Needs More Votes":   pending,
+            "— Awaiting Yes/No votes":         needs_votes,
+            "— Denied in Yes/No, awaiting Multi-choice": awaiting_multi,
+            # ── Outcome breakdown ──────────────────────────────
+            "Confirmed — Yes/No":              confirmed_yn,
+            "Confirmed — Multi-choice":        confirmed_m,
+            "Needs Toolbox Review":            needs_review,
+            "— Voted Not Sure (Multi)":        not_sure,
+            "— Stalled (retired, no consensus)": stalled,
             # ── Expert review ─────────────────────────────────
-            "Sent to Expert Yes/No":            sent_to_yn_expert,
-            "Sent to Expert Multi-choice":      sent_to_multi_expert,
+            "Sent to Expert Yes/No":           int(g["sent_to_yn_expert"].sum()),
+            "Sent to Expert Multi-choice":     int(g["sent_to_multi_expert"].sum()),
+            # ── Zooniverse platform retirement (reference only) ──
+            "Retired (all subject sets)":      int(g["zooniverse_retired_everywhere"].sum()),
         })
 
     df = pd.DataFrame(rows)
-    # Sort: In Progress first, then Complete; within each group by completion % desc
+    if df.empty:
+        return df
+    # Sort: In Progress first, then Complete; within each group by resolved % desc
     status_order = {"In Progress": 0, "Complete": 1}
     df["_sort"] = df["Status"].map(status_order)
-    df = (df.sort_values(["_sort", "Completion %"], ascending=[True, False])
+    df = (df.sort_values(["_sort", "Resolved %"], ascending=[True, False])
             .drop(columns=["_sort"])
             .reset_index(drop=True))
     return df
