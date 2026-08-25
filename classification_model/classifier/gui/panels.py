@@ -13,6 +13,8 @@ fourth costs an hour of GPU time, the default is worth the extra click.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import customtkinter as ctk
 
 from ..config import BalanceConfig, EvalConfig, ExtractConfig, TrainConfig
@@ -390,16 +392,47 @@ class TrainPanel(StagePanel):
              "always works, slowly."
              ).grid(row=1, column=0, sticky="w", pady=(8, 0))
 
-        c = self.card("Run name", "Where Ultralytics writes weights and plots.")
-        g = self.grid_body(c)
-        label(g, "Project", muted=True).grid(row=0, column=0, sticky="w",
-                                             padx=(0, 6), pady=5)
-        self.project = entry(g, "runs/classify", width=380)
-        self.project.grid(row=0, column=1, sticky="w", pady=5)
-        label(g, "Name", muted=True).grid(row=1, column=0, sticky="w",
-                                          padx=(0, 6), pady=5)
-        self.name = entry(g, "train", width=380)
-        self.name.grid(row=1, column=1, sticky="w", pady=5)
+        c = self.card(
+            "Output",
+            "Weights and plots are written to a run folder inside the output "
+            "folder, so several attempts at one model stay together.")
+        self.project = PathRow(c.body, "Output folder", "folder",
+                               on_change=lambda _p: self._preview_path())
+        self.project.grid(row=0, column=0, sticky="ew")
+
+        g = ctk.CTkFrame(c.body, fg_color="transparent")
+        g.grid(row=1, column=0, sticky="ew", pady=(10, 0))
+        label(g, "Run name", muted=True, width=132).grid(row=0, column=0,
+                                                         sticky="w", padx=(0, 8))
+        self.name = entry(g, "train", width=240)
+        self.name.grid(row=0, column=1, sticky="w")
+        hint(g, "a subfolder; blank uses 'train'").grid(row=0, column=2,
+                                                        sticky="w", padx=(12, 0))
+        self.name.bind("<KeyRelease>", lambda _e: self._preview_path())
+
+        self.path_preview = hint(c.body, "")
+        self.path_preview.grid(row=2, column=0, sticky="w", pady=(8, 0))
+
+    def _preview_path(self) -> None:
+        """Show exactly where best.pt will land.
+
+        The output folder and run name combine into a path rather than either
+        one being 'the' destination, which is not guessable from two labelled
+        boxes -- so it is spelled out instead of explained.
+        """
+        folder = self.project.get()
+        name = self.name.get().strip() or "train"
+        if not folder:
+            self.path_preview.configure(
+                text="Choose an output folder to see where the weights will go.",
+                text_color=T.TEXT_MUTED)
+            return
+        existing = Path(folder) / name
+        note = ("  (this run folder already exists - Ultralytics will add a "
+                f"suffix, e.g. {name}2)" if existing.is_dir() else "")
+        self.path_preview.configure(
+            text=f"Best weights → {existing / 'weights' / 'best.pt'}{note}",
+            text_color=T.WARN if note else T.TEXT_MUTED)
 
     def load(self) -> None:
         cfg: TrainConfig = self.state.train
@@ -414,11 +447,11 @@ class TrainPanel(StagePanel):
         self.batch.set(cfg.batch)
         self.device.delete(0, "end")
         self.device.insert(0, cfg.device)
-        self.project.delete(0, "end")
-        self.project.insert(0, cfg.project)
+        self.project.set(cfg.project)
         self.name.delete(0, "end")
         self.name.insert(0, cfg.name)
         self.preview.set(cfg.validate_only)
+        self._preview_path()
 
     def collect(self) -> None:
         cfg: TrainConfig = self.state.train
@@ -431,7 +464,7 @@ class TrainPanel(StagePanel):
         cfg.seed = self.seed.get() if self.seed.get() is not None else 42
         cfg.batch = self.batch.get()
         cfg.device = self.device.get().strip()
-        cfg.project = self.project.get().strip()
+        cfg.project = self.project.get()
         cfg.name = self.name.get().strip()
         cfg.validate_only = bool(self.preview.get())
 
