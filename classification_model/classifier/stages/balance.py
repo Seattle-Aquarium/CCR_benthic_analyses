@@ -7,9 +7,20 @@ this order, and the order matters:
 **1. Deduplicate by content.** Every patch in every input dataset is hashed and
 grouped by digest. The previous implementation compared filenames, which misses
 the case this pipeline actually produces: the same annotation point extracted in
-two different batches gets two different filenames and two identical files. Any
-train/val leak found here is resolved in favour of train, because a val image
-the model trained on measures nothing.
+two different batches gets two different filenames and two identical files.
+Exactly one copy of each group survives, so the merged set holds no identical
+pairs inside train, inside val, or across the two. A train/val leak is resolved
+in favour of train, because a val image the model trained on measures nothing.
+
+When the identical copies disagree about the *label*, one annotation is wrong
+and no rule can tell which. ``label_authority`` names the dataset to believe;
+its copy is the one kept, and a kept copy carries its own label. Left unset the
+winner falls out of path order, which is arbitrary -- so the stage says so
+rather than letting it pass silently.
+
+None of this modifies an input dataset. A "dropped" file is one the merge did
+not copy; the merged set is built fresh in the output folder, next to the
+duplicate report describing every group and how it was settled.
 
 **2. Check the held-out set.** Patches identical to something in the held-out
 evaluation set are leaks, and they are resolved by moving the *holdout* copy
@@ -94,13 +105,13 @@ def _run(cfg, progress, cancel) -> StageResult:
 
     # ---- hash ------------------------------------------------------
     occurrences: list[hashing.Occurrence] = []
-    owner: dict[str, int] = {}          # path -> index of the dataset it came from
-    for i, d in enumerate(per_dataset):
+    owner: dict[str, str] = {}          # path -> the dataset folder it came from
+    for d in per_dataset:
         for split in ("train", "val"):
             for label, files in d[split].items():
                 for f in files:
                     occurrences.append(hashing.Occurrence(split, label, f))
-                    owner[f] = i
+                    owner[f] = d["dir"]
     if cfg.holdout_dir:
         if not Path(cfg.holdout_dir).is_dir():
             res.warnings.append(f"Held-out folder not found: {cfg.holdout_dir}")
@@ -123,10 +134,21 @@ def _run(cfg, progress, cancel) -> StageResult:
     st.finish("hash", "duplicate audit complete")
 
     # ---- decide what to drop ---------------------------------------
-    drops = hashing.choose_drops(report.groups)
+    authority = cfg.label_authority.strip() or None
+    if authority and not any(_same_dir(authority, d) for d in datasets):
+        res.warnings.append(
+            f"Label authority '{Path(authority).name}' is not one of the input "
+            f"datasets, so it decides nothing. Conflicts fall back to path order.")
+        authority = None
+    elif authority:
+        authority = next(d for d in datasets if _same_dir(authority, d))
+
+    plan = hashing.choose_drops(report.groups, owner=owner, authority=authority)
     group_of = {o.path: o.group for o in occurrences}
-    holdout_drops = {p for p in drops if group_of.get(p) == "holdout"}
-    dataset_drops = drops - holdout_drops
+    holdout_drops = {p for p in plan.drops if group_of.get(p) == "holdout"}
+    dataset_drops = plan.drops - holdout_drops
+
+    _log_drop_plan(plan, authority)
 
     conflicts = report.conflicts
     if conflicts:
@@ -138,10 +160,20 @@ def _run(cfg, progress, cancel) -> StageResult:
         if len(conflicts) > 15:
             log.warning(f"    …and {len(conflicts) - 15:,} more (see "
                         f"{DUPLICATE_REPORT})")
-        res.warnings.append(
-            f"{len(conflicts):,} byte-identical patch(es) carry conflicting "
-            f"class labels. Resolved by keeping one copy, but the underlying "
-            f"annotation disagreement is still in your CSVs.")
+        if authority:
+            res.warnings.append(
+                f"{len(conflicts):,} byte-identical patch(es) carry conflicting "
+                f"class labels. {plan.resolved_by_authority:,} took the label "
+                f"from {Path(authority).name}"
+                + (f"; {plan.resolved_by_fallback:,} had no copy in that "
+                   f"dataset and fell back to path order"
+                   if plan.resolved_by_fallback else "")
+                + ". The disagreement is still in your annotation CSVs.")
+        else:
+            res.warnings.append(
+                f"{len(conflicts):,} byte-identical patch(es) carry conflicting "
+                f"class labels, and no label authority is set - which label "
+                f"survives is arbitrary. Set one to decide this deliberately.")
 
     leaks = [g for g in report.groups if g.category == "holdout_leak"]
     if leaks:
@@ -177,11 +209,12 @@ def _run(cfg, progress, cancel) -> StageResult:
     st.finish("plan_", "merge planned")
 
     if cfg.inventory_only:
-        if cfg.output_dir:
+        if cfg.output_dir and report.groups:
             path = hashing.write_report_csv(
-                report, Path(cfg.output_dir).parent / DUPLICATE_REPORT)
+                report, Path(cfg.output_dir) / DUPLICATE_REPORT)
             res.outputs["duplicate_report"] = path
             res.say(f"Duplicate audit written to {path}")
+            res.say("(that report is the only thing this preview wrote.)")
         res.say(f"{res.outputs['train_available']:,} train / "
                 f"{res.outputs['val_available']:,} val across "
                 f"{res.outputs['classes']} class(es), after removing "
@@ -203,7 +236,8 @@ def _run(cfg, progress, cancel) -> StageResult:
 
     out = Path(cfg.output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    hashing.write_report_csv(report, out.parent / DUPLICATE_REPORT)
+    report_path = hashing.write_report_csv(report, out / DUPLICATE_REPORT)
+    res.outputs["duplicate_report"] = report_path
 
     written = _write_dataset(merged_train, merged_val, cfg, st.sub("write"), cancel)
     res.outputs.update(written)
@@ -213,8 +247,9 @@ def _run(cfg, progress, cancel) -> StageResult:
     res.say(f"train: {written['train_written']:,} image(s) "
             f"({written['augmented']:,} augmented up to the floor)")
     res.say(f"val:   {written['val_written']:,} image(s), merged unchanged")
-    res.say(f"Removed {len(dataset_drops):,} byte-identical duplicate(s) "
-            f"before merging.")
+    for line in _drop_summary(plan):
+        res.say(line)
+    res.say(f"Duplicate audit written to {report_path}")
     if written["capped"]:
         res.say(f"Capped: {', '.join(written['capped'])}")
     if written["floored"]:
@@ -228,6 +263,50 @@ def _run(cfg, progress, cancel) -> StageResult:
 # --------------------------------------------------------------------------
 #  Helpers
 # --------------------------------------------------------------------------
+
+#: How each duplicate category is resolved, in the operator's terms. The merge
+#: never edits an input dataset -- a "dropped" file is simply one the merge did
+#: not copy across. The single exception is the held-out quarantine, which is a
+#: move, and is what the checkbox on the panel controls.
+_DROP_WORDING = {
+    "within_train": "redundant copies inside train (one kept)",
+    "within_val": "redundant copies inside val (one kept)",
+    "train_val_leak": "val copies that were also in train (train copy kept)",
+    "within_holdout": "redundant copies inside the held-out set",
+    "holdout_leak": "held-out copies that were also in training (training copy kept)",
+}
+
+
+def _log_drop_plan(plan, authority: str | None) -> None:
+    """Say which copy won, per category, before anything is written."""
+    if not plan.drops:
+        log.info("No byte-identical duplicates to resolve.")
+        return
+    log.info("Resolving duplicates - one copy of each is kept:")
+    for cat, n in sorted(plan.by_category.items(),
+                         key=lambda kv: -kv[1]):
+        log.info(f"  {n:>7,}  {_DROP_WORDING.get(cat, cat)}")
+    if authority:
+        log.info(f"  Label conflicts decided by: {Path(authority).name}")
+
+
+def _drop_summary(plan) -> list[str]:
+    """The same breakdown, condensed for the run summary."""
+    if not plan.drops:
+        return ["No byte-identical duplicates found - nothing to remove."]
+    out = [f"Removed {len(plan.drops):,} byte-identical duplicate(s), "
+           f"keeping one copy of each:"]
+    out += [f"   {n:,} {_DROP_WORDING.get(cat, cat)}"
+            for cat, n in sorted(plan.by_category.items(), key=lambda kv: -kv[1])]
+    return out
+
+
+def _same_dir(a: str, b: str) -> bool:
+    try:
+        return Path(a).resolve() == Path(b).resolve()
+    except OSError:
+        return str(a).strip() == str(b).strip()
+
 
 def _is_inside(child: str, parent: str) -> bool:
     try:

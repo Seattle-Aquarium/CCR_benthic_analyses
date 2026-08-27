@@ -104,6 +104,8 @@ def cmd_balance(args, state: PipelineState) -> int:
             setattr(cfg, name, getattr(args, name))
     if args.class_cap:
         cfg.class_caps.update(dict(args.class_cap))
+    if args.label_authority:
+        cfg.label_authority = args.label_authority
     if args.no_quarantine:
         cfg.quarantine_holdout_leaks = False
     cfg.inventory_only = not args.commit
@@ -251,6 +253,9 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--class-cap", action="append", type=_class_cap,
                    dest="class_cap", metavar="CLASS=COUNT")
     b.add_argument("--seed", type=int)
+    b.add_argument("--label-authority", metavar="DATASET",
+                   help="when identical patches disagree on a label, keep the "
+                        "copy from this dataset (must be one of --dataset)")
     b.add_argument("--no-quarantine", action="store_true",
                    help="report held-out leaks without moving them aside")
     b.add_argument("--commit", action="store_true")

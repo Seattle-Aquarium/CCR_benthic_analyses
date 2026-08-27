@@ -68,10 +68,16 @@ class ExtractConfig:
 class BalanceConfig:
     """Several patch datasets -> one deduplicated, balanced training set."""
 
-    #: Merged in order. Later entries win a label conflict, on the assumption
-    #: that a more recently verified batch is the more authoritative one.
     datasets: list[str] = field(default_factory=list)
     output_dir: str = ""
+
+    #: When byte-identical patches are filed under *different* class labels,
+    #: the copy from this dataset is the one kept -- and a kept copy carries
+    #: its own dataset's label. Blank means no preference, in which case the
+    #: winner falls out of train-before-val and path order, which is arbitrary
+    #: from the operator's point of view. Set this to the dataset whose
+    #: annotations you trust (typically the most recently verified batch).
+    label_authority: str = ""
 
     #: Audited against the merge. Any training patch byte-identical to a
     #: held-out patch is a leak, resolved by dropping the *holdout* copy --

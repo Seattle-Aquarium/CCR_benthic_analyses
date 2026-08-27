@@ -21,6 +21,9 @@ from ..config import BalanceConfig, EvalConfig, ExtractConfig, TrainConfig
 from . import theme as T
 from .widgets import (Card, PathList, PathRow, checkbox, entry, hint, label)
 
+#: Shown in the label-authority dropdown when no dataset has been nominated.
+NO_AUTHORITY = "(no preference - resolved by path order)"
+
 
 # --------------------------------------------------------------------------
 #  Field helpers
@@ -226,30 +229,59 @@ class BalancePanel(StagePanel):
     def build(self) -> None:
         c = self.card(
             "Datasets to merge",
-            "Merged in order. When identical patches disagree on a label, the "
-            "later dataset wins, on the assumption that it was verified more "
-            "recently.")
+            "Every patch is hashed, and only one copy of each survives - so "
+            "the merged set has no byte-identical pairs inside train, inside "
+            "val, or across the two. The inputs themselves are never modified.")
         self.datasets = PathList(c.body, mode="folder", add_text="+ Add dataset…",
-                                 empty_text="No dataset selected yet.")
+                                 empty_text="No dataset selected yet.",
+                                 on_change=lambda _p: self._refresh_authority())
         self.datasets.grid(row=0, column=0, sticky="ew")
 
-        c = self.card("Output folder")
+        c = self.card(
+            "Conflicting labels",
+            "When two byte-identical patches are filed under different "
+            "classes, one annotation is wrong. The copy kept is the one that "
+            "sets the label, so this chooses which dataset to believe.")
+        g = ctk.CTkFrame(c.body, fg_color="transparent")
+        g.grid(row=0, column=0, sticky="ew")
+        label(g, "Trust the labels in", muted=True, width=132).grid(
+            row=0, column=0, sticky="w", padx=(0, 8))
+        self.authority = ctk.CTkOptionMenu(
+            g, values=[NO_AUTHORITY], width=340, font=T.FONT_BODY,
+            corner_radius=6, fg_color=T.FIELD_BG, button_color=T.FIELD_BORDER,
+            button_hover_color=T.ACCENT, text_color=T.TEXT,
+            dropdown_font=T.FONT_BODY, dropdown_fg_color=T.SURFACE,
+            dropdown_text_color=T.TEXT, dropdown_hover_color=T.SURFACE_ALT)
+        self.authority.grid(row=0, column=1, sticky="w")
+        hint(c.body,
+             "Left unset, the surviving label is whichever sorts first by "
+             "path - arbitrary, and not something to leave to chance when the "
+             "datasets disagree."
+             ).grid(row=1, column=0, sticky="w", pady=(8, 0))
+
+        c = self.card(
+            "Output folder",
+            "The merged dataset, plus duplicate_patches_report.csv listing "
+            "every duplicate group found and how it was resolved.")
         self.out = PathRow(c.body, "Merged dataset", "folder")
         self.out.grid(row=0, column=0, sticky="ew")
 
         c = self.card(
             "Held-out set",
-            "Audited against the merge, never merged in. A training patch "
-            "identical to a held-out one is a leak, and it is the held-out "
-            "copy that gets moved aside - dropping the training copy instead "
-            "would shrink the training set to flatter the evaluation.")
+            "Audited against the merge, never merged in. A held-out patch "
+            "identical to a training one is a leak: the training copy is kept "
+            "and used, and it is the held-out copy that is removed - dropping "
+            "the training copy instead would shrink the training set to "
+            "flatter the evaluation.")
         self.holdout = PathRow(c.body, "Held-out folder", "folder")
         self.holdout.grid(row=0, column=0, sticky="ew")
         self.quarantine = ctk.BooleanVar(value=True)
         checkbox(c.body, "Quarantine leaked held-out patches", self.quarantine
                  ).grid(row=1, column=0, sticky="w", pady=(10, 0))
-        hint(c.body, "Moves them to <held-out>/_quarantined_leaked/. Moved, "
-                     "never deleted."
+        hint(c.body,
+             "Moves them to <held-out>/_quarantined_leaked/<class>/. This is "
+             "the only file the pipeline ever moves; everything else is a "
+             "copy into the output folder. Moved, never deleted."
              ).grid(row=2, column=0, sticky="w", pady=(4, 0))
 
         c = self.card(
@@ -278,9 +310,44 @@ class BalancePanel(StagePanel):
         hint(c.body, "e.g.  KE_sieve=4000").grid(row=1, column=0, sticky="w",
                                                  pady=(6, 0))
 
+    def _refresh_authority(self, want: str | None = None) -> None:
+        """Keep the dropdown in step with the dataset list.
+
+        Datasets are shown by folder name because the Dropbox prefix they
+        share is the part that does not distinguish them; the full path is
+        what gets stored.
+        """
+        # PathList fires on_change from its constructor, before the dropdown
+        # below it has been built. Nothing to sync yet in that case.
+        if not hasattr(self, "authority"):
+            return
+        want = self._authority_path() if want is None else want
+        self._authority_paths = list(self.datasets.get())
+        names = [Path(d).name or d for d in self._authority_paths]
+        # Two batches can share a folder name; disambiguate with the parent.
+        for i, n in enumerate(names):
+            if names.count(n) > 1:
+                names[i] = str(Path(self._authority_paths[i]).parent.name) + "/" + n
+        self.authority.configure(values=[NO_AUTHORITY] + names)
+        keep = next((n for d, n in zip(self._authority_paths, names)
+                     if want and _same_path(d, want)), NO_AUTHORITY)
+        self.authority.set(keep)
+
+    def _authority_path(self) -> str:
+        """The full path behind the dropdown's current selection."""
+        chosen = self.authority.get() if hasattr(self, "authority") else ""
+        if not chosen or chosen == NO_AUTHORITY:
+            return ""
+        values = list(self.authority.cget("values"))
+        try:
+            return self._authority_paths[values.index(chosen) - 1]
+        except (ValueError, IndexError, AttributeError):
+            return ""
+
     def load(self) -> None:
         cfg: BalanceConfig = self.state.balance
         self.datasets.set(cfg.datasets)
+        self._refresh_authority(cfg.label_authority)
         self.out.set(cfg.output_dir)
         self.holdout.set(cfg.holdout_dir)
         self.quarantine.set(cfg.quarantine_holdout_leaks)
@@ -295,6 +362,7 @@ class BalancePanel(StagePanel):
     def collect(self) -> None:
         cfg: BalanceConfig = self.state.balance
         cfg.datasets = self.datasets.get()
+        cfg.label_authority = self._authority_path()
         cfg.output_dir = self.out.get()
         cfg.holdout_dir = self.holdout.get()
         cfg.quarantine_holdout_leaks = bool(self.quarantine.get())
@@ -310,6 +378,13 @@ class BalancePanel(StagePanel):
         if not self.preview.get() and not self.out.get():
             return "Choose an output folder for the merged dataset."
         return None
+
+
+def _same_path(a: str, b: str) -> bool:
+    try:
+        return Path(a).resolve() == Path(b).resolve()
+    except OSError:
+        return str(a).strip() == str(b).strip()
 
 
 def _parse_class_caps(text: str) -> dict[str, int]:

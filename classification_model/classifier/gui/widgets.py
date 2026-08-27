@@ -139,12 +139,14 @@ class PathList(ctk.CTkFrame):
     """
 
     def __init__(self, master, mode: str = "file", filetypes=None,
-                 add_text: str = "+ Add", empty_text: str = "Nothing selected."):
+                 add_text: str = "+ Add", empty_text: str = "Nothing selected.",
+                 on_change=None):
         super().__init__(master, fg_color="transparent")
         self.grid_columnconfigure(0, weight=1)
         self.mode = mode
         self.filetypes = filetypes or [("CSV", "*.csv"), ("All files", "*.*")]
         self.empty_text = empty_text
+        self.on_change = on_change
         self._paths: list[str] = []
 
         self.rows = ctk.CTkFrame(self, fg_color="transparent")
@@ -200,6 +202,10 @@ class PathList(ctk.CTkFrame):
                                                        self._paths[index])
             self._render()
 
+    def _notify(self) -> None:
+        if self.on_change:
+            self.on_change(list(self._paths))
+
     def _render(self) -> None:
         for child in self.rows.winfo_children():
             child.destroy()
@@ -226,6 +232,7 @@ class PathList(ctk.CTkFrame):
                    "danger", width=76).grid(row=i, column=4, padx=(6, 0))
 
         self.count.configure(text=f"{len(self._paths)} selected")
+        self._notify()
 
 
 def _shorten(path: str, keep: int = 3) -> str:

@@ -246,23 +246,82 @@ def write_report_csv(report: DuplicateReport, path: str | Path) -> str:
     return str(path)
 
 
-def choose_drops(groups: list[DuplicateGroup]) -> set[str]:
+@dataclass
+class DropPlan:
+    """Which copy of each duplicate group survives, and which are discarded.
+
+    Kept as a value object rather than a bare set because the *counts* matter
+    to the operator: "3,100 duplicates removed" is not actionable, whereas
+    "2,900 redundant copies inside train, 200 val images that were also in
+    train" says what was wrong with the inputs.
+    """
+
+    drops: set[str]
+    #: category -> how many files that category contributed to ``drops``
+    by_category: dict[str, int]
+    #: label conflicts settled by the nominated dataset, and by fallback order
+    resolved_by_authority: int = 0
+    resolved_by_fallback: int = 0
+
+    def __len__(self) -> int:
+        return len(self.drops)
+
+    def __contains__(self, path: object) -> bool:
+        return path in self.drops
+
+
+def choose_drops(groups: list[DuplicateGroup], *,
+                 owner: dict[str, str] | None = None,
+                 authority: str | None = None) -> DropPlan:
     """Pick which copy of each duplicate group to keep; return the rest.
 
-    The keep order encodes what each split is *for*:
+    Exactly one copy of every group survives, so the merged dataset holds no
+    byte-identical pairs anywhere -- not inside train, not inside val, and not
+    across the two.
 
-    * A holdout leak is resolved by dropping the **holdout** copy. The training
-      data is what it is; what must be protected is the claim that the
-      evaluation set is unseen. Removing the training copy instead would
-      silently shrink the training set to flatter the metric.
-    * A train/val leak is resolved by keeping the **train** copy, because a
-      val image the model trained on measures nothing.
-    * Otherwise any one copy will do, so the first by path keeps it
-      deterministic across runs.
+    Which copy survives is decided in this order:
+
+    1. **Never the held-out copy, if a training copy exists.** A held-out leak
+       is resolved by discarding it from the *evaluation* set. Dropping the
+       training copy instead would shrink the training data in a way that
+       flatters the metric -- the opposite of what the check is for.
+    2. **The dataset nominated as the label authority**, when the group carries
+       conflicting labels and *authority* names one of the input datasets.
+       Whichever copy is kept takes its own dataset's label with it, so this is
+       what decides the label of a contested patch.
+    3. **train over val**, because a val image the model trained on measures
+       nothing.
+    4. **First by path**, so repeat runs on the same inputs agree.
+
+    Nothing here touches the input datasets -- the "drops" are simply files the
+    merge does not copy to the output. The only file this pipeline ever moves
+    is a leaked held-out patch, and only when quarantine is enabled.
     """
     rank = {"train": 0, "val": 1, "holdout": 2}
+    order = lambda o: (rank[o.group], o.path)          # noqa: E731
+
     drops: set[str] = set()
+    per_category: dict[str, int] = defaultdict(int)
+    by_authority = by_fallback = 0
+
     for g in groups:
-        keep, *rest = sorted(g.occurrences, key=lambda o: (rank[o.group], o.path))
-        drops.update(o.path for o in rest)
-    return drops
+        keep = None
+        if g.label_conflict and authority and owner:
+            # A held-out copy can never be the keeper while a training copy
+            # exists, so authority is only consulted among the dataset copies.
+            candidates = [o for o in g.occurrences
+                          if o.group != "holdout" and owner.get(o.path) == authority]
+            if candidates:
+                keep = min(candidates, key=order)
+                by_authority += 1
+        if keep is None:
+            keep = min(g.occurrences, key=order)
+            if g.label_conflict:
+                by_fallback += 1
+
+        for o in g.occurrences:
+            if o.path != keep.path:
+                drops.add(o.path)
+                per_category[g.category] += 1
+
+    return DropPlan(drops, dict(per_category), by_authority, by_fallback)
