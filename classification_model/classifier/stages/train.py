@@ -34,7 +34,7 @@ from pathlib import Path
 
 from ..config import TRAIN_AUGMENTATION_OVERRIDES
 from ..fsutil import IMG_EXTS, inventory_table, looks_like_split_dataset
-from ..logging_setup import get_logger
+from ..logging_setup import get_logger, quiet_progress
 from ..progress import ProgressCB, check_cancelled
 from . import StageResult, guard
 
@@ -272,13 +272,15 @@ def _train(cfg, report, res: StageResult, progress, cancel) -> StageResult:
 
         log.info(f"Training: {cfg.epochs} epoch(s), imgsz={cfg.imgsz}, "
                  f"patience={cfg.patience}, seed={cfg.seed}")
-        log.info("Ultralytics prints its own per-epoch table below; the "
-                 "progress bar tracks the run as a whole.")
         if progress:
             progress(0.05, f"training - up to {cfg.epochs} epochs…")
 
         _attach_epoch_progress(model, cfg, progress, cancel)
-        results = model.train(**kwargs)
+        # The bar above tracks the run; one summary row per epoch goes to the
+        # log. Ultralytics' own per-batch redraws are dropped in between --
+        # see quiet_progress.
+        with quiet_progress():
+            results = model.train(**kwargs)
 
         save_dir = (getattr(results, "save_dir", None)
                     or getattr(getattr(model, "trainer", None), "save_dir", None))
@@ -293,6 +295,41 @@ def _train(cfg, report, res: StageResult, progress, cancel) -> StageResult:
     return res
 
 
+def _epoch_row(trainer, epoch: int, total: int) -> str:
+    """One line per finished epoch: what the run is actually doing.
+
+    Reads the trainer rather than parsing Ultralytics' printed table, so the
+    numbers are the ones it recorded and not whatever survived the terminal.
+    A row is marked when this epoch is the best so far, which is the epoch
+    ``best.pt`` holds -- the number that matters at the end of a run.
+    """
+    def num(value, width: int, places: int) -> str:
+        try:
+            return f"{float(value):>{width}.{places}f}"
+        except (TypeError, ValueError):
+            return " " * (width - 1) + "-"
+
+    metrics = getattr(trainer, "metrics", None) or {}
+    tloss = getattr(trainer, "tloss", None)
+    if isinstance(tloss, dict):
+        tloss = next(iter(tloss.values()), None)
+    if hasattr(tloss, "item"):          # a single-element tensor
+        try:
+            tloss = tloss.item()
+        except Exception:
+            tloss = None
+
+    row = (f"  {f'{epoch}/{total}':>9}"
+           f"  {num(tloss, 10, 5)}"
+           f"  {num(metrics.get('val/loss'), 9, 5)}"
+           f"  {num(metrics.get('metrics/accuracy_top1'), 7, 4)}"
+           f"  {num(metrics.get('metrics/accuracy_top5'), 7, 4)}"
+           f"  {num(getattr(trainer, 'epoch_time', None), 6, 1)}s")
+    if getattr(getattr(trainer, "stopper", None), "best_epoch", None) == epoch:
+        row += "   <- best"
+    return row
+
+
 def _attach_epoch_progress(model, cfg, progress: ProgressCB | None, cancel) -> None:
     """Drive the progress bar and honour Stop, once per epoch.
 
@@ -302,12 +339,22 @@ def _attach_epoch_progress(model, cfg, progress: ProgressCB | None, cancel) -> N
     cancellation lands at an epoch boundary, after ``best.pt`` has been written
     for that epoch rather than in the middle of one.
     """
-    if progress is None and cancel is None:
-        return
+    header_written = False
 
     def on_epoch_end(trainer) -> None:
+        nonlocal header_written
         epoch = getattr(trainer, "epoch", 0) + 1
         total = getattr(trainer, "epochs", cfg.epochs) or cfg.epochs
+
+        # Ultralytics fires this once more after the last epoch, for the final
+        # validation pass. That is not a new epoch and must not be a new row.
+        if epoch <= total:
+            if not header_written:
+                log.info(f"  {'epoch':>9}  {'train loss':>10}  {'val loss':>9}"
+                         f"  {'top-1':>7}  {'top-5':>7}  {'time':>7}")
+                header_written = True
+            log.info(_epoch_row(trainer, epoch, total))
+
         if progress:
             # stopper.best_epoch is already 1-based -- Ultralytics calls the
             # stopper with `epoch + 1` -- unlike trainer.epoch, which is not.

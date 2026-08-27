@@ -12,6 +12,7 @@ it cannot regress in six files independently.
 from __future__ import annotations
 
 import io
+from contextlib import contextmanager
 import logging
 import queue
 import re
@@ -33,6 +34,23 @@ _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 #: What survives is the line's wording, which is what makes "the same line
 #: again" recognisable regardless of how the library terminated it.
 _SHAPE = re.compile(r"[^A-Za-z]+")
+
+#: A drawn progress bar: a percentage, or any of the box-drawing and block
+#: glyphs tqdm fills the bar with. Used only while a stage reports its own
+#: progress, where a bar in the log adds nothing the progress widget does not
+#: already show.
+_BAR = re.compile(r"\d+%|[─-▟]")
+
+#: Shapes (see ``_SHAPE``) of the lines Ultralytics prints around its own
+#: per-epoch table. With the bars dropped these are left orphaned -- a header
+#: with no rows beneath it, and a bare metrics row -- and the stage's own
+#: summary carries the same numbers with more context. Cosmetic only: if a
+#: future version words them differently the line simply reappears.
+_SUPERSEDED = {
+    "EpochGPUmemlossInstancesSize",   # their per-epoch table header
+    "classestopacctopacc",            # their validation header
+    "all",                            # their per-epoch metrics row
+}
 
 
 class _LineSink(io.TextIOBase):
@@ -72,6 +90,8 @@ class _LineSink(io.TextIOBase):
         self._shape: str | None = None
         self._pending: str | None = None
         self._last_partial = 0.0
+        self._quiet = 0         # >0 while a stage reports its own progress
+        self._seen: set[str] = set()    # shapes already shown, while quiet
 
     # Both tqdm and Ultralytics branch on these before writing.
     def isatty(self) -> bool:
@@ -104,6 +124,23 @@ class _LineSink(io.TextIOBase):
         shape = _SHAPE.sub("", line)
         now = time.monotonic()
 
+        if self._quiet:
+            # The stage publishes its own per-epoch summary, so the library's
+            # bars are redundant -- and the progress widget is already showing
+            # where the run is up to. Drop them outright.
+            if _BAR.search(line) or shape in _SUPERSEDED:
+                return
+            # For everything else, comparing against the *previous* line is
+            # not enough: an epoch cycles through several shapes, so each
+            # would print again every epoch. Show each kind once, then drop
+            # repeats.
+            if shape in self._seen:
+                return
+            self._seen.add(shape)
+            self._shape = shape
+            self._log.log(self._level, line)
+            return
+
         if shape == self._shape:
             # Same line, new numbers. Hold the newest so the finished state is
             # never lost, but only publish on the interval.
@@ -131,6 +168,29 @@ class _LineSink(io.TextIOBase):
         if line:
             self._offer(line)
         self._release_pending()
+
+
+@contextmanager
+def quiet_progress():
+    """Drop progress redraws for the duration, rather than throttling them.
+
+    For use while a stage publishes its own progress: a per-epoch summary
+    beats a bar redrawn a thousand times an epoch. Only affects a substituted
+    stream, so running in a real terminal keeps the live bars untouched.
+    """
+    sinks = [s for s in (sys.stdout, sys.stderr)
+             if getattr(s, "_is_shim", False)]
+    for s in sinks:
+        s._quiet += 1
+        s._seen.clear()
+    try:
+        yield
+    finally:
+        for s in sinks:
+            s._quiet = max(0, s._quiet - 1)
+            s._pending = None
+            if not s._quiet:
+                s._seen.clear()
 
 
 def ensure_streams() -> bool:
