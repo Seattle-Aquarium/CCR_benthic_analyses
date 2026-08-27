@@ -28,6 +28,12 @@ _configured = False
 #: -- stripped rather than passed through.
 _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
+#: Everything that changes between two redraws of the same progress bar --
+#: counters, percentages, rates, elapsed times, and the bar glyphs themselves.
+#: What survives is the line's wording, which is what makes "the same line
+#: again" recognisable regardless of how the library terminated it.
+_SHAPE = re.compile(r"[^A-Za-z]+")
+
 
 class _LineSink(io.TextIOBase):
     """A writable stand-in for a ``sys.stdout`` that does not exist.
@@ -51,15 +57,20 @@ class _LineSink(io.TextIOBase):
     #: handler pointed back at it and build a write -> log -> write loop.
     _is_shim = True
 
-    #: tqdm redraws its bar many times a second with a bare carriage return.
-    #: Forwarding every redraw would bury the real output, so partial lines
-    #: are throttled to one every couple of seconds.
+    #: A progress bar redraws many times a second. Ultralytics ends each
+    #: redraw with a newline rather than a carriage return, so a redraw is not
+    #: distinguishable by its terminator -- one epoch of 1,038 batches would
+    #: otherwise put 1,038 lines in the log pane, and a hundred epochs would
+    #: put a hundred thousand. Redraws are recognised by *shape* instead (see
+    #: ``_SHAPE``) and throttled to one every couple of seconds.
     _PARTIAL_INTERVAL_S = 2.0
 
     def __init__(self, logger: logging.Logger, level: int = logging.INFO):
         self._log = logger
         self._level = level
         self._buf = ""
+        self._shape: str | None = None
+        self._pending: str | None = None
         self._last_partial = 0.0
 
     # Both tqdm and Ultralytics branch on these before writing.
@@ -83,23 +94,43 @@ class _LineSink(io.TextIOBase):
             if cut < 0:
                 break
             line, self._buf = self._buf[:cut], self._buf[cut + 1:]
-            line = _ANSI.sub("", line).strip()
-            if not line:
-                continue
-            if cut == cr and cut != nl:
-                # A progress redraw: keep the latest, but not all of them.
-                now = time.monotonic()
-                if now - self._last_partial < self._PARTIAL_INTERVAL_S:
-                    continue
-                self._last_partial = now
-            self._log.log(self._level, line)
+            self._offer(_ANSI.sub("", line).strip())
         return len(text)
+
+    def _offer(self, line: str) -> None:
+        """Log one line, unless it is a redraw of the line already showing."""
+        if not line:
+            return
+        shape = _SHAPE.sub("", line)
+        now = time.monotonic()
+
+        if shape == self._shape:
+            # Same line, new numbers. Hold the newest so the finished state is
+            # never lost, but only publish on the interval.
+            self._pending = line
+            if now - self._last_partial >= self._PARTIAL_INTERVAL_S:
+                self._log.log(self._level, line)
+                self._pending = None
+                self._last_partial = now
+            return
+
+        # Something else is happening now, so show where the last one got to.
+        self._release_pending()
+        self._shape = shape
+        self._last_partial = now
+        self._log.log(self._level, line)
+
+    def _release_pending(self) -> None:
+        if self._pending:
+            self._log.log(self._level, self._pending)
+            self._pending = None
 
     def flush(self) -> None:
         line = _ANSI.sub("", self._buf).strip()
         self._buf = ""
         if line:
-            self._log.log(self._level, line)
+            self._offer(line)
+        self._release_pending()
 
 
 def ensure_streams() -> bool:

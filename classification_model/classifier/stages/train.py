@@ -187,6 +187,8 @@ def _run(cfg, progress, cancel) -> StageResult:
             res.say("Class folders match across train and val.")
         res.say(f"Early stopping: patience={cfg.patience} epoch(s) of "
                 f"{cfg.epochs}.")
+        # Better to learn the GPU is idle now than an epoch into the run.
+        _warn_if_cpu_by_accident(cfg, res)
         res.say("Nothing trained - clear 'Validate only' to start.")
         return res
 
@@ -200,6 +202,39 @@ def _run(cfg, progress, cancel) -> StageResult:
 
     check_cancelled(cancel, "validation")
     return _train(cfg, report, res, progress, cancel)
+
+
+def _warn_if_cpu_by_accident(cfg, res: StageResult) -> None:
+    """Say something when a usable GPU is being left idle.
+
+    ``device=cpu`` is a legitimate answer to a CUDA out-of-memory error, and
+    the evaluate stage sets it for exactly that reason. It is also sticky --
+    it persists in the saved config -- so it is easy to carry into a training
+    run, where the cost is not a slow evaluation but a run that cannot finish.
+    On this dataset CPU works out at roughly thirteen hours per epoch against
+    a few minutes on the GPU, so a hundred-epoch run goes from most of a day
+    to most of two months. That is worth interrupting for.
+    """
+    if str(cfg.device).strip().lower() not in ("cpu",):
+        return
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            return
+        name = torch.cuda.get_device_name(0)
+    except Exception:       # no torch, no CUDA build, no driver: nothing to say
+        return
+    log.warning("=" * 66)
+    log.warning(f"Device is set to 'cpu', but {name} is available and idle.")
+    log.warning("Training on CPU is roughly two orders of magnitude slower - "
+                "this run is unlikely to finish.")
+    log.warning("Clear the Device box to use the GPU. If you set 'cpu' because "
+                "of an out-of-memory error, lower Image size instead.")
+    log.warning("=" * 66)
+    res.warnings.append(
+        f"Training on CPU while {name} sits idle. Clear the Device box to use "
+        f"it; if 'cpu' was a workaround for out-of-memory, reduce Image size "
+        f"instead - that is what drives the allocation on this machine.")
 
 
 def _train(cfg, report, res: StageResult, progress, cancel) -> StageResult:
@@ -228,6 +263,8 @@ def _train(cfg, report, res: StageResult, progress, cancel) -> StageResult:
                        ("project", cfg.project), ("name", cfg.name)):
         if value not in (None, ""):
             kwargs[key] = value
+
+    _warn_if_cpu_by_accident(cfg, res)
 
     try:
         log.info(f"Loading base model: {cfg.model}")
