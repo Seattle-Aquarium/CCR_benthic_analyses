@@ -26,7 +26,8 @@ import customtkinter as ctk
 
 from .. import brand
 from ..config import PipelineState, default_state_path
-from ..logging_setup import QueueHandler, attach, configure, detach
+from ..logging_setup import (QueueHandler, attach, configure, detach,
+                             ensure_streams)
 from ..stages import ORDER, TITLES, StageResult
 from . import theme as T
 from .panels import PANELS
@@ -441,6 +442,11 @@ def _stage_runner(key: str):
 
 
 def main() -> None:
+    # Before anything else: a windowed (pythonw) process has no sys.stdout at
+    # all, and Ultralytics writes its training table straight to it. Without
+    # this, training dies with "'NoneType' object has no attribute 'write'"
+    # moments after the base model loads.
+    ensure_streams()
     ctk.set_default_color_theme("blue")
     App().mainloop()
 
