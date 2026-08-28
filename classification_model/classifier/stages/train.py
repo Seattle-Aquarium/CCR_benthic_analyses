@@ -22,8 +22,12 @@ raising. A real run was lost to this -- val loss climbing every epoch, top-1
 stuck around 2-3%, exactly 1/n for the class count. Mismatched classes are
 moved aside for the run and restored in a ``finally``.
 
-**Online augmentation is retuned for centre-annotated patches.** See
-``config.TRAIN_AUGMENTATION_OVERRIDES``.
+**Online augmentation is retuned for centre-annotated patches.** A patch is
+centred on the annotated point and labelled by what is at that centre, so any
+augmentation free to crop, shift or erase the middle of the frame can change
+the image without changing its label. Ultralytics' defaults do exactly that.
+See ``config.AUGMENTATION_PRESETS`` for the four settings and what each is
+for.
 """
 
 from __future__ import annotations
@@ -32,7 +36,7 @@ import shutil
 import time
 from pathlib import Path
 
-from ..config import TRAIN_AUGMENTATION_OVERRIDES
+from ..config import AUGMENTATION_PRESETS, PRESET_NOTES
 from ..fsutil import IMG_EXTS, inventory_table, looks_like_split_dataset
 from ..logging_setup import get_logger, quiet_progress
 from ..progress import ProgressCB, check_cancelled
@@ -187,9 +191,26 @@ def _run(cfg, progress, cancel) -> StageResult:
             res.say("Class folders match across train and val.")
         res.say(f"Early stopping: patience={cfg.patience} epoch(s) of "
                 f"{cfg.epochs}.")
+        res.say(f"Augmentation: {cfg.augmentation} - "
+                f"{PRESET_NOTES.get(cfg.augmentation, '')}")
+        bad = unknown_arguments(cfg.extra_args)
+        if bad:
+            res.say(f"WARNING - not valid Ultralytics arguments, the run will "
+                    f"refuse to start: {', '.join(bad)}")
+        elif cfg.extra_args:
+            res.say(f"Hand-set: "
+                    f"{', '.join(f'{k}={v}' for k, v in cfg.extra_args.items())}")
         # Better to learn the GPU is idle now than an epoch into the run.
         _warn_if_cpu_by_accident(cfg, res)
         res.say("Nothing trained - clear 'Validate only' to start.")
+        return res
+
+    bad = unknown_arguments(cfg.extra_args)
+    if bad:
+        res.errors.append(
+            f"Ultralytics has no such training argument(s): {', '.join(bad)}. "
+            f"Check the spelling - an unknown argument would stop the run "
+            f"after the dataset has been scanned.")
         return res
 
     if not cfg.exclude_mismatched and (report["only_train"] or report["only_val"]):
@@ -202,6 +223,22 @@ def _run(cfg, progress, cancel) -> StageResult:
 
     check_cancelled(cancel, "validation")
     return _train(cfg, report, res, progress, cancel)
+
+
+def unknown_arguments(extra: dict | None) -> list[str]:
+    """Names in *extra* that Ultralytics would reject.
+
+    Checked here rather than left to Ultralytics because it raises only once
+    the trainer is built, which is after the dataset scan -- a typo would cost
+    a minute on this dataset and a great deal more on a bigger one.
+    """
+    if not extra:
+        return []
+    try:
+        from ultralytics.cfg import DEFAULT_CFG_DICT
+    except Exception:       # cannot check without it; let Ultralytics decide
+        return []
+    return sorted(k for k in extra if k not in DEFAULT_CFG_DICT)
 
 
 def _warn_if_cpu_by_accident(cfg, res: StageResult) -> None:
@@ -251,14 +288,22 @@ def _train(cfg, report, res: StageResult, progress, cancel) -> StageResult:
             f"one split): {excluded}. They are restored afterwards, but the "
             f"model will not know them.")
 
+    preset = AUGMENTATION_PRESETS.get(cfg.augmentation, {})
     kwargs = {
         "data": cfg.data_dir,
         "epochs": cfg.epochs,
         "imgsz": cfg.imgsz,
         "seed": cfg.seed,
         "patience": cfg.patience,
-        **TRAIN_AUGMENTATION_OVERRIDES,
+        **preset,
+        # Applied last so a hand-set value always wins over the preset.
+        **(cfg.extra_args or {}),
     }
+    log.info(f"Augmentation preset: {cfg.augmentation} - "
+             f"{PRESET_NOTES.get(cfg.augmentation, '')}")
+    if cfg.extra_args:
+        log.info(f"Overridden by hand: "
+                 f"{', '.join(f'{k}={v}' for k, v in cfg.extra_args.items())}")
     for key, value in (("batch", cfg.batch), ("device", cfg.device),
                        ("project", cfg.project), ("name", cfg.name)):
         if value not in (None, ""):

@@ -112,12 +112,72 @@ class BalanceConfig:
 
 #: Ultralytics' own defaults fight this dataset in four specific ways, all
 #: stemming from patches being centred on their annotated point.
-TRAIN_AUGMENTATION_OVERRIDES = {
-    "erasing": 0.0,        # cutout can erase the very point being classified
-    "scale": 0.0,          # RandomResizedCrop can crop the centre point out
-    "auto_augment": None,  # RandAugment likewise; falls back to hsv jitter
-    "flipud": 0.5,         # benthic patches have no canonical "up"
+#: Augmentation and regularisation, as four named settings.
+#:
+#: The constraint that shapes all of them: a patch is *centred on the
+#: annotated point*, and the label describes what is at that centre. Any
+#: augmentation free to crop, shift or erase the middle of the frame can
+#: therefore change what the image shows without changing its label, which
+#: teaches the model the wrong thing. Ultralytics' defaults do exactly that --
+#: ``scale=0.5`` is a random-resized-crop, ``erasing=0.4`` is cutout, and
+#: ``auto_augment="randaugment"`` includes both -- so the pipeline has always
+#: turned them off. They stay off in every preset except the one that exists
+#: to reproduce stock behaviour.
+#:
+#: What is left to vary is colour and orientation, which is genuinely useful
+#: here: underwater colour shifts hard with depth and turbidity, and the
+#: seafloor has no canonical "up".
+AUGMENTATION_PRESETS: dict[str, dict] = {
+    "standard": {
+        "hsv_h": 0.015, "hsv_s": 0.7, "hsv_v": 0.4,
+        "degrees": 0.0, "translate": 0.1, "shear": 0.0,
+        "scale": 0.0, "erasing": 0.0, "auto_augment": None,
+        "fliplr": 0.5, "flipud": 0.5,
+        "mixup": 0.0, "cutmix": 0.0,
+        "dropout": 0.0, "weight_decay": 0.0005,
+    },
+    "stronger": {
+        # For a run that overfits. Every image is seen under more variation,
+        # and the head is regularised harder. Rotation is safe because it
+        # turns about the centre, so the annotated point stays put -- at the
+        # cost of padded corners at angles off the square.
+        "hsv_h": 0.03, "hsv_s": 0.8, "hsv_v": 0.5,
+        "degrees": 180.0, "translate": 0.05, "shear": 0.0,
+        "scale": 0.0, "erasing": 0.0, "auto_augment": None,
+        "fliplr": 0.5, "flipud": 0.5,
+        "mixup": 0.15, "cutmix": 0.0,
+        "dropout": 0.2, "weight_decay": 0.001,
+    },
+    "lighter": {
+        # For a run that underfits -- validation loss below training loss, or
+        # still improving when the epochs ran out. Less distortion, so the
+        # model can fit what is actually in front of it.
+        "hsv_h": 0.01, "hsv_s": 0.4, "hsv_v": 0.3,
+        "degrees": 0.0, "translate": 0.0, "shear": 0.0,
+        "scale": 0.0, "erasing": 0.0, "auto_augment": None,
+        "fliplr": 0.5, "flipud": 0.5,
+        "mixup": 0.0, "cutmix": 0.0,
+        "dropout": 0.0, "weight_decay": 0.0005,
+    },
+    # Nothing overridden: whatever Ultralytics ships, crop-and-erase included.
+    # Here to measure the pipeline's choices against, not to train with.
+    "ultralytics defaults": {},
 }
+
+#: What each preset is for, in the words the panel shows.
+PRESET_NOTES = {
+    "standard": "Colour jitter and flips. What every run so far has used.",
+    "stronger": "More colour and full rotation, plus mixup, dropout 0.2 and "
+                "double the weight decay. Use when a run overfits.",
+    "lighter": "Less distortion. Use when a run underfits or was still "
+               "improving when it stopped.",
+    "ultralytics defaults": "Stock Ultralytics, including random-resized-crop "
+                            "and random erasing - both of which can remove the "
+                            "annotated point from its own patch.",
+}
+
+TRAIN_AUGMENTATION_OVERRIDES = AUGMENTATION_PRESETS["standard"]
+
 
 
 @dataclass
@@ -142,6 +202,15 @@ class TrainConfig:
     #: ``best.pt`` is the best epoch either way; patience decides how long the
     #: run keeps going after it.
     patience: int = 20
+
+    #: Which entry of ``AUGMENTATION_PRESETS`` to train with.
+    augmentation: str = "standard"
+
+    #: Anything else to hand Ultralytics, as ``{key: value}``. Applied last,
+    #: so it overrides the preset. Validated against Ultralytics' own argument
+    #: list before the run starts, because a typo here is otherwise a crash
+    #: forty minutes in.
+    extra_args: dict = field(default_factory=dict)
 
     project: str = ""
     name: str = ""

@@ -427,8 +427,8 @@ def _diagnose(c: dict) -> tuple[str, str]:
         notes.append(
             f"By the last epoch validation loss sat {final_gap:.2f} above "
             f"training loss: the model had started memorising the training "
-            f"patches. Try stronger augmentation, more weight decay, or "
-            f"simply stopping sooner.")
+            f"patches. Set Augmentation to 'stronger' on stage 3, or cut "
+            f"Epochs so it stops sooner.")
     elif final_gap > GAP_MILD:
         verdict = "mild overfitting"
         notes.append(
@@ -922,10 +922,15 @@ def _next_steps(winner, models, shared) -> list[str]:
     if verdict in ("overfitting", "mild overfitting"):
         steps.append(
             f"The run overfitted after epoch {winner.curve.get('best_epoch')} "
-            f"of {winner.curve.get('epochs_total')}. Lower patience so it "
-            f"stops nearer its best, and consider stronger augmentation.")
+            f"of {winner.curve.get('epochs_total')}. On stage 3, set "
+            f"Augmentation to 'stronger' - more colour variation and full "
+            f"rotation, plus mixup, dropout 0.2 and double the weight decay - "
+            f"and lower Patience so the run stops nearer its best.")
     elif verdict in ("underfitting", "still improving"):
-        steps.append("The run had not finished learning - train it longer.")
+        steps.append(
+            "The run had not finished learning. Raise Epochs, and on stage 3 "
+            "set Augmentation to 'lighter' so less of each image is distorted "
+            "while the model is still trying to fit what is there.")
 
     missing = [m.name for m in models if not m.has_holdout]
     if missing:

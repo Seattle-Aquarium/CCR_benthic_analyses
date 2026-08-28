@@ -17,7 +17,8 @@ from pathlib import Path
 
 import customtkinter as ctk
 
-from ..config import (BalanceConfig, CompareConfig, EvalConfig,
+from ..config import (AUGMENTATION_PRESETS, PRESET_NOTES,
+                      BalanceConfig, CompareConfig, EvalConfig,
                       ExtractConfig, TrainConfig)
 from . import theme as T
 from .widgets import (Card, PathList, PathRow, checkbox, entry, hint, label)
@@ -381,6 +382,35 @@ class BalancePanel(StagePanel):
         return None
 
 
+def _parse_extra_args(text: str) -> dict:
+    """KEY=VALUE lines into a dict, with values typed the way YAML would.
+
+    Ultralytics distinguishes 0.0 from False and from "none", so the strings
+    are converted rather than passed through -- ``cos_lr=True`` has to arrive
+    as a bool to do anything.
+    """
+    out: dict = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, raw = line.partition("=")
+        key, raw = key.strip(), raw.strip()
+        if not key:
+            continue
+        lowered = raw.lower()
+        if lowered in ("true", "false"):
+            out[key] = lowered == "true"
+        elif lowered in ("none", "null", ""):
+            out[key] = None
+        else:
+            try:
+                out[key] = int(raw) if raw.lstrip("-").isdigit() else float(raw)
+            except ValueError:
+                out[key] = raw
+    return out
+
+
 def _same_path(a: str, b: str) -> bool:
     try:
         return Path(a).resolve() == Path(b).resolve()
@@ -453,6 +483,48 @@ class TrainPanel(StagePanel):
              "decides how long the run continues past it."
              ).grid(row=1, column=0, sticky="w", pady=(8, 0))
 
+        c = self.card(
+            "Augmentation and regularisation",
+            "How much each training image is varied between epochs, and how "
+            "hard the model is held back from memorising. This is the setting "
+            "to change when a run overfits or underfits.")
+        g = ctk.CTkFrame(c.body, fg_color="transparent")
+        g.grid(row=0, column=0, sticky="ew")
+        label(g, "Preset", muted=True, width=132).grid(row=0, column=0,
+                                                       sticky="w", padx=(0, 8))
+        self.augmentation = ctk.CTkOptionMenu(
+            g, values=list(AUGMENTATION_PRESETS), width=220, font=T.FONT_BODY,
+            corner_radius=6, fg_color=T.FIELD_BG, button_color=T.FIELD_BORDER,
+            button_hover_color=T.ACCENT, text_color=T.TEXT,
+            dropdown_font=T.FONT_BODY, dropdown_fg_color=T.SURFACE,
+            dropdown_text_color=T.TEXT, dropdown_hover_color=T.SURFACE_ALT,
+            command=lambda _v: self._preset_changed())
+        self.augmentation.grid(row=0, column=1, sticky="w")
+
+        self.preset_note = hint(c.body, "")
+        self.preset_note.grid(row=1, column=0, sticky="w", pady=(8, 0))
+        self.preset_values = hint(c.body, "")
+        self.preset_values.grid(row=2, column=0, sticky="w", pady=(4, 0))
+
+        hint(c.body,
+             "Patches are centred on the annotated point, so anything that "
+             "can crop, shift or erase the middle of the frame changes what "
+             "the image shows without changing its label. Every preset except "
+             "'ultralytics defaults' keeps those off."
+             ).grid(row=3, column=0, sticky="w", pady=(8, 0))
+
+        c = self.card(
+            "Anything else",
+            "One KEY=VALUE per line, passed straight to Ultralytics and "
+            "applied after the preset. Checked before the run starts.")
+        self.extra_args = ctk.CTkTextbox(
+            c.body, height=64, font=T.FONT_MONO, fg_color=T.FIELD_BG,
+            text_color=T.TEXT, border_width=1, border_color=T.BORDER,
+            corner_radius=6, wrap="none")
+        self.extra_args.grid(row=0, column=0, sticky="ew")
+        hint(c.body, "e.g.  dropout=0.3      cos_lr=True      lr0=0.005"
+             ).grid(row=1, column=0, sticky="w", pady=(6, 0))
+
         c = self.card("Hardware", "Blank uses the Ultralytics default.")
         g = self.grid_body(c)
         self.batch = Field(g, 0, 0, "Batch", int, note="blank = auto (16)")
@@ -488,6 +560,20 @@ class TrainPanel(StagePanel):
 
         self.path_preview = hint(c.body, "")
         self.path_preview.grid(row=2, column=0, sticky="w", pady=(8, 0))
+
+    def _preset_changed(self) -> None:
+        """Show what the chosen preset actually does, rather than its name."""
+        name = self.augmentation.get()
+        self.preset_note.configure(
+            text=PRESET_NOTES.get(name, ""),
+            text_color=T.WARN if name == "ultralytics defaults" else T.TEXT_MUTED)
+        values = AUGMENTATION_PRESETS.get(name, {})
+        interesting = ("hsv_s", "degrees", "translate", "mixup", "dropout",
+                       "weight_decay", "erasing", "scale")
+        shown = [f"{k}={values[k]}" for k in interesting if k in values]
+        self.preset_values.configure(
+            text=("Ultralytics decides everything." if not shown
+                  else "Sets  " + "   ".join(shown)))
 
     def _preview_path(self) -> None:
         """Show exactly where best.pt will land.
@@ -526,7 +612,13 @@ class TrainPanel(StagePanel):
         self.project.set(cfg.project)
         self.name.delete(0, "end")
         self.name.insert(0, cfg.name)
+        self.augmentation.set(cfg.augmentation if cfg.augmentation
+                              in AUGMENTATION_PRESETS else "standard")
+        self.extra_args.delete("1.0", "end")
+        self.extra_args.insert("1.0", "\n".join(
+            f"{k}={v}" for k, v in sorted((cfg.extra_args or {}).items())))
         self.preview.set(cfg.validate_only)
+        self._preset_changed()
         self._preview_path()
 
     def collect(self) -> None:
@@ -542,6 +634,8 @@ class TrainPanel(StagePanel):
         cfg.device = self.device.get().strip()
         cfg.project = self.project.get()
         cfg.name = self.name.get().strip()
+        cfg.augmentation = self.augmentation.get()
+        cfg.extra_args = _parse_extra_args(self.extra_args.get("1.0", "end"))
         cfg.validate_only = bool(self.preview.get())
 
     def validate(self) -> str | None:
