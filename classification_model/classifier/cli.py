@@ -161,6 +161,21 @@ def cmd_evaluate(args, state: PipelineState) -> int:
     return _report(result)
 
 
+def cmd_compare(args, state: PipelineState) -> int:
+    from .stages import compare
+
+    cfg = state.compare
+    if args.run:
+        cfg.runs = args.run
+    if args.out is not None:
+        cfg.output_dir = args.out
+    cfg.preview_only = not args.commit
+
+    result = compare.run(cfg, progress=_progress)
+    state.save(args.state or default_state_path())
+    return _report(result)
+
+
 def cmd_audit(args, state: PipelineState) -> int:
     """Hash a dataset (and optionally a holdout) and report duplicates.
 
@@ -291,6 +306,13 @@ def build_parser() -> argparse.ArgumentParser:
                    help="skip the independence check (not recommended)")
     v.add_argument("--commit", action="store_true")
     v.set_defaults(func=cmd_evaluate)
+
+    c = sub.add_parser("compare", help="rank several trained models")
+    c.add_argument("--run", action="append",
+                   help="a model output folder; repeat for each model")
+    c.add_argument("--out", help="where to write the comparison report")
+    c.add_argument("--commit", action="store_true")
+    c.set_defaults(func=cmd_compare)
 
     a = sub.add_parser("audit", help="find byte-identical duplicates")
     a.add_argument("--dataset")

@@ -1,7 +1,7 @@
 """
 The CCR Benthic Classifier desktop application.
 
-Four stages down the left, the selected stage's settings in the middle, one
+Five stages down the left, the selected stage's settings in the middle, one
 shared log and progress bar along the bottom. Finishing a stage fills in the
 next stage's inputs and moves the selection there, so the paths are never
 retyped and a dataset cannot be pointed at the wrong stage by accident.
@@ -42,6 +42,7 @@ NEXT_HINT = {
     "balance": "Stage 1's output was added to the merge list.",
     "train": "Stage 2's merged dataset is now stage 3's input.",
     "evaluate": "The trained weights are now stage 4's model.",
+    "compare": "The evaluated model was added to stage 5's comparison list.",
 }
 
 
@@ -379,6 +380,13 @@ class App(ctk.CTk):
             nxt = self.pipeline.advance_from_train(outputs["weights"])
         elif stage_key == "evaluate":
             self._offer_reports(outputs)
+            # Add this model to the comparison list, but stay put: after an
+            # evaluation the operator is reading the report, and jumping to a
+            # stage that needs a second model to be useful would interrupt
+            # that for nothing.
+            if outputs.get("output_dir"):
+                self.pipeline.advance_from_evaluate(outputs["output_dir"])
+                self.panels["compare"].load()
 
         self._save_state()
         if not nxt:
@@ -436,9 +444,10 @@ class App(ctk.CTk):
 def _stage_runner(key: str):
     """Import a stage lazily -- ultralytics and torch cost seconds to import,
     and the window should not wait on them to appear."""
-    from ..stages import balance, evaluate, extract, train
+    from ..stages import balance, compare, evaluate, extract, train
     return {"extract": extract.run, "balance": balance.run,
-            "train": train.run, "evaluate": evaluate.run}[key]
+            "train": train.run, "evaluate": evaluate.run,
+            "compare": compare.run}[key]
 
 
 def main() -> None:

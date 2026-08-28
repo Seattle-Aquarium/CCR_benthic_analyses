@@ -196,6 +196,21 @@ class EvalConfig:
 
 
 @dataclass
+class CompareConfig:
+    """Several finished model runs -> one decision about which to keep."""
+
+    #: Each entry is a model's output folder -- either the Ultralytics run
+    #: itself or the folder stage 4 wrote its reports into. Both layouts are
+    #: recognised, so this is whatever was typed into stage 3's Output folder.
+    runs: list[str] = field(default_factory=list)
+    output_dir: str = ""
+
+    #: Reads and reports without writing the workbook. On by default like
+    #: every other stage, though this one only ever writes a report.
+    preview_only: bool = True
+
+
+@dataclass
 class PipelineState:
     """All four stage configs plus what each stage last produced.
 
@@ -209,6 +224,7 @@ class PipelineState:
     balance: BalanceConfig = field(default_factory=BalanceConfig)
     train: TrainConfig = field(default_factory=TrainConfig)
     evaluate: EvalConfig = field(default_factory=EvalConfig)
+    compare: CompareConfig = field(default_factory=CompareConfig)
 
     last_extract_dir: str = ""
     last_holdout_dir: str = ""
@@ -246,6 +262,19 @@ class PipelineState:
         self.evaluate.train_dataset_dir = output_dir
         return "train"
 
+    def advance_from_evaluate(self, report_dir: str) -> str:
+        """Add a freshly evaluated model to the comparison list.
+
+        Stage 5 reads the folder stage 4 wrote its reports into, so that is
+        what gets handed on -- not the weights. Appended rather than replacing
+        the list, because comparing means keeping the previous candidates.
+        """
+        if report_dir and report_dir not in self.compare.runs:
+            self.compare.runs.append(report_dir)
+        if not self.compare.output_dir:
+            self.compare.output_dir = report_dir
+        return "compare"
+
     def advance_from_train(self, weights: str) -> str:
         self.last_weights = weights
         self.evaluate.model_path = weights
@@ -279,7 +308,8 @@ class PipelineState:
             return cls()
 
         sections = {"extract": ExtractConfig, "balance": BalanceConfig,
-                    "train": TrainConfig, "evaluate": EvalConfig}
+                    "train": TrainConfig, "evaluate": EvalConfig,
+                    "compare": CompareConfig}
         kwargs = {}
         for name, klass in sections.items():
             kwargs[name] = _coerce(klass, raw.get(name))

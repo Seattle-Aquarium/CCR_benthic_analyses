@@ -7,8 +7,8 @@ GUI knows what a stage's settings are, and no stage knows a GUI exists.
 
 Every panel's commit action is guarded by a preview toggle that is checked by
 default, so the first click on a new set of paths always reports what *would*
-happen. Given that three of these four stages write thousands of files and the
-fourth costs an hour of GPU time, the default is worth the extra click.
+happen. Given that three of these stages write thousands of files and a fourth
+costs an hour of GPU time, the default is worth the extra click.
 """
 
 from __future__ import annotations
@@ -17,7 +17,8 @@ from pathlib import Path
 
 import customtkinter as ctk
 
-from ..config import BalanceConfig, EvalConfig, ExtractConfig, TrainConfig
+from ..config import (BalanceConfig, CompareConfig, EvalConfig,
+                      ExtractConfig, TrainConfig)
 from . import theme as T
 from .widgets import (Card, PathList, PathRow, checkbox, entry, hint, label)
 
@@ -659,4 +660,64 @@ class EvaluatePanel(StagePanel):
         return None
 
 
-PANELS = (ExtractPanel, BalancePanel, TrainPanel, EvaluatePanel)
+
+# --------------------------------------------------------------------------
+#  5 - Compare
+# --------------------------------------------------------------------------
+
+class ComparePanel(StagePanel):
+    key = "compare"
+    title = "5.  Compare models"
+    subtitle = ("Rank candidate models on the same held-out images, per class "
+                "as well as overall, and say which one to move forward with.")
+    run_text = "Compare models"
+    preview_text = "Preview only"
+
+    def build(self) -> None:
+        c = self.card(
+            "Models to compare",
+            "Each entry is a model's output folder from stage 3 -- the one "
+            "stage 4 also wrote its reports into. A run only joins the "
+            "ranking once it has been evaluated on the held-out set.")
+        self.runs = PathList(c.body, mode="folder", add_text="+ Add model…",
+                             empty_text="No model selected yet.")
+        self.runs.grid(row=0, column=0, sticky="ew")
+        hint(c.body,
+             "Models are only ranked against each other when they were "
+             "evaluated on the same held-out images. Different evaluation "
+             "sets are reported, and the ranking is withheld rather than "
+             "quietly comparing numbers that do not mean the same thing."
+             ).grid(row=1, column=0, sticky="w", pady=(10, 0))
+
+        c = self.card(
+            "Report",
+            "One workbook plus two figures: the ranking and why, per-class F1 "
+            "for every model, the training curves, and what to try next.")
+        self.out = PathRow(c.body, "Output folder", "folder")
+        self.out.grid(row=0, column=0, sticky="ew")
+        hint(c.body,
+             "Writes model_comparison.xlsx, model_comparison_curves.png and "
+             "model_comparison_per_class.png."
+             ).grid(row=1, column=0, sticky="w", pady=(8, 0))
+
+    def load(self) -> None:
+        cfg: CompareConfig = self.state.compare
+        self.runs.set(cfg.runs)
+        self.out.set(cfg.output_dir)
+        self.preview.set(cfg.preview_only)
+
+    def collect(self) -> None:
+        cfg: CompareConfig = self.state.compare
+        cfg.runs = self.runs.get()
+        cfg.output_dir = self.out.get()
+        cfg.preview_only = bool(self.preview.get())
+
+    def validate(self) -> str | None:
+        if len(self.runs.get()) < 2:
+            return ("Add at least two model folders - a comparison needs "
+                    "something to compare against.")
+        if not self.preview.get() and not self.out.get():
+            return "Choose an output folder for the comparison report."
+        return None
+
+PANELS = (ExtractPanel, BalancePanel, TrainPanel, EvaluatePanel, ComparePanel)

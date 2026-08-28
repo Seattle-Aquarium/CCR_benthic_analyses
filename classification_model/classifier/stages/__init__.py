@@ -15,13 +15,14 @@ from typing import Callable
 from ..progress import CancelledError
 
 #: Stage order, and the keys used everywhere else to name a stage.
-ORDER = ("extract", "balance", "train", "evaluate")
+ORDER = ("extract", "balance", "train", "evaluate", "compare")
 
 TITLES = {
     "extract": "Extract patches",
     "balance": "Merge & balance",
     "train": "Train model",
     "evaluate": "Evaluate on holdout",
+    "compare": "Compare models",
 }
 
 

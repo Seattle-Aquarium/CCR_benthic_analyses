@@ -142,6 +142,9 @@ def _run(cfg, progress, cancel) -> StageResult:
 
     paths = _write_reports(df, model_classes, output_dir, label, res)
     res.outputs.update(paths)
+    # Stage 5 reads this folder rather than the weights: the comparison needs
+    # the reports written here, beside the run's own results.csv.
+    res.outputs["output_dir"] = str(output_dir)
     st.finish("report", "reports written")
 
     res.say(f"Held-out accuracy: {accuracy:.2f}%  "
