@@ -48,9 +48,81 @@ CURVES_PNG = "model_comparison_curves.png"
 PER_CLASS_PNG = "model_comparison_per_class.png"
 
 #: A class scoring below this on F1 is called out as weak. 0.60 is the
-#: threshold the existing hand-built comparison used, kept so the numbers stay
-#: comparable with the spreadsheets already circulating.
+#: threshold the existing hand-built comparison used, kept so these numbers
+#: stay comparable with the spreadsheets already circulating. It is a
+#: convention for triage, not a standard: nothing changes about a class at
+#: 0.61 versus 0.59.
 WEAK_F1 = 0.60
+
+#: Rough bands for reading a macro F1 at a glance. Orientation only -- what
+#: counts as good depends on how many classes there are and how separable they
+#: look at this patch size, and two adjacent seafloor points can be genuinely
+#: ambiguous to a human expert. The number that matters most is the direction
+#: between your own runs.
+F1_BANDS = ((0.30, "weak"), (0.50, "fair"), (0.70, "good"), (1.01, "strong"))
+
+#: A class whose reported abundance is within this much of the truth is near
+#: enough for percent cover; beyond it the survey figure is visibly skewed.
+COVER_OK_PCT = 10
+
+#: The bottleneck codes, in words that do not assume the vocabulary.
+BOTTLENECK_WORDS = {
+    "recall": "missed",
+    "precision": "over-called",
+    "balanced": "both equally",
+    "-": "-",
+}
+
+BOTTLENECK_MEANING = {
+    "recall": ("the model does not spot it - where this class really is, it "
+               "usually calls it something else"),
+    "precision": ("the model claims it too readily - when it says this class, "
+                  "it is often something else"),
+    "balanced": "it misses it and over-calls it about equally often",
+}
+
+
+def describe_f1(value: float) -> str:
+    """A one-word reading of an F1 score."""
+    for edge, word in F1_BANDS:
+        if value < edge:
+            return word
+    return "strong"
+
+
+def chance_level(n_classes: int) -> float:
+    """What a model that guessed at random would score, for scale."""
+    return round(1 / n_classes, 3) if n_classes else 0.0
+
+
+def weights_note(curve: dict) -> str:
+    """Whether the *saved* weights are affected by what the run did later.
+
+    Worth stating plainly because "this run overfitted" reads as "this model
+    is overfitted", and for a run whose best epoch came early those are
+    opposite claims. Ultralytics saves best.pt at the best validation epoch,
+    so the weights predate the divergence; what the divergence tells you is
+    about the recipe, not about the file you would deploy.
+    """
+    best, total = curve.get("best_epoch"), curve.get("epochs_total")
+    verdict = curve.get("verdict")
+    if not best or not total:
+        return ""
+    if verdict in ("overfitting", "mild overfitting"):
+        return (
+            f"The saved weights are from epoch {best} of {total} - taken "
+            f"before the overfitting set in, so the model you would actually "
+            f"use is not an overfitted one. What the overfitting says is that "
+            f"the last {total - best} epochs were wasted, and that a "
+            f"better-regularised recipe would probably reach a higher peak "
+            f"than epoch {best} did.")
+    if verdict in ("still improving", "underfitting"):
+        return (
+            f"The saved weights are from epoch {best} of {total}, the last or "
+            f"nearly the last - the run was cut off rather than finished, so "
+            f"there is very likely more to gain from simply training longer.")
+    return (f"The saved weights are from epoch {best} of {total}, and the run "
+            f"stayed healthy throughout.")
 
 #: Val-minus-train loss gaps, and what each one means. The bands are coarse on
 #: purpose: this is a prompt to look at the curve, not a verdict to quote.
@@ -201,9 +273,12 @@ def per_class_metrics(detail: pd.DataFrame) -> pd.DataFrame:
                                if int(is_true.sum()) else None),
             # Which side is holding the class back is the difference between
             # "needs more examples" and "needs a competitor disambiguated".
+            # Within a few points of each other the class is not limited by
+            # either side, and calling 0.62 against 0.63 "over-called" sends
+            # the reader after a problem that is not there.
             "bottleneck": ("-" if not (tp + fp + fn) else
-                           "recall" if recall < precision else
-                           "precision" if precision < recall else "balanced"),
+                           "balanced" if abs(precision - recall) < 0.05 else
+                           "recall" if recall < precision else "precision"),
         })
 
     df = pd.DataFrame(rows)
@@ -224,6 +299,7 @@ def overall_metrics(detail: pd.DataFrame, per_class: pd.DataFrame) -> dict:
         "macro_f1": round(float(seen["f1"].mean()), 4),
         "weighted_f1": round(float((seen["f1"] * weights).sum()), 4),
         "weak_classes": int((seen["f1"] < WEAK_F1).sum()),
+        "classes_total": int(len(seen)),
         # Mean absolute cover error, in percentage points of each class's true
         # count -- the percent-cover deliverable's own accuracy, which F1 does
         # not measure. Restricted to classes with real support: a class with
@@ -474,20 +550,9 @@ def recommend(models: list[ModelRun]) -> tuple[ModelRun | None, list[str]]:
             f"recommendation: it is more even across the taxonomy, which is "
             f"what macro F1 measures.")
 
-    verdict = winner.curve.get("verdict")
-    gap = winner.curve.get("final_val_minus_train")
-    if verdict in ("overfitting", "mild overfitting") and gap is not None:
-        lines.append(
-            f"Caveat: {winner.name} shows {verdict} - by the last epoch its "
-            f"validation loss was {gap:.2f} above its training loss. It still "
-            f"wins on unseen data, so this is not disqualifying, but a "
-            f"better-regularised run of the same recipe would probably beat "
-            f"it.")
-    elif verdict in ("underfitting", "still improving"):
-        lines.append(
-            f"Caveat: {winner.name} was {verdict} when the run ended, so it is "
-            f"winning without having finished learning. Training it longer is "
-            f"the cheapest improvement available.")
+    # The saved-weights explanation is reported once, in its own section --
+    # see build_digest. Repeating it here made the summary say the same
+    # paragraph twice.
 
     bias = winner.overall.get("classes_cover_off_by_25pct")
     if bias:
@@ -736,13 +801,17 @@ def build_digest(models, matrix, winner, rationale, shared, caveats) -> dict:
     table = [{
         "model": m.name,
         "macro_f1": m.overall["macro_f1"],
+        "macro_f1_word": describe_f1(m.overall["macro_f1"]),
         "top1": m.overall["top1_accuracy"],
         "weighted_f1": m.overall["weighted_f1"],
         "weak": m.overall["weak_classes"],
+        "classes_total": m.overall.get("classes_total"),
         "cover_bias": m.overall.get("mean_abs_cover_bias_pct"),
+        "cover_classes": m.overall.get("cover_classes_counted"),
         "verdict": m.curve.get("verdict", "-"),
         "best_epoch": m.curve.get("best_epoch"),
         "epochs": m.curve.get("epochs_total"),
+        "weights_note": weights_note(m.curve),
         "is_winner": m is winner,
     } for m in by_f1]
 
@@ -761,6 +830,11 @@ def build_digest(models, matrix, winner, rationale, shared, caveats) -> dict:
                 "winner_f1": float(frame.loc[r.Index, winner.name]),
                 "other_f1": float(frame.loc[r.Index, runner]),
                 "delta": float(r.delta),
+                "winner_name": winner.name,
+                "other_name": runner,
+                # Spelled out rather than left to a sign: "0.08 worse" does
+                # not say worse than what.
+                "better_model": winner.name if r.delta > 0 else runner,
             } for r in frame.head(6).itertuples()]
 
     weakest = []
@@ -772,6 +846,7 @@ def build_digest(models, matrix, winner, rationale, shared, caveats) -> dict:
             "label": r.label, "support": int(r.support), "f1": float(r.f1),
             "precision": float(r.precision), "recall": float(r.recall),
             "bottleneck": r.bottleneck,
+            "problem": BOTTLENECK_WORDS.get(r.bottleneck, r.bottleneck),
             "cover_bias_pct": r.cover_bias_pct,
         } for r in seen.sort_values("headroom", ascending=False).head(5).itertuples()]
 
@@ -782,10 +857,16 @@ def build_digest(models, matrix, winner, rationale, shared, caveats) -> dict:
             "count": int(r.count), "share": float(r.share_of_class),
         } for r in winner.confusions.head(5).itertuples()]
 
+    n_classes = winner.overall.get("classes_total") if winner else 0
     return {
         "recommended": winner.name if winner else None,
         "comparable": shared,
         "images": winner.overall["images"] if winner else 0,
+        "classes_total": n_classes,
+        "chance_f1": chance_level(n_classes),
+        "weak_f1": WEAK_F1,
+        "cover_ok_pct": COVER_OK_PCT,
+        "weights_note": weights_note(winner.curve) if winner else "",
         "why": list(rationale),
         "caveats": list(caveats),
         "table": table,
@@ -821,6 +902,13 @@ def _next_steps(winner, models, shared) -> list[str]:
                 f"(precision {r.precision:.2f} vs recall {r.recall:.2f}). More "
                 f"examples of it will not help; it needs more examples of "
                 f"whatever it is absorbing.")
+        else:
+            steps.append(
+                f"{r.label} is missed and over-called about equally "
+                f"(precision {r.precision:.2f}, recall {r.recall:.2f}) on "
+                f"{int(r.support):,} held-out points. Nothing is one-sided "
+                f"here, so this class needs the confusion pairs below "
+                f"disambiguated rather than simply more examples.")
 
     if winner.confusions is not None and len(winner.confusions):
         c = winner.confusions.iloc[0]
@@ -856,22 +944,45 @@ def digest_lines(d: dict) -> list[str]:
         return ["No ranking could be produced."] + d.get("next_steps", [])
 
     w = max(len(r["model"]) for r in d["table"])
+    best = next(r for r in d["table"] if r["is_winner"])
     out = [
-        "=" * 72,
+        "=" * 78,
         f"RECOMMENDED:  {d['recommended']}",
-        "=" * 72,
-        f"Ranked by macro F1 on {d['images']:,} held-out images.",
+        "=" * 78,
+        f"Ranked by macro F1 on {d['images']:,} held-out images across "
+        f"{d['classes_total']} classes.",
+        f"Macro F1 runs 0 (useless) to 1 (perfect). Guessing at random on "
+        f"{d['classes_total']} classes scores about {d['chance_f1']:.2f};",
+        f"this model scores {best['macro_f1']:.3f} ({best['macro_f1_word']}).",
         "",
-        f"  {'model':<{w}}  {'macro F1':>8}  {'top-1':>7}  {'weak':>5}  "
-        f"{'cover err':>9}  training",
+        f"  {'model':<{w}}  {'macro F1':>8}  {'top-1':>7}  {'weak':>7}  "
+        f"{'cover err':>9}  saved weights",
     ]
     for r in d["table"]:
         mark = "*" if r["is_winner"] else " "
         cover = f"{r['cover_bias']:.0f}%" if r["cover_bias"] is not None else "-"
+        weak = f"{r['weak']}/{r['classes_total']}"
         out.append(
             f"{mark} {r['model']:<{w}}  {r['macro_f1']:>8.3f}  "
-            f"{r['top1']:>7.1%}  {r['weak']:>5}  {cover:>9}  "
-            f"{r['verdict']} (best epoch {r['best_epoch']}/{r['epochs']})")
+            f"{r['top1']:>7.1%}  {weak:>7}  {cover:>9}  "
+            f"epoch {r['best_epoch']} of {r['epochs']}")
+    out += [
+        "",
+        f"  macro F1   average of each class's precision-and-recall balance, "
+        f"every class",
+        f"             counting equally - so rare taxa cannot be ignored. "
+        f"Higher is better.",
+        f"  top-1      share of all points labelled correctly. Dominated by "
+        f"the common classes.",
+        f"  weak       classes scoring below F1 {d['weak_f1']:.2f}, a triage "
+        f"threshold, not a standard.",
+        f"  cover err  how far this model's reported abundance per class sits "
+        f"from the truth,",
+        f"             on average. Under +/-{d['cover_ok_pct']}% is fine for "
+        f"percent cover.",
+    ]
+    if d.get("weights_note"):
+        out += ["", "ABOUT THE SAVED WEIGHTS", f"  {d['weights_note']}"]
 
     if d["why"]:
         out += ["", "WHY"] + [f"  - {line}" for line in d["why"]]
@@ -879,23 +990,38 @@ def digest_lines(d: dict) -> list[str]:
         out += ["", "READ THIS FIRST"] + [f"  ! {c}" for c in d["caveats"]]
 
     if d["movers"]:
-        out += ["", "WHERE THE MODELS DISAGREE MOST  (F1, held-out)"]
+        out += ["", "WHERE THE MODELS DISAGREE MOST  (per-class F1)",
+                f"  chosen = {d['movers'][0]['winner_name']}",
+                f"  other  = {d['movers'][0]['other_name']}",
+                "",
+                f"  {'class':<12}{'points':>8}  {'chosen':>8}  {'other':>8}   "
+                f"better on this class"]
         for m in d["movers"]:
-            arrow = "better" if m["delta"] > 0 else "worse"
             out.append(
-                f"  {m['label']:<12} {m['support']:>6,} pts   "
-                f"{d['recommended'][:18]} {m['winner_f1']:.2f} vs "
-                f"{m['other_f1']:.2f}   ({abs(m['delta']):.2f} {arrow})")
+                f"  {m['label']:<12}{m['support']:>8,}  "
+                f"{m['winner_f1']:>8.2f}  {m['other_f1']:>8.2f}   "
+                f"{'chosen' if m['delta'] > 0 else 'other'}")
 
     if d["weakest"]:
-        out += ["", "WEAKEST CLASSES BY IMAGES MISREAD  (the work queue)"]
+        out += ["", "THE WORK QUEUE  (weakest classes, by how many points they "
+                "get wrong)",
+                f"  {'class':<12}{'points':>8}  {'F1':>5}   {'problem':<13}"
+                f"{'cover':>7}"]
         for c in d["weakest"]:
-            bias = ("" if c["cover_bias_pct"] is None
-                    else f", cover {c['cover_bias_pct']:+.0f}%")
+            bias = ("-" if c["cover_bias_pct"] is None
+                    else f"{c['cover_bias_pct']:+.0f}%")
             out.append(
-                f"  {c['label']:<12} {c['support']:>6,} pts   F1 {c['f1']:.2f}   "
-                f"P {c['precision']:.2f} / R {c['recall']:.2f}   "
-                f"limited by {c['bottleneck']}{bias}")
+                f"  {c['label']:<12}{c['support']:>8,}  {c['f1']:>5.2f}   "
+                f"{c['problem']:<13}{bias:>7}")
+        out += [
+            "    missed      = where it really is, the model calls it "
+            "something else",
+            "    over-called = when the model says it, it is often something "
+            "else",
+            f"    cover       = reported abundance vs truth. Negative = "
+            f"under-reported,",
+            "                  positive = over-reported.",
+        ]
 
     if d["next_steps"]:
         out += ["", "WHAT TO TRY NEXT"]

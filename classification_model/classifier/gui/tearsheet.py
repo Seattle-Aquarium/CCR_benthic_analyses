@@ -51,6 +51,7 @@ class TearSheet(ctk.CTkToplevel):
         self._row = 0
 
         self._build_verdict()
+        self._build_weights_note()
         self._build_table()
         self._build_caveats()
         self._build_next_steps()
@@ -111,31 +112,59 @@ class TearSheet(ctk.CTkToplevel):
             return
         inner = self._card(
             "The headline",
-            f"Ranked by macro F1 on {d['images']:,} held-out images - images "
-            f"no model in this comparison was trained on.")
+            f"Ranked by macro F1 on {d['images']:,} held-out images across "
+            f"{d['classes_total']} classes - images no model in this "
+            f"comparison was trained on, so these are the numbers to trust.")
 
         cover = ("-" if best["cover_bias"] is None
                  else f"{best['cover_bias']:.0f}%")
         stats = ctk.CTkFrame(inner, fg_color="transparent")
         stats.grid(row=0, column=0, sticky="ew")
-        for i, (value, caption) in enumerate((
-                (f"{best['macro_f1']:.3f}", "macro F1"),
-                (f"{best['top1']:.1%}", "top-1 accuracy"),
-                (f"{best['weak']}", f"classes below F1 0.60"),
-                (cover, "mean cover error"))):
+
+        # Every headline number carries the scale it should be read against,
+        # because none of them mean anything on their own.
+        tiles = (
+            (f"{best['macro_f1']:.3f}", "macro F1",
+             f"{best['macro_f1_word']}  -  0 to 1, higher better\n"
+             f"random guessing = {d['chance_f1']:.2f}"),
+            (f"{best['top1']:.1%}", "top-1 accuracy",
+             "share of all points labelled\ncorrectly, common classes included"),
+            (f"{best['weak']} of {best['classes_total']}", "weaker classes",
+             f"scoring under F1 {d['weak_f1']:.2f} - a triage\n"
+             f"line we chose, not a standard"),
+            (cover, "cover error",
+             f"average gap between reported and\n"
+             f"true abundance; under {d['cover_ok_pct']}% is fine"),
+        )
+        for i, (value, caption, note) in enumerate(tiles):
             stats.grid_columnconfigure(i, weight=1)
             cell = ctk.CTkFrame(stats, fg_color="transparent")
-            cell.grid(row=0, column=i, sticky="w", padx=(0, 26))
+            cell.grid(row=0, column=i, sticky="nw", padx=(0, 22))
             ctk.CTkLabel(cell, text=value, font=(T.FAMILY_SEMIBOLD, 26),
                          text_color=T.TEXT).grid(row=0, column=0, sticky="w")
             ctk.CTkLabel(cell, text=caption, font=T.FONT_SMALL,
-                         text_color=T.TEXT_MUTED).grid(row=1, column=0, sticky="w")
+                         text_color=T.TEXT).grid(row=1, column=0, sticky="w")
+            ctk.CTkLabel(cell, text=note, font=T.FONT_SMALL, justify="left",
+                         text_color=T.TEXT_MUTED, anchor="w"
+                         ).grid(row=2, column=0, sticky="w", pady=(3, 0))
 
         for i, line in enumerate(d["why"], start=1):
             ctk.CTkLabel(inner, text="- " + line, font=T.FONT_BODY,
                          text_color=T.TEXT, anchor="w", justify="left",
                          wraplength=920).grid(row=i, column=0, sticky="ew",
                                               pady=(8 if i == 1 else 3, 0))
+
+    def _build_weights_note(self) -> None:
+        note = self.digest.get("weights_note")
+        if not note:
+            return
+        inner = self._card(
+            "Is the model itself overfitted?",
+            "Training saves the best epoch, not the last one, so a run that "
+            "went wrong later did not necessarily produce a bad model.")
+        ctk.CTkLabel(inner, text=note, font=T.FONT_BODY, text_color=T.TEXT,
+                     anchor="w", justify="left", wraplength=920
+                     ).grid(row=0, column=0, sticky="ew")
 
     def _build_table(self) -> None:
         d = self.digest
@@ -145,17 +174,25 @@ class TearSheet(ctk.CTkToplevel):
         width = max(len(r["model"]) for r in d["table"])
         self._mono(inner,
                    f"{'':2}{'model':<{width}}  {'macro F1':>8}  {'top-1':>7}  "
-                   f"{'weak':>5}  {'cover err':>9}  training",
+                   f"{'weaker':>7}  {'cover err':>9}  saved weights",
                    0, T.TEXT_MUTED)
         for i, r in enumerate(d["table"], start=1):
             cover = "-" if r["cover_bias"] is None else f"{r['cover_bias']:.0f}%"
             mark = "> " if r["is_winner"] else "  "
+            weak = f"{r['weak']}/{r['classes_total']}"
             self._mono(
                 inner,
                 f"{mark}{r['model']:<{width}}  {r['macro_f1']:>8.3f}  "
-                f"{r['top1']:>7.1%}  {r['weak']:>5}  {cover:>9}  "
-                f"{r['verdict']} (best epoch {r['best_epoch']}/{r['epochs']})",
+                f"{r['top1']:>7.1%}  {weak:>7}  {cover:>9}  "
+                f"epoch {r['best_epoch']} of {r['epochs']}",
                 i, T.ACCENT if r["is_winner"] else T.TEXT)
+        ctk.CTkLabel(
+            inner,
+            text=("The chosen model is marked >. 'Saved weights' is the epoch "
+                  "the kept file came from, not where the run stopped."),
+            font=T.FONT_SMALL, text_color=T.TEXT_MUTED, anchor="w",
+            justify="left", wraplength=900
+        ).grid(row=len(d["table"]) + 1, column=0, sticky="ew", pady=(8, 0))
 
     def _build_caveats(self) -> None:
         if not self.digest["caveats"]:
@@ -182,21 +219,34 @@ class TearSheet(ctk.CTkToplevel):
         movers = self.digest["movers"]
         if not movers:
             return
+        # Two long folder names in a fixed-width table are unreadable however
+        # they are truncated, so the columns are named by role and the names
+        # are given once, above.
         inner = self._card(
             "Where the models disagree most",
-            "A class the survey depends on can move the opposite way to the "
-            "headline number, so this is the part worth checking by name.")
+            f"chosen = {movers[0]['winner_name']}   (the recommendation)\n"
+            f"other  = {movers[0]['other_name']}\n\n"
+            f"A class the survey depends on can move the opposite way to the "
+            f"headline number, so this is the part worth checking by name.")
         self._mono(inner,
-                   f"{'class':<12}{'points':>8}   {'chosen':>7} {'other':>7}   "
-                   f"difference", 0, T.TEXT_MUTED)
+                   f"{'class':<12}{'points':>8}  {'chosen':>8}  {'other':>8}   "
+                   f"better on this class", 0, T.TEXT_MUTED)
         for i, m in enumerate(movers, start=1):
             better = m["delta"] > 0
             self._mono(
                 inner,
-                f"{m['label']:<12}{m['support']:>8,}   "
-                f"{m['winner_f1']:>7.2f} {m['other_f1']:>7.2f}   "
-                f"{abs(m['delta']):.2f} {'better' if better else 'worse'}",
+                f"{m['label']:<12}{m['support']:>8,}  "
+                f"{m['winner_f1']:>8.2f}  {m['other_f1']:>8.2f}   "
+                f"{'chosen' if better else 'other'}",
                 i, T.OK if better else T.WARN)
+        ctk.CTkLabel(
+            inner,
+            text=("Green where the chosen model is ahead on that class, coral "
+                  "where the other one is. Scores are F1 for that class alone, "
+                  "so a class can go the other way from the headline."),
+            font=T.FONT_SMALL, text_color=T.TEXT_MUTED, anchor="w",
+            justify="left", wraplength=900
+        ).grid(row=len(movers) + 1, column=0, sticky="ew", pady=(8, 0))
 
     def _build_weakest(self) -> None:
         weakest = self.digest["weakest"]
@@ -205,20 +255,35 @@ class TearSheet(ctk.CTkToplevel):
         inner = self._card(
             "The work queue",
             "Weakest classes ordered by how many held-out points they get "
-            "wrong, not by score - a big class at 0.7 costs more than a tiny "
-            "one at 0.1. 'Cover' is how far the reported abundance would be "
-            "from the truth.")
+            "wrong, not by score - a big class at 0.7 costs the survey more "
+            "than a tiny one at 0.1.")
         self._mono(inner,
-                   f"{'class':<12}{'points':>8}  {'F1':>5}  {'prec':>5}  "
-                   f"{'rec':>5}   {'limited by':<11} cover", 0, T.TEXT_MUTED)
+                   f"{'class':<12}{'points':>8}  {'F1':>5}   {'problem':<13}"
+                   f"{'cover':>7}", 0, T.TEXT_MUTED)
         for i, c in enumerate(weakest, start=1):
             bias = ("-" if c["cover_bias_pct"] is None
                     else f"{c['cover_bias_pct']:+.0f}%")
             self._mono(
                 inner,
-                f"{c['label']:<12}{c['support']:>8,}  {c['f1']:>5.2f}  "
-                f"{c['precision']:>5.2f}  {c['recall']:>5.2f}   "
-                f"{c['bottleneck']:<11} {bias}", i)
+                f"{c['label']:<12}{c['support']:>8,}  {c['f1']:>5.2f}   "
+                f"{c['problem']:<13}{bias:>7}", i)
+
+        legend = (
+            "missed        where this class really is, the model usually "
+            "calls it something else.\n"
+            "              It needs more, or more varied, training examples.\n"
+            "over-called   when the model says this class, it is often "
+            "something else. More\n"
+            "              examples of it will not help - it needs more of "
+            "whatever it is absorbing.\n"
+            "cover         reported abundance against the truth. Negative "
+            "means the model\n"
+            "              under-reports this class, positive means it "
+            "over-reports it.")
+        ctk.CTkLabel(inner, text=legend, font=T.FONT_MONO, anchor="w",
+                     justify="left", text_color=T.TEXT_MUTED
+                     ).grid(row=len(weakest) + 1, column=0, sticky="ew",
+                            pady=(10, 0))
 
     def _build_figures(self) -> None:
         figures = self.digest.get("figures") or {}
