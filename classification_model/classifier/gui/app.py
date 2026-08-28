@@ -366,6 +366,19 @@ class App(ctk.CTk):
         self.rail.set_status(stage_key, "done")
         self._advance(stage_key, result)
 
+    def _show_tearsheet(self, digest: dict) -> None:
+        """Open the one-page comparison summary.
+
+        The log pane already holds the same summary as text; this is for
+        reading it without scrolling, and for the figures, which a text pane
+        cannot show at all.
+        """
+        try:
+            from .tearsheet import show
+            show(self, digest)
+        except Exception as ex:      # a summary window must never lose a run
+            self._log(f"Could not open the summary window: {ex}", "warn")
+
     def _advance(self, stage_key: str, result: StageResult) -> None:
         """Hand this stage's output to whichever stage consumes it."""
         outputs = result.outputs
@@ -378,6 +391,8 @@ class App(ctk.CTk):
                 self.pipeline.balance.output_dir)
         elif stage_key == "train" and outputs.get("weights"):
             nxt = self.pipeline.advance_from_train(outputs["weights"])
+        elif stage_key == "compare" and outputs.get("digest"):
+            self._show_tearsheet(outputs["digest"])
         elif stage_key == "evaluate":
             self._offer_reports(outputs)
             # Add this model to the comparison list, but stay put: after an

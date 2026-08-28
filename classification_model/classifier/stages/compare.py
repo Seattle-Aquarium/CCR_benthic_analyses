@@ -192,6 +192,13 @@ def per_class_metrics(detail: pd.DataFrame) -> pd.DataFrame:
             "recall": round(recall, 4),
             "f1": round(f1, 4),
             "balanced_accuracy": round((recall + specificity) / 2, 4),
+            # What the model would report as this class's cover, against what
+            # is really there. Errors that cancel leave cover unbiased even
+            # when F1 is poor; errors that do not, bias it directly.
+            "cover_bias": int(is_pred.sum() - is_true.sum()),
+            "cover_bias_pct": (round(100 * (int(is_pred.sum()) - int(is_true.sum()))
+                                     / int(is_true.sum()), 1)
+                               if int(is_true.sum()) else None),
             # Which side is holding the class back is the difference between
             # "needs more examples" and "needs a competitor disambiguated".
             "bottleneck": ("-" if not (tp + fp + fn) else
@@ -206,6 +213,7 @@ def per_class_metrics(detail: pd.DataFrame) -> pd.DataFrame:
 def overall_metrics(detail: pd.DataFrame, per_class: pd.DataFrame) -> dict:
     """Top-1 plus the macro and weighted averages, in one dict."""
     seen = per_class[per_class["support"] > 0]
+    solid = seen[seen["support"] >= MIN_CHART_SUPPORT]
     weights = seen["support"] / seen["support"].sum() if len(seen) else seen["support"]
     return {
         "images": len(detail),
@@ -216,6 +224,16 @@ def overall_metrics(detail: pd.DataFrame, per_class: pd.DataFrame) -> dict:
         "macro_f1": round(float(seen["f1"].mean()), 4),
         "weighted_f1": round(float((seen["f1"] * weights).sum()), 4),
         "weak_classes": int((seen["f1"] < WEAK_F1).sum()),
+        # Mean absolute cover error, in percentage points of each class's true
+        # count -- the percent-cover deliverable's own accuracy, which F1 does
+        # not measure. Restricted to classes with real support: a class with
+        # three held-out points predicted nine times reads as +200%, which is
+        # arithmetically true and tells nobody anything.
+        "mean_abs_cover_bias_pct": round(float(
+            solid["cover_bias_pct"].abs().mean()), 1) if len(solid) else None,
+        "classes_cover_off_by_25pct": int(
+            (solid["cover_bias_pct"].abs() > 25).sum()),
+        "cover_classes_counted": int(len(solid)),
         "mean_confidence_correct": round(
             float(detail.loc[detail["correct"], "confidence"].mean()), 4)
         if detail["correct"].any() else 0.0,
@@ -407,14 +425,22 @@ TIE_THRESHOLD = 0.005
 def recommend(models: list[ModelRun]) -> tuple[ModelRun | None, list[str]]:
     """Pick the model to move forward with, and say why in full.
 
-    Ranked on held-out top-1 accuracy, because that is the only number in the
-    pipeline measured on images no model has trained on. Macro F1 breaks a
-    near-tie: it weights a class with 40 examples the same as one with 4,000,
-    so it is the question "does this model still know the rare taxa" asked
-    numerically. Where the two disagree the disagreement is reported rather
-    than resolved silently -- which of the two matters depends on whether the
-    survey needs overall cover or rare-species detection, and that is not a
-    decision this code should make on its own.
+    Ranked on **macro F1**. F1 balances precision against recall, which is the
+    right default when neither error is worse than the other -- and for
+    benthic cover neither is: over-calling a class inflates its cover, missing
+    it deflates it, and both distort the survey equally. Macro rather than
+    weighted, because it scores a class with forty held-out points the same as
+    one with four thousand; a weighted average on this taxonomy is dominated
+    by the substrate classes and would call a model good while it had stopped
+    recognising the rare taxa entirely.
+
+    Top-1 accuracy is reported alongside but does not decide the ranking: it
+    is the weighted view under another name, so on an imbalanced set it mostly
+    measures how well the common classes are doing.
+
+    Where the two orderings disagree the disagreement is reported rather than
+    resolved silently, because which one matters depends on whether the survey
+    needs overall cover or rare-taxon detection.
     """
     scored = [m for m in models if m.has_holdout]
     if not scored:
@@ -424,47 +450,33 @@ def recommend(models: list[ModelRun]) -> tuple[ModelRun | None, list[str]]:
             f"Only {scored[0].name} has a held-out evaluation, so there is "
             f"nothing to compare it against."]
 
+    by_f1 = sorted(scored, key=lambda m: -m.overall["macro_f1"])
     by_top1 = sorted(scored, key=lambda m: -m.overall["top1_accuracy"])
-    by_macro = sorted(scored, key=lambda m: -m.overall["macro_f1"])
-    best, runner = by_top1[0], by_top1[1]
-    margin = best.overall["top1_accuracy"] - runner.overall["top1_accuracy"]
+    winner, runner = by_f1[0], by_f1[1]
+    margin = winner.overall["macro_f1"] - runner.overall["macro_f1"]
 
     lines = [
-        f"Ranked on held-out top-1 accuracy ({best.overall['images']:,} "
-        f"unseen images):"]
-    for i, m in enumerate(by_top1, 1):
-        lines.append(
-            f"   {i}. {m.name}   top-1 {m.overall['top1_accuracy']:.2%}   "
-            f"macro-F1 {m.overall['macro_f1']:.3f}   "
-            f"{m.overall['weak_classes']} class(es) below F1 {WEAK_F1}")
+        f"Recommended: {winner.name} - best macro F1 "
+        f"({winner.overall['macro_f1']:.3f}) on "
+        f"{winner.overall['images']:,} held-out images."]
 
-    winner = best
-    if margin < TIE_THRESHOLD and by_macro[0] is not best:
-        winner = by_macro[0]
+    if margin < 0.01:
         lines.append(
-            f"{best.name} leads on top-1 by only {margin:.2%}, which on this "
-            f"holdout is about {round(margin * best.overall['images'])} images "
-            f"-- too close to call. {winner.name} has the better macro F1 "
-            f"({winner.overall['macro_f1']:.3f} against "
-            f"{best.overall['macro_f1']:.3f}), meaning it handles the rare "
-            f"classes better, so it is the recommendation.")
-    elif by_macro[0] is not best:
+            f"It is close: {runner.name} is only {margin:.3f} behind on macro "
+            f"F1, which is within the noise of a single evaluation. Treat "
+            f"these two as equivalent and choose on the per-class table.")
+    if by_top1[0] is not winner:
         lines.append(
-            f"Note the disagreement: {best.name} wins on overall accuracy but "
-            f"{by_macro[0].name} has the better macro F1 "
-            f"({by_macro[0].overall['macro_f1']:.3f} against "
-            f"{best.overall['macro_f1']:.3f}). {best.name} is the better "
-            f"choice for overall percent-cover; {by_macro[0].name} is the "
-            f"better choice if the rare taxa matter as much as the common "
-            f"ones.")
-    else:
-        lines.append(
-            f"{best.name} leads on both overall accuracy and macro F1, so the "
-            f"choice is unambiguous.")
+            f"{by_top1[0].name} has the higher overall accuracy "
+            f"({by_top1[0].overall['top1_accuracy']:.2%} against "
+            f"{winner.overall['top1_accuracy']:.2%}), because it does better "
+            f"on the common substrate classes. {winner.name} is still the "
+            f"recommendation: it is more even across the taxonomy, which is "
+            f"what macro F1 measures.")
 
     verdict = winner.curve.get("verdict")
     gap = winner.curve.get("final_val_minus_train")
-    if verdict in ("overfitting", "mild overfitting"):
+    if verdict in ("overfitting", "mild overfitting") and gap is not None:
         lines.append(
             f"Caveat: {winner.name} shows {verdict} - by the last epoch its "
             f"validation loss was {gap:.2f} above its training loss. It still "
@@ -476,6 +488,15 @@ def recommend(models: list[ModelRun]) -> tuple[ModelRun | None, list[str]]:
             f"Caveat: {winner.name} was {verdict} when the run ended, so it is "
             f"winning without having finished learning. Training it longer is "
             f"the cheapest improvement available.")
+
+    bias = winner.overall.get("classes_cover_off_by_25pct")
+    if bias:
+        lines.append(
+            f"For percent cover specifically: {bias} of "
+            f"{winner.overall.get('cover_classes_counted')} well-sampled "
+            f"class(es) would be reported more than 25% away from their true "
+            f"abundance, even where F1 looks acceptable. Errors that cancel "
+            f"leave cover unbiased; these do not.")
 
     return winner, lines
 
@@ -699,6 +720,191 @@ def plot_per_class(matrix: pd.DataFrame, models: list[ModelRun],
 
 
 # --------------------------------------------------------------------------
+#  The digest -- what someone actually reads
+# --------------------------------------------------------------------------
+
+def build_digest(models, matrix, winner, rationale, shared, caveats) -> dict:
+    """Everything worth knowing, small enough to read in one sitting.
+
+    The workbook keeps every number; this keeps the ones that change a
+    decision. Both the log summary and the tear sheet render from here, so
+    they cannot drift apart.
+    """
+    scored = [m for m in models if m.has_holdout]
+    by_f1 = sorted(scored, key=lambda m: -m.overall["macro_f1"])
+
+    table = [{
+        "model": m.name,
+        "macro_f1": m.overall["macro_f1"],
+        "top1": m.overall["top1_accuracy"],
+        "weighted_f1": m.overall["weighted_f1"],
+        "weak": m.overall["weak_classes"],
+        "cover_bias": m.overall.get("mean_abs_cover_bias_pct"),
+        "verdict": m.curve.get("verdict", "-"),
+        "best_epoch": m.curve.get("best_epoch"),
+        "epochs": m.curve.get("epochs_total"),
+        "is_winner": m is winner,
+    } for m in by_f1]
+
+    movers = []
+    if len(matrix) and winner is not None and len(by_f1) > 1:
+        names = [m.name for m in scored]
+        other = [n for n in names if n != winner.name]
+        if other:
+            runner = other[0]
+            frame = matrix[matrix["support"] >= MIN_CHART_SUPPORT].copy()
+            frame["delta"] = frame[winner.name] - frame[runner]
+            frame = frame.reindex(frame["delta"].abs().sort_values(
+                ascending=False).index)
+            movers = [{
+                "label": r.label, "support": int(r.support),
+                "winner_f1": float(frame.loc[r.Index, winner.name]),
+                "other_f1": float(frame.loc[r.Index, runner]),
+                "delta": float(r.delta),
+            } for r in frame.head(6).itertuples()]
+
+    weakest = []
+    if winner is not None and winner.per_class is not None:
+        pc = winner.per_class
+        seen = pc[pc["support"] >= MIN_CHART_SUPPORT].copy()
+        seen["headroom"] = (1 - seen["f1"]) * seen["support"]
+        weakest = [{
+            "label": r.label, "support": int(r.support), "f1": float(r.f1),
+            "precision": float(r.precision), "recall": float(r.recall),
+            "bottleneck": r.bottleneck,
+            "cover_bias_pct": r.cover_bias_pct,
+        } for r in seen.sort_values("headroom", ascending=False).head(5).itertuples()]
+
+    confusions = []
+    if winner is not None and winner.confusions is not None:
+        confusions = [{
+            "true": r.true_label, "pred": r.pred_label,
+            "count": int(r.count), "share": float(r.share_of_class),
+        } for r in winner.confusions.head(5).itertuples()]
+
+    return {
+        "recommended": winner.name if winner else None,
+        "comparable": shared,
+        "images": winner.overall["images"] if winner else 0,
+        "why": list(rationale),
+        "caveats": list(caveats),
+        "table": table,
+        "movers": movers,
+        "weakest": weakest,
+        "confusions": confusions,
+        "next_steps": _next_steps(winner, models, shared),
+    }
+
+
+def _next_steps(winner, models, shared) -> list[str]:
+    """The handful of actions worth taking, ordered by expected payoff."""
+    if winner is None:
+        return ["Run stage 4 on at least two models against the same held-out "
+                "folder, then compare again."]
+    steps = []
+    pc = winner.per_class
+    seen = pc[pc["support"] >= MIN_CHART_SUPPORT].copy()
+    seen["headroom"] = (1 - seen["f1"]) * seen["support"]
+    top = seen.sort_values("headroom", ascending=False).head(2)
+
+    for r in top.itertuples():
+        if r.bottleneck == "recall":
+            steps.append(
+                f"{r.label} is missed more than it is over-called "
+                f"(recall {r.recall:.2f} vs precision {r.precision:.2f}) on "
+                f"{int(r.support):,} held-out points - the largest single "
+                f"pool of errors. Raise its cap or floor in stage 2, or "
+                f"annotate more of it.")
+        elif r.bottleneck == "precision":
+            steps.append(
+                f"{r.label} is over-applied rather than missed "
+                f"(precision {r.precision:.2f} vs recall {r.recall:.2f}). More "
+                f"examples of it will not help; it needs more examples of "
+                f"whatever it is absorbing.")
+
+    if winner.confusions is not None and len(winner.confusions):
+        c = winner.confusions.iloc[0]
+        steps.append(
+            f"Biggest single confusion: {c.true_label} read as {c.pred_label} "
+            f"{int(c['count']):,} times ({c.share_of_class:.0%} of all "
+            f"{c.true_label}). If those two are separable at this patch size, "
+            f"that is the highest-value annotation available.")
+
+    verdict = winner.curve.get("verdict")
+    if verdict in ("overfitting", "mild overfitting"):
+        steps.append(
+            f"The run overfitted after epoch {winner.curve.get('best_epoch')} "
+            f"of {winner.curve.get('epochs_total')}. Lower patience so it "
+            f"stops nearer its best, and consider stronger augmentation.")
+    elif verdict in ("underfitting", "still improving"):
+        steps.append("The run had not finished learning - train it longer.")
+
+    missing = [m.name for m in models if not m.has_holdout]
+    if missing:
+        steps.append(
+            f"Not yet evaluated, so not in this ranking: {', '.join(missing)}. "
+            f"Run stage 4 on each against the same held-out folder.")
+    if not shared:
+        steps.append("Re-evaluate every model against one held-out folder so "
+                     "the comparison rests on identical images.")
+    return steps
+
+
+def digest_lines(d: dict) -> list[str]:
+    """The digest as plain text, for the log pane."""
+    if not d.get("recommended"):
+        return ["No ranking could be produced."] + d.get("next_steps", [])
+
+    w = max(len(r["model"]) for r in d["table"])
+    out = [
+        "=" * 72,
+        f"RECOMMENDED:  {d['recommended']}",
+        "=" * 72,
+        f"Ranked by macro F1 on {d['images']:,} held-out images.",
+        "",
+        f"  {'model':<{w}}  {'macro F1':>8}  {'top-1':>7}  {'weak':>5}  "
+        f"{'cover err':>9}  training",
+    ]
+    for r in d["table"]:
+        mark = "*" if r["is_winner"] else " "
+        cover = f"{r['cover_bias']:.0f}%" if r["cover_bias"] is not None else "-"
+        out.append(
+            f"{mark} {r['model']:<{w}}  {r['macro_f1']:>8.3f}  "
+            f"{r['top1']:>7.1%}  {r['weak']:>5}  {cover:>9}  "
+            f"{r['verdict']} (best epoch {r['best_epoch']}/{r['epochs']})")
+
+    if d["why"]:
+        out += ["", "WHY"] + [f"  - {line}" for line in d["why"]]
+    if d["caveats"]:
+        out += ["", "READ THIS FIRST"] + [f"  ! {c}" for c in d["caveats"]]
+
+    if d["movers"]:
+        out += ["", "WHERE THE MODELS DISAGREE MOST  (F1, held-out)"]
+        for m in d["movers"]:
+            arrow = "better" if m["delta"] > 0 else "worse"
+            out.append(
+                f"  {m['label']:<12} {m['support']:>6,} pts   "
+                f"{d['recommended'][:18]} {m['winner_f1']:.2f} vs "
+                f"{m['other_f1']:.2f}   ({abs(m['delta']):.2f} {arrow})")
+
+    if d["weakest"]:
+        out += ["", "WEAKEST CLASSES BY IMAGES MISREAD  (the work queue)"]
+        for c in d["weakest"]:
+            bias = ("" if c["cover_bias_pct"] is None
+                    else f", cover {c['cover_bias_pct']:+.0f}%")
+            out.append(
+                f"  {c['label']:<12} {c['support']:>6,} pts   F1 {c['f1']:.2f}   "
+                f"P {c['precision']:.2f} / R {c['recall']:.2f}   "
+                f"limited by {c['bottleneck']}{bias}")
+
+    if d["next_steps"]:
+        out += ["", "WHAT TO TRY NEXT"]
+        out += [f"  {i}. {t}" for i, t in enumerate(d["next_steps"], 1)]
+    out.append("=" * 72)
+    return out
+
+
+# --------------------------------------------------------------------------
 #  The stage
 # --------------------------------------------------------------------------
 
@@ -768,25 +974,25 @@ def _run(cfg, progress, cancel) -> StageResult:
         res.outputs["recommended"] = winner.name
     st.finish("analyse", "compared")
 
-    for line in rationale:
-        res.say(line)
-    if shared and len(matrix):
-        flipped = matrix[matrix["best_minus_worst"] > 0.10]
-        if len(flipped):
-            res.say(f"{len(flipped)} class(es) differ by more than 0.10 F1 "
-                    f"between models - worth reading the per-class sheet, "
-                    f"since a class the survey depends on may have moved the "
-                    f"other way from the headline number.")
+    digest = build_digest(models, matrix, winner, rationale, shared,
+                          list(res.warnings))
+    res.outputs["digest"] = digest
+    for line in digest_lines(digest):
+        log.info(line)
 
-    for m in models:
-        notes = improvement_notes(m, shared)
-        if notes:
-            log.info(f"--- {m.name} ---")
-            for n in notes:
-                log.info(f"    {n}")
+    # The summary block above is the report; the run summary stays short so
+    # the two do not say the same thing twice.
+    if winner:
+        best = next(r for r in digest["table"] if r["is_winner"])
+        res.say(f"Use {winner.name} - macro F1 {best['macro_f1']:.3f}, "
+                f"top-1 {best['top1']:.1%} on {digest['images']:,} held-out "
+                f"images.")
+        if digest["next_steps"]:
+            res.say(f"Next: {digest['next_steps'][0]}")
 
     if cfg.preview_only:
-        res.say("Nothing written - clear 'Preview only' to write the report.")
+        res.say("Nothing written - clear 'Preview only' to write the report "
+                "and open the summary window.")
         return res
 
     # ---- write ------------------------------------------------------
@@ -796,10 +1002,15 @@ def _run(cfg, progress, cancel) -> StageResult:
     res.outputs.update(written)
     st.finish("write", "report written")
 
-    res.say(f"Comparison written to {written['workbook']}")
-    for key in ("curves_png", "per_class_png"):
-        if written.get(key):
-            res.say(f"   {written[key]}")
+    # Keyed without the suffix: the tear sheet asks for "curves", not the
+    # filename it happens to have been written under.
+    digest["figures"] = {k.removesuffix("_png"): written[k]
+                         for k in ("curves_png", "per_class_png")
+                         if written.get(k)}
+    digest["workbook"] = written["workbook"]
+    res.outputs["digest"] = digest
+
+    res.say(f"Full detail: {written['workbook']}")
     return res
 
 
