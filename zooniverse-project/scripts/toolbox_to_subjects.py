@@ -51,6 +51,7 @@ from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
 
 import cv2
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -315,6 +316,56 @@ def draw_center_marker(img_bgr, x: int, y: int, patch_size: int) -> None:
              (x + inner_radius + gap + tick_length, y), color, tick_thickness, lineType=cv2.LINE_AA)
 
 
+# Black halo width as a share of the glyph height. Measured from the text
+# rather than the font scale because the two are not proportional across
+# OpenCV versions: at the same scale, 5.0's font measures 34 px tall against
+# 4.13's 27 px, and is bolder with it. 12% of whichever it is looks the same.
+HALO_PER_TEXT_HEIGHT = 0.12
+
+
+def _halo(text_height: int) -> int:
+    return max(2, int(round(text_height * HALO_PER_TEXT_HEIGHT)))
+
+
+def outlined_text(img_bgr, text: str, org, font, font_scale: float,
+                  thickness: int, halo: int) -> None:
+    """
+    White text with a black halo `halo` px wide, in any OpenCV version.
+
+    Deliberately NOT two cv2.putText passes at different thicknesses, which is
+    what this script used to do. OpenCV 5 rewrote putText and saturates
+    thickness at 2: passes at 2, 5, 8 and 14 all lay down identical ink, so
+    the wider black pass is drawn at the white pass's width and then covered
+    entirely by it. Measured on OpenCV 5.0.0 the black area came out at 0 px --
+    no outline at all -- while the same code looked correct on 4.13.
+
+    Dilating a text mask gives an exact halo, keeps the antialiasing, and
+    behaves the same on both. The canonical copy of this lives in
+    kelpquest/patches.py; it is repeated here so this script stays standalone.
+    """
+    (text_w, text_h), baseline = cv2.getTextSize(text, font, font_scale, thickness)
+    pad = halo + 2
+    h, w = img_bgr.shape[:2]
+    x0, y0 = max(0, org[0] - pad), max(0, org[1] - text_h - pad)
+    x1, y1 = min(w, org[0] + text_w + pad), min(h, org[1] + baseline + pad)
+    if x1 <= x0 or y1 <= y0:
+        return
+
+    roi = img_bgr[y0:y1, x0:x1]
+    glyph = np.zeros(roi.shape[:2], dtype=np.uint8)
+    cv2.putText(glyph, text, (org[0] - x0, org[1] - y0), font, font_scale,
+                255, thickness, cv2.LINE_AA)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,
+                                       (2 * halo + 1, 2 * halo + 1))
+    outline = cv2.dilate(glyph, kernel)
+
+    out = roi.astype(np.float32)
+    out *= 1.0 - (outline.astype(np.float32) / 255.0)[:, :, None]
+    a = (glyph.astype(np.float32) / 255.0)[:, :, None]
+    out = out * (1.0 - a) + 255.0 * a
+    img_bgr[y0:y1, x0:x1] = np.clip(out, 0, 255).astype(np.uint8)
+
+
 def draw_model_label(img_bgr, model_pred_name: str, model_pred_code: str = None,
                      patch_size: int = 224,
                      rect_left=None, rect_top=None,
@@ -349,23 +400,26 @@ def draw_model_label(img_bgr, model_pred_name: str, model_pred_code: str = None,
                 text = candidate
                 break
 
-    x       = max(4, (w // 2) - text_width // 2)
-    padding = max(12, int(10 * font_scale))
+    # The outline sticks out past the glyphs, so it is what has to clear the
+    # edge and the rectangle -- not the text box on its own.
+    halo   = _halo(text_height)
+    edge   = 4 + halo
+    x       = max(edge, (w // 2) - text_width // 2)
+    padding = max(12, int(10 * font_scale)) + halo
 
     if all(v is not None for v in (rect_left, rect_top, rect_right, rect_bottom)):
         rect_center_x = int(rect_left + (rect_right - rect_left) / 2)
-        x = max(4, min(w - 4 - text_width, rect_center_x - text_width // 2))
+        x = max(edge, min(w - edge - text_width, rect_center_x - text_width // 2))
         if rect_top - padding - text_height >= 0:
             y = rect_top - padding
         elif rect_bottom + padding + text_height <= h:
             y = rect_bottom + padding + text_height
         else:
-            y = max(text_height + 4, min(h - 4, rect_top - padding))
+            y = max(text_height + edge, min(h - edge, rect_top - padding))
     else:
-        y = max(text_height + baseline + 4, int(15 * font_scale + 8))
+        y = max(text_height + baseline + edge, int(15 * font_scale + 8))
 
-    cv2.putText(img_bgr, text, (x, y), font, font_scale, (0, 0, 0),   thickness + 3, cv2.LINE_AA)
-    cv2.putText(img_bgr, text, (x, y), font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
+    outlined_text(img_bgr, text, (x, y), font, font_scale, thickness, halo)
 
 
 def draw_patch_box(img_bgr,

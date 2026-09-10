@@ -10,18 +10,212 @@ This repository organizes everything for our Zooniverse citizen science project 
 zooniverse-project/
 ├── README.md
 ├── tracker.xlsx                        ← master tracking spreadsheet
-├── scripts/
-│   ├── toolbox_to_subjects.py          ← Step 1: extract patches from Toolbox annotations
-│   ├── import_subjects.py              ← Step 2: upload patches to Zooniverse
-│   ├── export_subjectset.py            ← Step 3: export classifications for one subject set
-│   ├── analyse_classifications.py      ← Step 4: generate Excel summary report
-│   └── config.example.env             ← credentials template
+├── run_KelpQuest.bat                   ← double-click to start the desktop app
+├── launch.py                           ← PyInstaller entry shim
+├── kelpquest/                          ← the desktop app
+│   ├── discovery.py                    ← read a transect folder
+│   ├── telemetry.py                    ← the UTC transect CSV: identity + per-still depth
+│   ├── sampling.py                     ← scatter annotation points
+│   ├── patches.py                      ← cut and draw the patch images
+│   ├── classify.py                     ← run our YOLO classifier
+│   ├── metadata.py                     ← write the Toolbox, Zooniverse and joined sheets
+│   ├── zooniverse.py                   ← create subjects
+│   ├── export.py                       ← download the classifications
+│   ├── report.py                       ← the Excel summary
+│   ├── pipeline.py                     ← the seven stages, and their contract
+│   └── gui/                            ← window, stage rail and panels
+├── scripts/                            ← the original command-line tools
+│   ├── toolbox_to_subjects.py          ← extract patches from Toolbox annotations
+│   ├── import_subjects.py              ← upload patches to Zooniverse
+│   ├── export_subjectset.py            ← export classifications for one subject set
+│   ├── analyse_classifications.py      ← generate Excel summary report
+│   └── config.example.env              ← credentials template
+├── tests/
 └── exports/                            ← downloaded classification CSVs (git-ignored)
 ```
 
 ---
 
-## Full Workflow
+## Kelp Quest — the desktop app
+
+`run_KelpQuest.bat` opens a window that carries one transect from a folder of
+edited stills all the way to an Excel summary of what volunteers said about it.
+It does not need CoralNet-Toolbox upstream: it scatters its own annotation
+points, so the Toolbox sheet becomes something the run *produces*, ready to
+import and verify.
+
+Seven stages down the left, the selected stage's settings in the middle, one
+shared log and progress bar along the bottom. Finishing a stage fills in the
+next stage's inputs and moves the selection there, so paths are never retyped.
+
+```
+UTC transect CSV ──┐
+                   ▼
+transect folder ─► 1 · Transect folder    scan; identity read from the telemetry
+                   │
+                   ▼
+                   2 · Cut patches        50 points a still, 224 px patch, 784 px crop
+                   │                      (classifies in the same pass by default)
+                   ▼
+                   3 · Classify patches   our YOLO model, top 5 suggestions
+                   │
+                   ▼
+                   4 · Write metadata     Toolbox sheet · metadata.csv · telemetry join
+                   │
+                   ▼
+                   5 · Upload to Zooniverse   one subject per patch, resumable
+                   │
+                   ▼       (volunteers classify)
+                   6 · Export classifications  fresh export, waited for
+                   │
+                   ▼
+                   7 · Build the report   multi-sheet Excel summary
+```
+
+Every stage runs on its own, so a step can be redone without redoing the
+transect — re-classify with different weights, or rewrite a sheet after
+correcting the site name.
+
+### The check toggle
+
+**"Check only" is ticked every time the app opens, and again after each stage
+advances.** A check reports what *would* happen and writes nothing: how many
+patches would be cut, which sheets would be written, what would be uploaded,
+how big the subject set is. One stage writes thousands of JPEGs and another
+creates subjects volunteers immediately start work on, so the first click on a
+new set of paths is always the safe one. Untick it and the app names what it is
+about to do before doing it.
+
+Stage 1 only ever reads, so it has no check box.
+
+### Telemetry does the identity work
+
+Point the Transect page at the UTC transect CSV for the transect — "Find it for
+me" looks for it under the flight folder — and it supplies:
+
+| From the CSV | Used for |
+|---|---|
+| `Transect_ID` | the transect ID prefix, e.g. `EBM_W25` |
+| `Site_name`, `Transect_number`, `Date` | site, transect, survey date |
+| `Depth`, `Altitude`, `Latitude`, `Longitude`, `Heading`, `Velocity_mps`, `Width`, `Area_m2` | per-still columns, joined on the timestamp in the filename |
+
+The join is an exact second match between the still's name
+(`2025_01_28_11-34-11.jpg`) and the CSV's `Date`/`Time` — the same join
+`scripts/join_percent_cover_telemetry.py` does after the fact. On the transect
+this was built against, 58 of 58 stills matched. Interpolating was deliberately
+not attempted: a blank column is easier to notice than a plausible wrong
+position.
+
+Without a CSV, site, date and transect fall back to reading the folder names
+and no telemetry columns are written.
+
+### The transect ID
+
+You give the **prefix** — the site and season, `EBM_W25` — and the transect
+number is appended, giving `EBM_W25_T6`. The prefix comes from the telemetry
+CSV when there is one; type it once otherwise. It is asked for as two halves on
+purpose: a single free-text field is how transect 6's stills end up uploaded
+under transect 1's identity.
+
+### Starting it
+
+Double-click `run_KelpQuest.bat`. The first run builds a private Python
+environment in `%LOCALAPPDATA%\KelpQuest` and installs what it needs, which
+takes several minutes; after that it starts straight away. From an environment
+that already has the dependencies:
+
+```bash
+python -m kelpquest
+```
+
+### What a run writes
+
+Everything lands in the output folder, `<transect>/zooniverse_patches` by
+default:
+
+| File | What it is |
+|---|---|
+| `<still>_r<row>_c<col>.jpg` | one patch per point — green box on the patch, red crosshair on the point, predicted label above |
+| `patches.csv` | the manifest: every point, its top-5 suggestions and confidences |
+| `<date>_<site>_<T#>_toolbox_annotations.csv` | import into CoralNet-Toolbox and verify point by point |
+| `<date>_<site>_<T#>_annotations_telemetry.csv` | every point with the depth and position of its still — what a cover-versus-depth analysis needs |
+| `metadata.csv` | what the upload reads; becomes each subject's metadata |
+| `upload_log.csv` | every subject created, so a re-run skips it |
+| `fail_log.csv` | anything skipped or refused, with the reason |
+
+Keys prefixed `#` in `metadata.csv` — the model's confidence and all the
+telemetry — are hidden from volunteers by Zooniverse. They are for the analysis
+afterwards; a depth or a confidence score on screen is context nobody was asked
+to weigh while deciding whether they agree with the model.
+
+### Settings that matter
+
+| Setting | Default | Why |
+|---|---|---|
+| Points per image | 50 | matches the finalized 2024–2025 transects |
+| Patch size | 224 px | what the classifier was trained on |
+| Edge margin | 224 px | one patch width, so the patch is always wholly inside the frame |
+| Seed | 42 | the same seed on the same transect gives the same points |
+| Crop scale | 3.5 | 784 px of context around a 224 px patch |
+| Classify in the same pass | on | cutting and classifying both need the still decoded, so doing both encodes each patch once instead of twice |
+| Weights | — | `best.pt` from a run in `classification_model` |
+| Labelset | shared Dropbox copy | turns a short code into a long label |
+
+### Things worth knowing
+
+- **Stopping is safe.** Press Stop and the sheets are written for the patches
+  that were actually cut, so what is on disk is uploadable rather than
+  orphaned.
+- **An interrupted upload resumes.** Every subject created is in
+  `upload_log.csv`; run it again and those are skipped.
+- **The export is generated fresh.** Zooniverse builds it server-side, which
+  takes minutes, and the app waits. Asking without waiting hands back whatever
+  export was generated last — quietly the wrong file on a set that has had new
+  classifications since.
+- **Online-only files are refused.** A OneDrive or Dropbox placeholder reads at
+  network speed, which looks exactly like a hang. The app counts them and asks
+  before starting.
+- **Record the Subject Set ID.** It is shown on the Upload page after a run and
+  goes in `tracker.xlsx`.
+- **Credentials** come from `scripts/.env`, the same file the scripts use. The
+  app never writes them anywhere.
+- **The report** delegates to `scripts/analyse_classifications.py`, so there is
+  one implementation of those seven sheets rather than two to keep in step.
+
+### If uploading and exporting refuse to start
+
+The app checks whether `panoptes-client` can be imported *before* using it,
+because on Windows it can crash the interpreter rather than raise: it pulls in
+`python-magic`, which loads a native libmagic, and the plain wheel ships no
+magic database. That is a segfault, so `try: import` cannot catch it and the
+window would simply vanish the moment you pressed Upload.
+
+The fix, once per environment:
+
+```bash
+pip install python-magic-bin
+```
+
+Everything except stages 5 and 6 works without it.
+
+### Tests
+
+```bash
+python -m pytest tests/
+```
+
+Nothing in the suite needs Dropbox, a model checkpoint or a network — stills
+and telemetry are synthesised.
+
+---
+
+## The command-line scripts
+
+The original per-step scripts still work and are documented below. Use them for
+a transect that already has Toolbox annotations you want to keep, which is the
+one thing the app does not do.
+
+### Full Workflow
 
 ```
 CoralNet-Toolbox
@@ -56,9 +250,20 @@ CoralNet-Toolbox
 
 ### 1. Install dependencies
 
+For the scripts:
+
 ```bash
-pip install panoptes-client python-dotenv pandas tqdm opencv-python-headless openpyxl
+pip install -r requirements.txt
 ```
+
+For the desktop app as well (adds customtkinter, Pillow and ultralytics):
+
+```bash
+pip install -r requirements-app.txt
+```
+
+`run_KelpQuest.bat` does this for you into its own environment, and installs
+the CPU build of PyTorch rather than the multi-gigabyte CUDA one.
 
 ### 2. Configure credentials
 

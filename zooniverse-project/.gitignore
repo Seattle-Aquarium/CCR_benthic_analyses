@@ -25,3 +25,12 @@ Thumbs.db
 *.log
 import_log.txt
 export_log.txt
+
+# Kelp Quest desktop app
+.kelpquest_config.json
+zooniverse_patches/
+patches.csv
+upload_log.csv
+fail_log.csv
+build/
+dist/
