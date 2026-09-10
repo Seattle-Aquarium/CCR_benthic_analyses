@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(python -m pip show opencv-python-headless opencv-python pandas tqdm)",
+      "Bash(python -m pip show numpy openpyxl requests panoptes-client python-dotenv)",
+      "Bash(conda env *)",
+      "Bash(conda run *)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(find \"/c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env\" -iname \"*magic*\" 2>/dev/null)",
+      "Read(//c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/**)",
+      "Bash(grep -rn \"import magic\\\\|magic\\\\.\" \"/c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/Lib/site-packages/panoptes_client/\" 2>/dev/null)",
+      "Read(//c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/Lib/site-packages/panoptes_client//**)"
+    ]
+  }
+}

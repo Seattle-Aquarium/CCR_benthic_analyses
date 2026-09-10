@@ -4,6 +4,98 @@
 
 
 
+## function to rename columns 
+rename_columns <- function(df, name_map) {
+  
+  if (is.null(names(name_map)) || any(names(name_map) == "")) {
+    stop(
+      "'name_map' must be a named vector using ",
+      '"old_name" = "new_name".'
+    )
+  }
+  
+  old_names <- names(name_map)
+  new_names <- unname(name_map)
+  
+  # Only rename columns that actually occur in the dataframe
+  present <- old_names %in% names(df)
+  old_present <- old_names[present]
+  new_present <- new_names[present]
+  
+  # Prevent multiple existing columns from receiving the same name
+  if (anyDuplicated(new_present)) {
+    duplicate_names <- unique(new_present[duplicated(new_present)])
+    
+    stop(
+      "Multiple existing columns would be renamed to: ",
+      paste(duplicate_names, collapse = ", ")
+    )
+  }
+  
+  names(df)[match(old_present, names(df))] <- new_present
+  
+  df
+}
+
+
+## old and new Reef Check algae names
+algae_name_map <- c(
+  "Acid Weed"         = "acid_weed",
+  "Broad-Ribbed Kelp" = "broad-ribbed_kelp",
+  "Bull Kelp"         = "bull_kelp",
+  "Feather Boa Kelp"  = "feather_boa_kelp",
+  "Five-Ribbed Kelp"  = "kelp_five_rib",
+  "Giant Kelp"        = "giant_kelp",
+  "Sieve Kelp"        = "kelp_sieve",
+  "Sugar Kelp"        = "kelp_sugar",
+  "Three-Ribbed Kelp" = "kelp_three_rib",
+  "Torn Kelp"         = "torn_kelp",
+  "Winged Kelp"       = "winged_kelp",
+  "Wire Weed"         = "brown_algae_sargassum",
+  "Woody Kelp"        = "woody_kelp"
+)
+
+
+## old and new Reef Check column names 
+invert_name_map <- c(
+  "Rock Crab"                  = "cancer_crab",
+  "Kelp Crab"                  = "kelp_crab",
+  "Kelp Crab (Juvenile)"       = "kelp_crab_juv",
+  "Slender Crab"               = "slender_crab",
+  "Dungeness Crab"             = "dungeness_crab",
+  "Green Crab"                 = "green_crab",
+  "Leather Star"               = "leather_star",
+  "Flat Fish"                  = "flat_fish",
+  "Plumose Anemone"            = "plumose_anemone",
+  "Rock Scallop"               = "scallop",
+  "Orange Cucumber"            = "burrowing_sea_cucumber",
+  "California Sea Cucumber"    = "california_sea_cucumber",
+  "Large Anemone"              = "large_anemone",
+  "Gumboot Chiton"             = "gumboot_chiton",
+  "Blue Striped Star"          = "blue_striped_star",
+  "Hairy Triton"               = "hairy_triton",
+  "Short Spined Sea Star"      = "short_spined_star",
+  "Giant Spined Star"          = "giant_spined_star",
+  "Dawson sunstar"             = "dawson_star",
+  "Sunflower Star"             = "sunflower_star",
+  "Rainbow Star"               = "rainbow_star",
+  "Bat Star"                   = "bat_star",
+  "Blood Star"                 = "blood_star",
+  "Dawson's Sun Star"          = "dawson_sun_star",
+  "Red Urchin"                 = "red_urchin",
+  "Purple Urchin"              = "purple_urchin",
+  "Green/Pallid Urchin"        = "green_white_urchin",
+  "Piddock Clam"               = "clam_siphon",
+  "Giant Pacific Octopus"      = "giant_pacific_octopus",
+  "Short Spined Star"          = "short_spined_star",
+  "Blue Striped Sun Star"      = "blue_striped_sun_star",
+  "Pinto Abalone"              = "pinto_abalone"
+)
+
+standardize.invert.cols <- function(df) {
+  rename_columns(df, invert_name_map)
+}
+
 
 ## list of sites to retain
 sites_to_retain <- c("Sirens of Spring", 
@@ -13,20 +105,6 @@ sites_to_retain <- c("Sirens of Spring",
 ## rename specific entries in the 'site' column
 old_vals <- c("Sirens of Spring", "Centennial Park", "Elliott Bay Marina", "Elliot Bay Marina")
 new_vals <- c("Centennial_Park", "Centennial_Park", "Elliott_Bay_Marina", "Elliott_Bay_Marina")
-
-
-## list of Reef Check names to change 
-input_algae_list <- c("5-Ribbed Kelp", 
-                      "Sieve Kelp", 
-                      "Sugar Kelp", 
-                      "Wire Weed")
-
-
-## new names for algae 
-output_algae_list <- c("kelp_five_rib", 
-                       "kelp_sieve", 
-                       "kelp_sugar",
-                       "brown_algae_sargassum")
 
 
 ## define the filtering function
@@ -44,12 +122,13 @@ filter.and.sort <- function(df, sites_to_retain) {
 }
 
 
-## function to rename factor 
-rename.factor <- function(df, col, old, new) {
-  df[[col]] <- forcats::fct_recode(df[[col]], !!new := old)
-  return(df)
+## function to remove summer 2025
+remove_summer_2025 <- function(df) {
+  dplyr::filter(
+    df,
+    !Date %in% c("2025-08-28", "2025-08-29")
+  )
 }
-
 
 ## function to strip n characters off a column
 remove.chars <- function(df, col, n) {
@@ -70,12 +149,19 @@ rename.columns <- function(df, old_names, new_names) {
 }
 
 
-## long to wide form
+## Long to wide form
 compress.to.wide <- function(df, value_col, class_col) {
   df %>%
-    group_by(site, transect, !!sym(class_col)) %>%
-    summarise(Total = sum(.data[[value_col]], na.rm = TRUE), .groups = "drop") %>%
-    pivot_wider(names_from = all_of(class_col), values_from = Total, values_fill = 0)
+    group_by(Date, site, transect, !!sym(class_col)) %>%
+    summarise(
+      Total = sum(.data[[value_col]], na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    pivot_wider(
+      names_from = all_of(class_col),
+      values_from = Total,
+      values_fill = 0
+    )
 }
 
 
@@ -97,29 +183,33 @@ extrapolate.abundance <- function(df, amount_col, distance_col) {
 combine.UPC.names <- function(df) {
   df %>% mutate(combined_name = ifelse(grepl("^Superlayer", Classcode),
                                        Classcode, paste(Category, Classcode, sep = "_")
-  ))
+  )) %>%
+    mutate(combined_name = str_replace_all(tolower(combined_name), " ", "_"))
 }
 
 
-## calculate density:
-calculate.density <- function(df, start_col, end_col, divisor) {
-  start_idx <- which(names(df) == start_col)
-  end_idx <- which(names(df) == end_col)
-  
-  if (length(start_idx) == 0 || length(end_idx) == 0 || start_idx > end_idx) {
-    stop("Invalid start or end column names.")
+## calculate density. Prefer the `cols` argument (an explicit vector of column
+## names) over start_col/end_col where possible: a start/end range is looked
+## up by CURRENT column position, so if the df was previously reordered (e.g.
+## by reorder.by.total(), which sorts columns by total value) the range can
+## silently span the wrong columns -- it'll only "happen" to be correct if the
+## intended start/end columns still rank highest/lowest by total.
+calculate.density <- function(df, start_col = NULL, end_col = NULL, divisor, cols = NULL) {
+  if (is.null(cols)) {
+    start_idx <- which(names(df) == start_col)
+    end_idx <- which(names(df) == end_col)
+
+    if (length(start_idx) == 0 || length(end_idx) == 0 || start_idx > end_idx) {
+      stop("Invalid start or end column names.")
+    }
+
+    cols <- names(df)[start_idx:end_idx]
   }
-  
+
   # Compute density
-  df[start_idx:end_idx] <- round(df[start_idx:end_idx] / divisor, 2)
-  
+  df[cols] <- round(df[cols] / divisor, 2)
+
   return(df)
-}
-
-
-## retain every nth row
-nth.row <- function(df, n) {
-  df[seq(1, nrow(df), by = n), ]
 }
 
 
@@ -130,7 +220,100 @@ delete.cols <- function(df, cols_to_remove) {
 }
 
 
-## function to save.csv 
+## function to add depth column 
+add.depth <- function(df) {
+  df %>%
+    dplyr::mutate(
+      depth = dplyr::case_when(
+        transect %in% 1:3 ~ "deep",
+        transect %in% 4:6 ~ "shallow",
+        TRUE ~ NA_character_
+      ),
+      .after = transect
+    )
+}
+
+
+## function to add season column
+add.season <- function(df) {
+  df %>%
+    dplyr::mutate(
+      season = dplyr::case_when(
+        format(as.Date(Date), "%m") == "01" ~ "winter",
+        format(as.Date(Date), "%m") == "10" ~ "summer",
+        TRUE ~ NA_character_
+      ),
+      .after = Date
+    )
+}
+
+
+## function to add a fully-unique site x transect x season key, e.g.
+## "CP_1_summer" or "EBM_4_summer". Distinct from transect_id (site x
+## transect only), which collapses summer/winter together for use as a
+## repeated-measures random-effect grouping variable -- key instead
+## uniquely identifies each of the 24 site/transect/season sampling events,
+## shared across the diver and ROV rows for that same event
+add.key <- function(df) {
+  df %>%
+    dplyr::mutate(
+      key = paste(
+        dplyr::case_when(
+          site == "Centennial_Park" ~ "CP",
+          site == "Elliott_Bay_Marina" ~ "EBM",
+          TRUE ~ NA_character_
+        ),
+        transect, season,
+        sep = "_"
+      ),
+      .after = site
+    )
+}
+
+
+## classify each photo as belonging to the ROV's outbound ("out") or return
+## pass along the transect tape. Two passes are run per 30m transect, one on
+## each side of the tape: within each site/transect/season group, ordering
+## photos by Time and tracking each one's planar distance (GPS, equirectangular
+## approximation) from that group's first-captured photo traces a curve that
+## rises through the outbound leg to a peak near the transect's far end, then
+## falls back down through the return leg -- so the peak marks the turnaround.
+## Everything up to and including the peak is "out"; everything after is
+## "return" (this mirrors add.transect.distance() in
+## data_visualization_functions.R, which computes the same distance metric for
+## plotting rather than classification).
+##
+## Verified against all 24 site x transect x season groups in HSIL_percent_
+## cover.csv: 21 show a clean rise-then-fall distance curve. Two
+## (Elliott_Bay_Marina transects 1 & 2, summer) only have ~37-38 photos with a
+## monotonically increasing distance -- no return pass was captured for those,
+## so every photo is correctly labeled "out". One (Centennial_Park transect 4,
+## winter) has visibly noisy/unreliable GPS fixes (repeated identical
+## coordinates, erratic jumps) throughout the transect, so its "out"/"return"
+## split should be treated with caution.
+add.transect.pass <- function(df, group_cols = c("site", "transect", "season")) {
+  stopifnot(all(c("Time", "Latitude", "Longitude") %in% names(df)))
+
+  df %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
+    dplyr::mutate(
+      .time_rank = rank(Time, ties.method = "first"),
+      .lat0 = Latitude[which.min(.time_rank)],
+      .lon0 = Longitude[which.min(.time_rank)],
+      .dx = (Longitude - .lon0) * 111320 * cos(.lat0 * pi / 180),
+      .dy = (Latitude - .lat0) * 111320,
+      .dist_from_start = sqrt(.dx^2 + .dy^2),
+      pass = dplyr::if_else(
+        .time_rank <= .time_rank[which.max(.dist_from_start)], "out", "return"
+      ),
+      .after = season
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-.time_rank, -.lat0, -.lon0, -.dx, -.dy, -.dist_from_start)
+}
+
+
+## function to save.csv
 save.csv <- function(df, path, filename){
   write.csv(x = df,
             file = file.path(path, filename),
@@ -138,83 +321,89 @@ save.csv <- function(df, path, filename){
 }
 
 
-## populate ROV dataframe with columns from diver data
-add.Reef.Check.inverts <- function(source_df, receiver_df) {
-  cols_to_add <- setdiff(names(source_df), names(receiver_df))
-  for (col in cols_to_add) {
-    receiver_df[[col]] <- 0
+## function to re-order cols by total
+reorder.by.total <- function(df, start_col, end_col) {
+  
+  start_idx <- match(start_col, names(df))
+  end_idx   <- match(end_col, names(df))
+  
+  if (is.na(start_idx) || is.na(end_idx) || start_idx > end_idx) {
+    stop("Invalid start or end column names.")
   }
-  return(receiver_df)
-}
-
-
-## standardize diver invert column names to match those of the ROV
-standardize.invert.cols <- function(df) {
-  name_map <- c(
-    "Rock Crab" = "cancer_crab",
-    "Kelp Crab" = "kelp_crab",
-    "Kelp Crab (juvenile)" = "kelp_crab_juv",
-    "Slender Crab" = "slender_crab",
-    "Dungeness Crab" = "dungeness_crab",
-    "Green Crab" = "green_crab",
-    "Leather Star" = "leather_star",
-    "Flat Fish" = "flat_fish",
-    "Plumose Anemone" = "plumose_anemone",
-    "Rock Scallop" = "scallop",
-    "Orange Cucumber" = "burrowing_sea_cucumber",
-    "California Sea Cucumber" = "california_sea_cucumber",
-    "Blood star" = "blood_star",
-    "Large Anemone" = "large_anemone",
-    "Gumboot Chiton" = "gumboot_chiton",
-    "Blue Striped Star" = "blue_striped_star",
-    "Hairy Triton" = "hairy_triton",
-    "Short Spined Sea Star" = "short_spined_star",
-    "Giant Spined Star" = "giant_spined_star",
-    "Dawson sunstar" = "dawson_star",
-    "Sunflower Star" = "sunflower_star",
-    "Rainbow Star" = "rainbow_star",
-    "Bat Star" = "bat_star",
-    "Red Urchin" = "red_urchin",
-    "Purple Urchin" = "purple_urchin",
-    "Green/Pallid Urchin" = "green_white_urchin",
-    "Piddock Clam" = "clam_siphon",
-    "Giant Pacific Octopus" = "giant_pacific_octopus",
-    "Pinto Abalone" = "pinto_abalone"
+  
+  target_cols <- names(df)[start_idx:end_idx]
+  
+  column_totals <- colSums(
+    df[target_cols],
+    na.rm = TRUE
   )
   
-  flipped_map <- setNames(names(name_map), name_map)
-  df <- df %>% rename(any_of(flipped_map))
-  return(df)
+  ordered_cols <- names(
+    sort(column_totals, decreasing = TRUE)
+  )
+  
+  before_cols <- if (start_idx > 1) {
+    names(df)[seq_len(start_idx - 1)]
+  } else {
+    character(0)
+  }
+  
+  after_cols <- if (end_idx < ncol(df)) {
+    names(df)[(end_idx + 1):ncol(df)]
+  } else {
+    character(0)
+  }
+  
+  df[c(before_cols, ordered_cols, after_cols)]
 }
+
+
+
+## raw Zooniverse short_label_code -> descriptive ROV column name, cross-checked
+## against the Label/Long Label pairs in the raw Toolbox exports. Kept at
+## top level (rather than local to consistent.labels()) so other scripts
+## (e.g. analyze_functions.R, for pulling category colors out of the
+## Zooniverse labelset JSON by short_label_code) can reuse the same mapping
+## instead of maintaining a second, drift-prone copy.
+rov_code_map <- c(
+  "BR_filam"    = "brown_algae_filamentous",
+  "GR_fil"      = "green_algae_filamentous",
+  "BR_sarg"     = "brown_algae_sargassum",
+  "GR_ulva"     = "green_algae_ulva",
+  "RE_bush"     = "red_algae_bushy",
+  "RE_fil"      = "red_algae_filamentous",
+  "RE_leaf"     = "red_algae_flat_leaf",
+  "SU_bould"    = "boulder",
+  "SU_cob"      = "cobble",
+  "SU_peb"      = "pebble",
+  "SU_silt"     = "silt",
+  "KE_sugar"    = "kelp_sugar",
+  "RE_branch"   = "red_algae_branching",
+  "SU_sand"     = "sand_fine_shell",
+  "unknown"     = "unknown_area",
+  "KE_sieve"    = "kelp_sieve",
+  "KE_5rib"     = "kelp_five_rib",
+  "SU_shell"    = "shell_hash",
+  "MS"          = "mobile_species",
+  "KE_stipe"    = "kelp_stipe",
+  "SI_kelpBry"  = "kelp_bryozoan",
+  "SU_anth"     = "anthropogenic",
+  "BR_encrust"  = "brown_algae_encrusting",
+  "BR_fucus"    = "brown_algae_fucus",
+  "GR_filam"    = "green_algae_filamentous",
+  "KE_bull"     = "kelp_bull_blade",
+  "KE_holdfas"  = "kelp_holdfast",
+  "RE_CCA"      = "red_algae_cca",
+  "RE_encrust"  = "red_algae_encrusting",
+  "SI"          = "sessile_invertebrates",
+  "SU_wood"     = "wood_debris"
+)
 
 
 ## ensure ROV column headers are consistent
 consistent.labels <- function(df) {
-  names_map <- c(
-    "BR_filam"    = "brown_algae_filamentous",
-    "GR_fil"      = "green_algae_filamentous",
-    "BR_sarg"     = "brown_algae_sargassum",
-    "GR_ulva"     = "green_algae_ulva",
-    "RE_bush"     = "red_algae_bushy",
-    "RE_fil"      = "red_algae_filamentous",
-    "RE_leaf"     = "red_algae_flat_leaf",
-    "SU_bould"    = "boulder",
-    "SU_cob"      = "cobble",
-    "SU_peb"      = "pebble",
-    "SU_silt"     = "silt",
-    "KE_sugar"    = "kelp_sugar",
-    "RE_branch"   = "red_algae_branching",
-    "SU_sand"     = "sand_fine_shell",
-    "unknown"     = "unknown_area",
-    "KE_sieve"    = "kelp_sieve",
-    "KE_5rib"     = "kelp_five_rib",
-    "SU_shell"    = "shell_hash",
-    "MS"          = "mobile_species",
-    "KE_stipe"    = "kelp_stipe",
-    "SI_kelpBry"  = "kelp_bryozoan",
-    "SU_anth"     = "anthropogenic"
-  )
-  
+  names_map <- rov_code_map
+
   # Rename columns using the map (if present in df)
   renamed_df <- df
   for (old_name in names(names_map)) {
@@ -222,131 +411,59 @@ consistent.labels <- function(df) {
       colnames(renamed_df)[colnames(renamed_df) == old_name] <- names_map[[old_name]]
     }
   }
-  
+
   return(renamed_df)
 }
 
 
-## rename colums
-old_names <- c(
-  "Review",
-  "AN_large",
-  "AN_plumose",
-  "GA_gum",
-  "GA_abalone",
-  "CL_siphon",
-  "CL_scall",
-  "UR_purp",
-  "UR_red",
-  "UR_green",
-  "SS_ochre",
-  "SS_leather",
-  "SS_verm",
-  "SS_blood",
-  "SS_bat",
-  "SS_pycno",
-  "SS_rainbow",
-  "SS_sun",
-  "SS_stripe",
-  "CU_burrow",
-  "CU_cali",
-  "CR_cancer",
-  "CR_kelp",
-  "CR_helmet",
-  "CR_sharp",
-  "GR_kelp",
-  "GR_lingcod",
-  "GR_painted",
-  "GR_rock",
-  "GR_whitesp",
-  "SP_kelp",
-  "SP_pile",
-  "SP_shiner",
-  "SP_stripe",
-  "RF_black",
-  "RF_brown",
-  "RF_canary",
-  "RF_china",
-  "RF_copper",
-  "RF_ytail",
-  "RF_Yeye",
-  "fish_gunn",
-  "fish_cab",
-  "fish_sculp",
-  "fish_flat",
-  "fish_wolf"
+rov_invert_name_map <- c(
+  "Review"      = "review",
+  "AN_large"    = "large_anemone",
+  "AN_plumose"  = "plumose_anemone",
+  "GA_gum"      = "gumboot_chiton",
+  "GA_abalone"  = "abalone",
+  "CL_siphon"   = "clam_siphon",
+  "CL_scall"    = "scallop",
+  "UR_purp"     = "purple_urchin",
+  "UR_red"      = "red_urchin",
+  "UR_green"    = "green_white_urchin",
+  "SS_ochre"    = "ochre_mottled_star",
+  "SS_leather"  = "leather_star",
+  "SS_verm"     = "vermillion_star",
+  "SS_blood"    = "blood_star",
+  "SS_bat"      = "bat_seastar",
+  "SS_pycno"    = "sunflower_star",
+  "SS_rainbow"  = "rainbow_star",
+  "SS_sun"      = "dawsons_sun_star",
+  "SS_stripe"   = "striped_sun_star",
+  "CU_burrow"   = "burrowing_sea_cucumber",
+  "CU_cali"     = "california_sea_cucumber",
+  "CR_cancer"   = "cancer_crab",
+  "CR_kelp"     = "kelp_crab",
+  "CR_helmet"   = "helmet_crab",
+  "CR_sharp"    = "sharpnose_crab",
+  "GR_kelp"     = "kelp_greenling",
+  "GR_lingcod"  = "lingcod",
+  "GR_painted"  = "painted_greenling",
+  "GR_rock"     = "rock_greenling",
+  "GR_whitesp"  = "white_spotted_greenling",
+  "SP_kelp"     = "kelp_perch",
+  "SP_pile"     = "pile_perch",
+  "SP_shiner"   = "shiner_perch",
+  "SP_stripe"   = "striped_seaperch",
+  "RF_black"    = "black_deacon_rockfish",
+  "RF_brown"    = "brown_rockfish",
+  "RF_canary"   = "canary_rockfish",
+  "RF_china"    = "china_rockfish",
+  "RF_copper"   = "copper_rockfish",
+  "RF_ytail"    = "yellow_tail_rockfish",
+  "RF_Yeye"     = "yelloweye_rockfish",
+  "fish_gunn"   = "gunnel_fish",
+  "fish_cab"    = "cabezon_buffalo_sculpin",
+  "fish_sculp"  = "other_large_sculpin",
+  "fish_flat"   = "flat_fish",
+  "fish_wolf"   = "wolf_eel"
 )
-
-new_names <- c(
-  "Review",
-  "large_anemone",
-  "plumose_anemone",
-  "gumboot_chiton",
-  "abalone",
-  "clam_siphon",
-  "scallop",
-  "purple_urchin",
-  "red_urchin",
-  "green_white_urchin",
-  "ochre_mottled_star",
-  "leather_star",
-  "vermillion_star",
-  "blood_star",
-  "bat_seastar",
-  "sunflower_star",
-  "rainbow_star",
-  "Dawsons_sun_star",
-  "striped_sun_star",
-  "burrowing_sea_cucumber",
-  "california_sea_cucumber",
-  "cancer_crab",
-  "kelp_crab",
-  "helmet_crab",
-  "sharpnose_crab",
-  "kelp_greenling",
-  "lingcod",
-  "painted_greenling",
-  "rock_greenling",
-  "white_spotted_greenling",
-  "kelp_perch",
-  "pile_perch",
-  "shiner_perch",
-  "striped_seaperch",
-  "black_deacon_rockfish",
-  "brown_rockfish",
-  "canary_rockfish",
-  "china_rockfish",
-  "copper_rockfish",
-  "yellow_tail_rockfish",
-  "yelloweye_rockfish",
-  "gunnel_fish",
-  "cabezon_buffalo_sculpin",
-  "other_large_sculpin",
-  "flat_fish",
-  "wolf_eel"
-)
-
-
-## function to stack dataframes and fill in the missing info with 0's
-stack.dfs <- function(df1, df2) {
-  all_cols <- union(names(df1), names(df2))
-  
-  for (col in setdiff(all_cols, names(df1))) {
-    df1[[col]] <- 0
-  }
-  
-  for (col in setdiff(all_cols, names(df2))) {
-    df2[[col]] <- 0
-  }
-  
-  df1 <- df1[, all_cols]
-  df2 <- df2[, all_cols]
-  
-  combined <- rbind(df1, df2)
-  
-  return(combined)
-}
-
 
 
 combine.cols <- function(df, cols_to_combine, new_col_name) {
@@ -384,124 +501,43 @@ rename.metadata <- function(df) {
 }
 
 
-## summarize by site / transect 
-summarize.by.site.transect <- function(df, start_col, end_col) {
-  start_idx <- which(names(df) == start_col)
-  end_idx <- which(names(df) == end_col)
-  
-  if (length(start_idx) == 0 || length(end_idx) == 0 || start_idx > end_idx) {
-    stop("Invalid start_col or end_col")
+## average by arbitrary grouping cols (e.g. site/transect/depth/season), rounded
+## to 3 decimal places; also reports how many rows (photos) went into each mean.
+## Takes an explicit vector of column names (`cols`)
+## rather than a start/end range, since a start/end range silently breaks if
+## the columns were previously reordered (e.g. by reorder.by.total()).
+average.by.group <- function(df, group_cols, cols) {
+  missing_cols <- setdiff(cols, names(df))
+  if (length(missing_cols) > 0) {
+    stop(paste("Missing columns:", paste(missing_cols, collapse = ", ")))
   }
-  
-  cols_to_sum <- names(df)[start_idx:end_idx]
-  
-  # Group and summarize
+
   df %>%
-    group_by(site, transect) %>%
-    summarise(across(all_of(cols_to_sum), ~ sum(.x, na.rm = TRUE)), .groups = "drop")
+    group_by(across(all_of(group_cols))) %>%
+    summarise(
+      n_photos = dplyr::n(),
+      across(all_of(cols), ~ round(mean(.x, na.rm = TRUE), 3)),
+      .groups = "drop"
+    )
 }
 
 
-## average by site / transect, rounded to 2 decimal places
-average.by.site.transect <- function(df, start_col, end_col) {
-  start_idx <- which(names(df) == start_col)
-  end_idx <- which(names(df) == end_col)
-  
-  if (length(start_idx) == 0 || length(end_idx) == 0 || start_idx > end_idx) {
-    stop("Invalid start_col or end_col")
+## sum by arbitrary grouping cols; companion to average.by.group(), used e.g.
+## to sum per-photo point counts up to transect-level totals
+sum.by.group <- function(df, group_cols, cols) {
+  missing_cols <- setdiff(cols, names(df))
+  if (length(missing_cols) > 0) {
+    stop(paste("Missing columns:", paste(missing_cols, collapse = ", ")))
   }
-  
-  cols_to_avg <- names(df)[start_idx:end_idx]
-  
-  # Group, calculate mean, and round to 2 decimal places
+
   df %>%
-    group_by(site, transect) %>%
-    summarise(across(all_of(cols_to_avg), ~ round(mean(.x, na.rm = TRUE), 3)), .groups = "drop")
+    group_by(across(all_of(group_cols))) %>%
+    summarise(
+      n_photos = dplyr::n(),
+      across(all_of(cols), ~ sum(.x, na.rm = TRUE)),
+      .groups = "drop"
+    )
 }
-
-
-## function to combine columns 
-# Requires: dplyr, tidyr (and optionally forcats if you want factor handling)
-
-combine_with_zero_fill <- function(df_a, df_b, fill_value = 0) {
-  stopifnot(is.data.frame(df_a), is.data.frame(df_b))
-  
-  # Columns unique to each input
-  only_a <- setdiff(names(df_a), names(df_b))
-  only_b <- setdiff(names(df_b), names(df_a))
-  cols_to_fill <- c(only_a, only_b)
-  
-  # Row-bind; dplyr::bind_rows will create missing columns with NA
-  out <- dplyr::bind_rows(df_a, df_b)
-  
-  # Replace NAs **only** in columns that were absent in one of the inputs
-  if (length(cols_to_fill) > 0) {
-    out <- out |>
-      dplyr::mutate(dplyr::across(
-        dplyr::all_of(cols_to_fill),
-        ~ {
-          # Fill with 0 while respecting column type
-          if (is.integer(.x)) {
-            tidyr::replace_na(.x, as.integer(fill_value))
-          } else if (is.numeric(.x)) {
-            tidyr::replace_na(.x, as.numeric(fill_value))
-          } else if (is.logical(.x)) {
-            # Interpret 0/"0"/FALSE as FALSE, otherwise TRUE
-            fv <- if (is.character(fill_value)) tolower(fill_value) else fill_value
-            tidyr::replace_na(.x, isTRUE(fv) || (!is.character(fv) && fv != 0))
-          } else {
-            # For character/factor/other types, fill with "0"
-            # (Adjust here if you'd prefer to leave these as NA instead)
-            tidyr::replace_na(as.character(.x), "0")
-          }
-        }
-      ))
-  }
-  
-  out
-}
-
-
-## add columns and name them
-add_column <- function(df, col_name, col_value, position) {
-
-  n_cols <- ncol(df)
-    new_col <- rep(col_value, nrow(df))
-  
-  before <- df[ , seq_len(position - 1), drop = FALSE]
-  after  <- df[ , seq(from = position, to = n_cols), drop = FALSE]
-  
-  new_df <- cbind(before, setNames(list(new_col), col_name), after)
-  rownames(new_df) <- rownames(df)  # preserve rownames if any
-  
-  return(new_df)
-}
-
-
-## add depth
-add_depth_column <- function(df, position) {
-  stopifnot("transect" %in% names(df))
-  
-  n_cols <- ncol(df)
-  if (position < 1 || position > (n_cols + 1)) {
-    stop("Position must be between 1 and ", n_cols + 1)
-  }
-  
-  # create depth column based on transect values
-  depth <- ifelse(df$transect %in% 1:3, "deep",
-                  ifelse(df$transect %in% 4:6, "shallow", NA))
-  
-  # split before/after & insert depth
-  before <- df[ , seq_len(position - 1), drop = FALSE]
-  after  <- df[ , seq(from = position, to = n_cols), drop = FALSE]
-  
-  new_df <- cbind(before, depth = depth, after)
-  rownames(new_df) <- rownames(df)
-  
-  return(new_df)
-}
-
-
 
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,0 +1,866 @@
+## script to contain functions for visualizing data
+
+
+
+
+## prefered graphing theme
+my.theme = theme(panel.grid.major = element_blank(),
+                 panel.grid.minor = element_blank(),
+                 panel.background = element_blank(),
+                 axis.line = element_line(colour = "black"),
+                 axis.title.x=element_text(size=15),
+                 axis.title.y=element_text(size=15),
+                 axis.text=element_text(size=15),
+                 plot.title = element_text(size=15),
+                 legend.title=element_text(size=15),
+                 legend.text=element_text(size=15))
+
+
+## build the long-form ROV-diver abundance head-to-head comparison data, from
+## results/combined/ROV_diver_abundance_combined.csv (one row per transect x
+## method, "key" uniquely identifying each of the 24 site/transect/season
+## sampling events -- see build_combined_abundance.R). Reshapes into one row
+## per key x taxon, joining that transect's diver count (x) against its ROV
+## count (y) by key, for each taxon in `taxa`
+build.abundance.pairs.data <- function(combined_df, taxa) {
+  purrr::map_dfr(taxa, function(tx) {
+    diver_slim <- combined_df %>% filter(type == "diver") %>% select(key, x = all_of(tx))
+    rov_slim <- combined_df %>% filter(type == "ROV") %>% select(key, y = all_of(tx))
+    inner_join(diver_slim, rov_slim, by = "key") %>%
+      mutate(category = tx, .before = 1)
+  })
+}
+
+
+## visualize ROV vs. diver abundance head-to-head comparisons (one point per
+## site/transect/season, faceted by taxon). Unlike visualize.head.to.head()
+## (percent-cover, one shared 0-100 scale across every category), abundance
+## counts span wildly different ranges taxon to taxon -- ochre/mottled star
+## reaches the tens to hundreds, several others rarely exceed single digits
+## -- so each facet gets its own free x/y scale, anchored at 0, rather than
+## one shared axis that would flatten the rarer taxa unreadably close to the
+## origin. coord_fixed() can't be combined with facet_wrap(scales = "free")
+## in current ggplot2 (raises an error), so a true 1:1 diagonal is achieved
+## instead by forcing each facet's x and y ranges to match one another: an
+## invisible geom_blank() point is injected at (panel_max, panel_max) for
+## every taxon, which extends that facet's own free x/y auto-range to
+## exactly the same upper bound in both directions (limits = c(0, NA) below
+## anchors the lower bound at 0 the same way), then theme(aspect.ratio = 1)
+## draws every panel as a literal square -- matched data range + square
+## panel reproduces a true 45-degree reference line without coord_fixed().
+## Facet strips are enlarged to double as each panel's title, so the
+## color-by-category legend (redundant once every panel is already labeled)
+## is dropped entirely. Facets are ordered by total abundance (summed diver
+## + ROV counts across all 24 transects), most abundant taxon first, least
+## abundant last. The 1:1 reference line is a subtle gray dashed line,
+## deliberately distinct from the solid black axis lines (my.theme) so it
+## reads as a background reference rather than another data series.
+## `labels` optionally renames strip text only (e.g. shortening a taxon name
+## that would otherwise overflow its panel at this font size) -- a named
+## vector, category -> display text; the underlying `category` values (and
+## therefore color mapping / facet order) are untouched. Every panel also
+## gets a "(a)", "(b)", ... tag prepended on its own line above the taxon
+## name, in the same most-to-least-abundant order as the panels themselves,
+## so up to 26 taxa could be tagged this way before running out of letters
+## (only 10 in use here). The letter itself is bold, its surrounding
+## parentheses are not -- ggtext::element_markdown() (rather than plain
+## element_text()) renders the "(**a**)" markdown so those two weights can
+## coexist in one strip label; ggplot centers multi-line strip text by
+## default, so the tag lands centered above the name with no extra
+## positioning code
+visualize.abundance.pairs <- function(data, colors, ncol = 4, labels = NULL,
+                                      x_label = "Diver count",
+                                      y_label = "ROV count") {
+  category_order <- data %>%
+    group_by(category) %>%
+    summarise(total = sum(x) + sum(y), .groups = "drop") %>%
+    arrange(desc(total)) %>%
+    pull(category)
+
+  data <- data %>% mutate(category = factor(category, levels = category_order))
+
+  range_anchors <- data %>%
+    group_by(category) %>%
+    summarise(panel_max = max(c(x, y), na.rm = TRUE) * 1.05, .groups = "drop") %>%
+    mutate(x = panel_max, y = panel_max)
+
+  ## `labels` is allowed to be a partial rename map (as used here, renaming
+  ## only the taxa whose default names overflow their panel) -- missing
+  ## categories are backfilled with their own name (identity) before the
+  ## panel-letter tag is prepended, so as_labeller() never sees an NA
+  display_names <- setNames(category_order, category_order)
+  if (!is.null(labels)) display_names[names(labels)] <- labels
+  panel_tags <- paste0("(**", letters[seq_along(category_order)], "**)")
+  full_labels <- setNames(paste0(panel_tags, "\n", display_names[category_order]), category_order)
+  strip_labeller <- ggplot2::as_labeller(full_labels)
+
+  ggplot(data, aes(x = x, y = y, color = category)) +
+    geom_abline(slope = 1, intercept = 0, color = "grey50", linetype = "dashed", linewidth = 0.6) +
+    geom_point(size = 2.6) +
+    geom_blank(data = range_anchors, aes(x = x, y = y)) +
+    scale_x_continuous(limits = c(0, NA)) +
+    scale_y_continuous(limits = c(0, NA)) +
+    scale_color_manual(values = colors) +
+    facet_wrap(~ category, ncol = ncol, scales = "free", labeller = strip_labeller) +
+    guides(color = "none") +
+    labs(x = x_label, y = y_label) +
+    my.theme +
+    theme(strip.text = ggtext::element_markdown(size = 20, lineheight = 1.1),
+          axis.title.x = element_text(size = 25),
+          axis.title.y = element_text(size = 25),
+          axis.text = element_text(size = 16),
+          aspect.ratio = 1)
+}
+
+
+## build the long-form ROV-diver percent-cover head-to-head comparison data,
+## from results/combined/ROV_diver_percent_cover_combined.csv (one row per
+## transect x method, "key" uniquely identifying each of the 24 site/
+## transect/season sampling events -- see build_combined_percent_cover.R).
+## Reshapes into one row per key x category, joining that transect's diver
+## proportion (x) against its ROV proportion (y) by key, for each category in
+## `categories`, rescaling both from 0-1 up to 0-100 (%) for display. This
+## replaces the older build.head.to.head.data(), which independently re-
+## derived the same 8-category crosswalk straight from the raw ROV/diver
+## files rather than reusing the one already established for modeling in
+## build_combined_percent_cover.R -- two parallel copies of the same
+## crosswalk were an unnecessary drift risk
+build.percent.cover.pairs.data <- function(combined_df, categories) {
+  purrr::map_dfr(categories, function(cat) {
+    diver_slim <- combined_df %>% filter(type == "diver") %>% select(key, x = all_of(cat)) %>% mutate(x = x * 100)
+    rov_slim <- combined_df %>% filter(type == "ROV") %>% select(key, y = all_of(cat)) %>% mutate(y = y * 100)
+    inner_join(diver_slim, rov_slim, by = "key") %>%
+      mutate(category = cat, .before = 1)
+  })
+}
+
+
+## visualize ROV vs. diver head-to-head percent-cover comparisons (one point
+## per site/transect/season, faceted by category when more than one category
+## is present in `data`). Unlike visualize.abundance.pairs(), axes are fixed
+## (shared 0-100% range and a true coord_fixed() 1:1 aspect across every
+## panel, not free per panel) -- percent-cover is already a common 0-100%
+## unit across categories, so one shared scale keeps categories directly
+## comparable at a glance, at the cost of making the rarest categories look
+## small near the origin. `category_order` sets both the left-to-right/top-
+## to-bottom panel order and the "(a)", "(b)", ... tag sequence (see
+## visualize.abundance.pairs() for the tag/parenthesis markdown approach and
+## why letters -- not just the color -- are what makes the legend
+## unnecessary); defaults to whatever order `data$category` is already in if
+## not supplied. `labels` optionally renames strip text only, same partial-
+## rename-map behavior as visualize.abundance.pairs(). The 1:1 reference
+## line and axis/strip text sizing also match the abundance figure
+visualize.head.to.head <- function(data, colors, category_order = NULL, labels = NULL,
+                                   axis_limit = 100,
+                                   x_label = "Diver percent-cover (%)",
+                                   y_label = "ROV percent-cover (%)") {
+  if (is.null(category_order)) category_order <- unique(data$category)
+  data <- data %>% mutate(category = factor(category, levels = category_order))
+
+  p <- ggplot(data, aes(x = x, y = y, color = category)) +
+    geom_abline(slope = 1, intercept = 0, color = "grey50", linetype = "dashed", linewidth = 0.6) +
+    geom_point(size = 2.6) +
+    coord_fixed(ratio = 1, xlim = c(0, axis_limit), ylim = c(0, axis_limit)) +
+    scale_color_manual(values = colors) +
+    labs(x = x_label, y = y_label) +
+    my.theme +
+    theme(axis.title.x = element_text(size = 25),
+          axis.title.y = element_text(size = 25),
+          axis.text = element_text(size = 16))
+
+  if (length(category_order) > 1) {
+    display_names <- setNames(category_order, category_order)
+    if (!is.null(labels)) display_names[names(labels)] <- labels
+    panel_tags <- paste0("(**", letters[seq_along(category_order)], "**)")
+    full_labels <- setNames(paste0(panel_tags, "\n", display_names[category_order]), category_order)
+
+    p <- p +
+      facet_wrap(~ category, ncol = 4, labeller = ggplot2::as_labeller(full_labels)) +
+      guides(color = "none") +
+      theme(strip.text = ggtext::element_markdown(size = 20, lineheight = 1.1))
+  }
+
+  p
+}
+
+
+## compute each photo's approximate distance (m) from its transect's first
+## captured photo, using a local equirectangular approximation of GPS
+## coordinates (adequate given transects span only ~30m; not appropriate at
+## larger scales). Two ROV passes are run per 30m transect -- an outbound
+## pass down one side of the meter tape and a return pass down the other --
+## so ordering all photos (both passes) by this distance naturally
+## interleaves them by physical position along the tape (roughly two points
+## per meter mark) rather than needing to explicitly stitch the two passes
+## together.
+add.transect.distance <- function(df, group_cols = c("site", "transect", "season")) {
+  df %>%
+    group_by(across(all_of(group_cols))) %>%
+    arrange(Time, .by_group = TRUE) %>%
+    mutate(
+      lat0 = dplyr::first(Latitude),
+      lon0 = dplyr::first(Longitude),
+      dx = (Longitude - lon0) * 111320 * cos(lat0 * pi / 180),
+      dy = (Latitude - lat0) * 111320,
+      distance_m = sqrt(dx^2 + dy^2)
+    ) %>%
+    ungroup() %>%
+    select(-lat0, -lon0, -dx, -dy)
+}
+
+
+## visualize a single percent-cover category across photos/space (both ROV
+## passes interleaved by distance along the transect) for one site x season,
+## faceted by transect in the given order. Facet strips read "Transect N"
+## (via a custom labeller) rather than a bare number, and are sized up from
+## ggplot's small default so they're legible when the figure is stretched
+## wide for spatial pattern (see prep.outward.pass.photos() below).
+##
+## Line/point color is mapped to transect (via `colors`, the same six-color
+## transect_density_colors palette used by the violin figures) rather than a
+## single fixed color per category -- since each facet panel only shows one
+## transect anyway, this just tints each panel to match its transect's color
+## elsewhere, for visual consistency between the two figure families, and
+## replaces an earlier version that pulled one color per category from the
+## Zooniverse labelset JSON. The color legend is redundant with the facet
+## strip label, so it's suppressed. The y-axis is fixed to `y_limits`
+## (default 0-1, the full possible range for a proportion) rather than
+## floating per-category, so cover magnitude is directly comparable across
+## categories -- at the cost of making rarer categories harder to read on
+## their own panel.
+visualize.photo.level <- function(data, category, transect_order, colors,
+                                  ncol = 3,
+                                  x_label = "distance along transect (m)",
+                                  y_label = category,
+                                  strip_text_size = 16,
+                                  y_limits = c(0, 1)) {
+  plot_data <- data %>%
+    mutate(transect = factor(transect, levels = transect_order)) %>%
+    arrange(transect, distance_m)
+
+  ggplot(plot_data, aes(x = distance_m, y = .data[[category]], color = transect)) +
+    geom_line() +
+    geom_point(size = 2) +
+    scale_color_manual(values = colors) +
+    coord_cartesian(ylim = y_limits) +
+    facet_wrap(~ transect, ncol = ncol,
+              labeller = as_labeller(function(x) paste("Transect", x))) +
+    guides(color = "none") +
+    labs(x = x_label, y = y_label) +
+    my.theme +
+    theme(strip.text = element_text(size = strip_text_size, face = "bold"))
+}
+
+
+## build the outward ("out") pass subset for one site x season, ready for
+## visualize.photo.level(): filters to the six transects, computes each
+## photo's GPS distance from its transect's first photo (add.transect.distance()),
+## keeps only the outbound pass (pass == "out", from add.transect.pass() in
+## the wrangle pipeline), and -- since transects are a fixed 30m long --
+## drops any photo whose computed distance falls past `max_distance`. A
+## handful of photos (mostly single stragglers after a multi-minute time gap,
+## e.g. one Centennial Park transect 2 photo landing at ~40m) are GPS/logging
+## artifacts past the actual tape, not real 30+ m of transect; left in, they
+## stretch the x-axis and open up a long flat gap in the line before the
+## final stray point.
+prep.outward.pass.photos <- function(data, site_name, season_name, max_distance = 30) {
+  data %>%
+    filter(site == site_name, season == season_name, transect %in% 1:6) %>%
+    add.transect.distance() %>%
+    filter(pass == "out", distance_m <= max_distance)
+}
+
+
+## distribution of cover magnitude *given presence* (proportion > 0 only) for
+## a single category, per transect: violin (density shape) + a narrow inset
+## boxplot (median/IQR reference) + jittered points, all colored by transect.
+## Each transect's prevalence (% of all photos, zero included, with any
+## cover) is printed as large bold black text directly above its violin,
+## with a smaller header line naming what those numbers mean.
+##
+## Loosely modeled after Fig. 4 of Randell et al. 2022 (PNAS Kelp-forest
+## dynamics controlled by substrate complexity) -- a beeswarm + median line
+## per group -- but swaps their flat median line for a violin, since our
+## categories are proportions (bounded [0, 1], often multimodal) rather than
+## the roughly unimodal urchin-abundance counts in that figure. Density is
+## bounded to [0, 1] via geom_violin()'s `bounds` argument.
+##
+## Zero-cover photos are excluded from the violin/box/points (that's the
+## point -- see the % labels for how common they are); this is stated
+## explicitly in the subtitle so the exclusion isn't silent. `category_label`
+## is the human-readable name used in the header text (e.g. from
+## format.category.label()) -- separate from `title`, since the title may add
+## site/season context the header line doesn't need repeated.
+visualize.category.violin.with.prevalence <- function(data, category, colors,
+                                                       transect_order = 1:6,
+                                                       category_label = category,
+                                                       title = category,
+                                                       y_label = "proportion cover (given present)",
+                                                       label_y = 1.12,
+                                                       header_y = 1.24) {
+  plot_data <- data %>%
+    mutate(transect = factor(transect, levels = transect_order))
+
+  prevalence <- plot_data %>%
+    group_by(transect) %>%
+    summarise(pct = round(100 * mean(.data[[category]] > 0, na.rm = TRUE)),
+             .groups = "drop")
+
+  nonzero_data <- filter(plot_data, .data[[category]] > 0)
+  n_total <- nrow(plot_data)
+  n_nonzero <- nrow(nonzero_data)
+  subtitle <- paste0(
+    "shown below: the ", n_nonzero, "/", n_total, " photos (",
+    round(100 * n_nonzero / n_total, 1),
+    "%) with any cover; zero-cover photos excluded (see % above)"
+  )
+
+  header_data <- tibble::tibble(
+    x = mean(seq_along(transect_order)), y = header_y,
+    label = paste0("% of photos with ", category_label, " present")
+  )
+
+  ggplot(nonzero_data, aes(x = transect, y = .data[[category]])) +
+    geom_violin(aes(fill = transect, color = transect), alpha = 0.25,
+               bounds = c(0, 1), linewidth = 0.8) +
+    geom_boxplot(aes(color = transect), width = 0.12, fill = "white",
+                alpha = 0.8, outlier.shape = NA, linewidth = 0.6) +
+    geom_jitter(aes(color = transect), width = 0.15, alpha = 0.5, size = 1.5) +
+    geom_text(data = prevalence, aes(x = transect, y = label_y, label = paste0(pct, "%")),
+              inherit.aes = FALSE, color = "black", fontface = "bold", size = 6) +
+    ggtext::geom_richtext(data = header_data, aes(x = x, y = y, label = label),
+                          inherit.aes = FALSE, fill = NA, label.color = NA,
+                          color = "black", size = 4.2) +
+    scale_fill_manual(values = colors) +
+    scale_color_manual(values = colors) +
+    ## drop = FALSE: without this, a transect with 0% prevalence (no rows
+    ## survive the category > 0 filter feeding the violin/box/jitter layers)
+    ## gets silently reordered to the end of the x-axis instead of staying in
+    ## its correct position -- ggplot infers axis order from which layers
+    ## first "discover" each level, and the geom_text/geom_richtext layers
+    ## (built from the un-filtered `prevalence` data) discover it last
+    scale_x_discrete(drop = FALSE) +
+    scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+    coord_cartesian(ylim = c(0, header_y + 0.06)) +
+    labs(x = "transect", y = y_label, title = title, subtitle = subtitle) +
+    guides(fill = "none", color = "none") +
+    my.theme +
+    theme(plot.title = ggtext::element_markdown(size = 15),
+          plot.subtitle = element_text(size = 10.5))
+}
+
+
+## human-readable title for a raw percent-cover category column, e.g.
+## "sand_fine_shell" -> "Sand Fine Shell". kelp_sugar/kelp_sieve get their
+## markdown-italic scientific name instead (rendered via element_markdown in
+## the plot title theme), for consistency with the earlier kelp figures.
+format.category.label <- function(category, sugar_kelp_name, sieve_kelp_name) {
+  species_names <- c(kelp_sugar = sugar_kelp_name, kelp_sieve = sieve_kelp_name)
+  if (category %in% names(species_names)) return(species_names[[category]])
+  words <- strsplit(gsub("_", " ", category), " ")[[1]]
+  paste0(toupper(substring(words, 1, 1)), substring(words, 2), collapse = " ")
+}
+
+
+## build one row per transect (site x transect x season) comparing diver
+## density to ROV percent-cover for a single algae/kelp species. These are
+## NOT the same units -- diver density is a count-based index (individuals
+## per transect, extrapolated/standardized), ROV cover is the proportion of
+## photo points classified as that species -- and there's no defensible way
+## to convert one into the other without calibration data (e.g. average
+## canopy footprint per individual) that we don't have. The three
+## visualize.kelp.*() functions below compare relative pattern/concordance
+## across transects instead of raw magnitude.
+build.kelp.comparison.data <- function(diver_density_df, rov_cover_df, species_col) {
+  diver_slim <- diver_density_df %>%
+    select(site, transect, season, depth, diver_value = all_of(species_col))
+  rov_slim <- rov_cover_df %>%
+    select(site, transect, season, depth, rov_value = all_of(species_col))
+
+  inner_join(diver_slim, rov_slim, by = c("site", "transect", "season", "depth")) %>%
+    mutate(transect_label = paste0(site, "_T", transect, "_", season)) %>%
+    arrange(site, transect, season)
+}
+
+
+## shared data-prep for visualize.kelp.standardized.overlay.stack(): z-scores
+## both methods and builds a "T#.season.site" nested x category (in that
+## order -- transect innermost/fastest-varying, season next, site outermost)
+## for use with legendry::guide_axis_nested(), which draws the season/site
+## groupings as bracket labels beneath the transect ticks.
+prep.kelp.standardized.data <- function(data, site_order, season_order) {
+  data %>%
+    mutate(
+      site_f = factor(site, levels = site_order),
+      season_f = factor(season, levels = season_order),
+      site_display = factor(gsub("_", " ", as.character(site_f)),
+                            levels = gsub("_", " ", site_order)),
+      transect_short = factor(paste0("T", transect),
+                              levels = paste0("T", sort(unique(transect)))),
+      diver = as.numeric(scale(diver_value)),
+      ROV = as.numeric(scale(rov_value))
+    ) %>%
+    arrange(site_f, season_f, transect) %>%
+    mutate(x_nested = interaction(transect_short, season_f, site_display,
+                                  sep = ".", lex.order = FALSE)) %>%
+    select(x_nested, diver, ROV) %>%
+    pivot_longer(cols = c(diver, ROV), names_to = "method", values_to = "value")
+}
+
+
+## build a single ggplot "panel" that renders a photo (jpg/png) as a raster
+## image with no axes/labels, for combining alongside a chart via patchwork
+## (e.g. visualize.kelp.standardized.overlay.stack()'s optional
+## photo_top_path/photo_bottom_path). The panel's aspect ratio is locked to
+## the source image's own width:height (theme(aspect.ratio = ...)) so
+## patchwork fits it into whatever grid cell it's given without stretching
+## or distorting the photo -- any leftover space in the cell is absorbed as
+## blank margin instead of warping the image.
+##
+## The source photo is downsampled to `max_width_px` before being handed to
+## rasterGrob(): our source camera JPEGs are ~4600px wide, but a PDF/PNG
+## rasterGrob embeds pixel data uncompressed, so passing the raw photo
+## through untouched previously bloated the output PDF to ~90MB for what
+## renders as a only few inches wide on the page. 1600px is comfortably
+## sharp at 300dpi printed at that size (1600px / 300dpi ~= 5.3in) while
+## keeping file size reasonable. Requires magick (image reading/resizing)
+## and grid (rasterGrob).
+build.photo.panel <- function(image_path, max_width_px = 1600) {
+  img <- magick::image_read(image_path)
+  info <- magick::image_info(img)
+  if (info$width > max_width_px) img <- magick::image_resize(img, paste0(max_width_px, "x"))
+
+  ggplot() +
+    annotation_custom(grid::rasterGrob(img, interpolate = TRUE),
+                      xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf) +
+    xlim(0, 1) + ylim(0, 1) +
+    theme_void() +
+    theme(aspect.ratio = info$height / info$width)
+}
+
+
+## combine two standardized (z-score) overlay plots -- e.g. two kelp species --
+## into a single one-column, two-row figure: a legend inset into the top
+## panel's upper right, a single shared y-axis title, and a shared nested
+## x-axis (transect > season > site) shown only on the bottom row (the top
+## row keeps its tick marks but no text, so the two rows still line up).
+## `title_top`/`title_bottom` are rendered as markdown (via ggtext), so pass
+## e.g. "*Saccharina latissima* (sugar kelp)" for italicized scientific names.
+## Requires legendry (nested axis guide), patchwork (stacking + collecting
+## the shared axis title), and ggtext (markdown/italic titles).
+##
+## Text sizing: axis titles at 25, matching the ROV-diver 1:1 head-to-head
+## figures (visualize.head.to.head(), visualize.abundance.pairs()). Axis
+## text, the legendry nested-axis subtitle (season/site bracket labels),
+## panel titles, and legend text share a single second-tier size (20,
+## title_size) -- deliberately louder than those two figures' own axis-text
+## size (16), since unlike them this figure has no x-axis title to anchor
+## against, so its tick/bracket labels need to read clearly next to a 25pt
+## y-axis title on their own. The color legend has no title (self-
+## explanatory "diver"/"ROV" entries); `method_labels` capitalizes "diver" to
+## "Diver" for display only, matching the "Diver"/"ROV" capitalization
+## convention used elsewhere (e.g. visualize.head.to.head()'s axis labels) --
+## the underlying "diver"/"ROV" data values (and therefore `colors`' names)
+## are untouched.
+##
+## `photo_top_path`/`photo_bottom_path` optionally add a representative photo
+## immediately to the right of each row (via build.photo.panel()), turning
+## the one-column stack into a two-column x two-row grid -- e.g. a sugar kelp
+## photo beside the top (sugar kelp) row, a sieve kelp photo beside the
+## bottom (sieve kelp) row. `main_width_ratio`/`photo_width_ratio` set the
+## relative column widths (chart column : photo column). Both paths must be
+## supplied together; if either is NULL, photos are omitted and the original
+## one-column stack is returned. The 2x2 grid is assembled as a *flat*
+## patchwork composition (plot_layout(ncol = 2, byrow = TRUE), not nested
+## `(a|b)/(c|d)` operators) -- nesting breaks axis_titles = "collect" (it
+## stopped merging the shared y-axis title across rows, leaving two
+## duplicate "standardized z-score" titles), while the flat form collects
+## correctly.
+visualize.kelp.standardized.overlay.stack <- function(data_top, data_bottom,
+                                                       title_top, title_bottom,
+                                                       colors,
+                                                       site_order = c("Centennial_Park", "Elliott_Bay_Marina"),
+                                                       season_order = c("summer", "winter"),
+                                                       y_label = "standardized z-score",
+                                                       axis_title_size = 25,
+                                                       axis_text_size = 20,
+                                                       subtitle_text_size = 20,
+                                                       title_size = 20,
+                                                       legend_text_size = 20,
+                                                       method_labels = c(diver = "Diver", ROV = "ROV"),
+                                                       legend_position_inside = c(0.93, 0.90),
+                                                       photo_top_path = NULL,
+                                                       photo_bottom_path = NULL,
+                                                       main_width_ratio = 2.75,
+                                                       photo_width_ratio = 1) {
+  plot_top <- ggplot(
+    prep.kelp.standardized.data(data_top, site_order, season_order),
+    aes(x = x_nested, y = value, color = method, group = method)
+  ) +
+    geom_line() +
+    geom_point(size = 2) +
+    scale_color_manual(values = colors, labels = method_labels) +
+    labs(x = NULL, y = y_label, color = NULL, title = title_top) +
+    my.theme +
+    theme(axis.text.x = element_blank(),
+          axis.text.y = element_text(size = axis_text_size),
+          axis.title.x = element_text(size = axis_title_size),
+          axis.title.y = element_text(size = axis_title_size),
+          plot.title = ggtext::element_markdown(size = title_size),
+          legend.text = element_text(size = legend_text_size),
+          legend.position = "inside",
+          legend.position.inside = legend_position_inside,
+          legend.background = element_blank())
+
+  plot_bottom <- ggplot(
+    prep.kelp.standardized.data(data_bottom, site_order, season_order),
+    aes(x = x_nested, y = value, color = method, group = method)
+  ) +
+    geom_line() +
+    geom_point(size = 2) +
+    scale_color_manual(values = colors, labels = method_labels) +
+    guides(x = legendry::guide_axis_nested(key = legendry::key_range_auto(sep = "\\."))) +
+    labs(x = NULL, y = y_label, color = NULL, title = title_bottom) +
+    my.theme +
+    theme(axis.text.x = element_text(size = axis_text_size),
+          axis.text.y = element_text(size = axis_text_size),
+          axis.title.x = element_text(size = axis_title_size),
+          axis.title.y = element_text(size = axis_title_size),
+          legendry.axis.subtitle = element_text(size = subtitle_text_size),
+          plot.title = ggtext::element_markdown(size = title_size),
+          legend.position = "none")
+
+  if (!is.null(photo_top_path) && !is.null(photo_bottom_path)) {
+    photo_top <- build.photo.panel(photo_top_path)
+    photo_bottom <- build.photo.panel(photo_bottom_path)
+
+    return(
+      (plot_top + photo_top + plot_bottom + photo_bottom) +
+        patchwork::plot_layout(ncol = 2, byrow = TRUE,
+                               widths = c(main_width_ratio, photo_width_ratio),
+                               axes = "collect", axis_titles = "collect")
+    )
+  }
+
+  (plot_top / plot_bottom) +
+    patchwork::plot_layout(axes = "collect", axis_titles = "collect")
+}
+
+
+
+
+## ROV sampling schematic (methods figure) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## a "filmstrip" of the 30 photos taken along one 30m outward-pass transect
+## (1 photo/meter), each drawn as a small outlined box holding 5 randomly-
+## placed smaller boxes -- each small box stands in for one group of 10 of
+## the 50 points HSIL/VIAME randomly distributes per photo for percent-cover
+## annotation (5 groups x 10 points = 50). Individual points aren't drawn
+## (illegible at filmstrip scale); a separate, larger "exemplar" panel
+## repeats the same box/patch design at a size where it's actually legible,
+## serving as a de facto legend. Meant to be stacked (via patchwork) directly
+## under a real per-transect line plot -- e.g. visualize.photo.level() for a
+## single transect -- sharing the same 0-30m x range, so the schematic reads
+## as "this is what generated the data above."
+
+## rejection-sample `n` 2D points within a box centered on the origin with
+## half-widths (half_w, half_h), keeping any pair at least `min_dist` apart
+## -- used to scatter the 5 "10-point" patches inside a photo box without
+## them overlapping each other. A patch box is small relative to a photo
+## box, so in practice all 5 fit within a handful of tries; if a point still
+## can't find a free spot after `max_tries`, its last (rejected) candidate is
+## kept anyway rather than erroring, since this is an illustrative diagram,
+## not real annotation data -- a rare, slightly-too-close pair is a
+## acceptable cosmetic compromise, not a correctness issue.
+sample.non.overlapping.points <- function(n, half_w, half_h, min_dist, max_tries = 200) {
+  pts <- matrix(nrow = 0, ncol = 2)
+  for (i in seq_len(n)) {
+    for (try in seq_len(max_tries)) {
+      candidate <- c(runif(1, -half_w, half_w), runif(1, -half_h, half_h))
+      if (nrow(pts) == 0 || all(sqrt(rowSums(sweep(pts, 2, candidate)^2)) >= min_dist)) break
+    }
+    pts <- rbind(pts, candidate)
+  }
+  pts
+}
+
+
+## build one "photo" box (outline) + its n_patches randomly placed smaller
+## "10-point" boxes, centered at (center_x, center_y). Returns a list of two
+## data frames (photo, patches), both with xmin/xmax/ymin/ymax + an id column
+## -- ready to be row-bound across many photos and drawn with a couple of
+## geom_rect() calls (one call for all photo outlines, one for all patches,
+## rather than one geom_rect() per box).
+build.photo.schematic.geometry <- function(center_x, center_y, photo_w, photo_h,
+                                           n_patches = 5, patch_frac = 0.17,
+                                           min_dist_frac = 0.3, photo_id = 1) {
+  half_w <- photo_w / 2
+  half_h <- photo_h / 2
+  patch_w <- photo_w * patch_frac
+  patch_h <- photo_h * patch_frac
+
+  photo <- data.frame(
+    photo_id = photo_id,
+    xmin = center_x - half_w, xmax = center_x + half_w,
+    ymin = center_y - half_h, ymax = center_y + half_h
+  )
+
+  ## keep patch centers within the photo box, inset by half a patch so no
+  ## patch pokes outside the photo outline
+  usable_half_w <- half_w - patch_w / 2
+  usable_half_h <- half_h - patch_h / 2
+  offsets <- sample.non.overlapping.points(
+    n_patches, usable_half_w, usable_half_h,
+    min_dist = min_dist_frac * min(photo_w, photo_h)
+  )
+
+  patches <- data.frame(
+    photo_id = photo_id,
+    patch_id = seq_len(n_patches),
+    xmin = center_x + offsets[, 1] - patch_w / 2,
+    xmax = center_x + offsets[, 1] + patch_w / 2,
+    ymin = center_y + offsets[, 2] - patch_h / 2,
+    ymax = center_y + offsets[, 2] + patch_h / 2
+  )
+
+  list(photo = photo, patches = patches)
+}
+
+
+## the 30-photo filmstrip: one photo box per meter along a `transect_length`
+## m transect (default 30, 1/m -- the ROV outward-pass protocol), each with
+## `n_patches` randomly placed "10-point" boxes per build.photo.schematic.geometry().
+## `photo_aspect` (width:height) defaults to the real ROV photo aspect ratio
+## (sugar.jpg/sieve.jpg are 4606x4030px, ~1.143:1) so the schematic boxes
+## read as photo-shaped rather than arbitrary squares. `seed` fixes the
+## patch layout so the figure is reproducible run to run (the patch
+## positions are illustrative, not real annotation data, but a figure that
+## redraws differently every render is a bad look in a manuscript).
+## coord_fixed(ratio = 1) is used deliberately: x and y are the same
+## "meters" unit, so a literal 1:1 aspect keeps each photo box visually
+## photo_aspect-shaped rather than whatever the panel's own width/height
+## happens to stretch it to -- this also naturally produces a short, wide
+## "filmstrip" panel that lines up under a same-x-range line plot.
+## `x_expand` defaults to 0 (no scale padding beyond the explicit xlim) so
+## the rendered x=0..transect_length+photo_spacing range matches *exactly*
+## when this panel is stacked under a real data panel using the same hard
+## range (see visualize.rov.sampling.with.transects()) -- otherwise the two
+## panels' default 5%-ish auto-padding would differ and photo box #1/#n
+## wouldn't land under the real data's first/last point. `plot_margin` is
+## exposed so a caller stacking this under another panel can zero out the
+## top margin to pull the boxes up flush against whatever's above.
+visualize.rov.photo.filmstrip <- function(transect_length = 30, photo_spacing = 1,
+                                          n_patches = 5, photo_aspect = 4606 / 4030,
+                                          photo_w = 0.62, seed = 42,
+                                          photo_color = "black", patch_color = "grey35",
+                                          patch_fill = "grey85",
+                                          x_label = "Distance along 30m transect",
+                                          x_breaks = c(1, seq(5, transect_length, 5)),
+                                          x_expand = 0,
+                                          axis_title_size = 25, axis_text_size = 16,
+                                          plot_margin = margin(5.5, 5.5, 5.5, 5.5)) {
+  set.seed(seed)
+  photo_h <- photo_w / photo_aspect
+  centers <- seq(photo_spacing, transect_length, by = photo_spacing)
+
+  geoms <- purrr::map(seq_along(centers), function(i) {
+    build.photo.schematic.geometry(centers[i], 0, photo_w, photo_h,
+                                   n_patches = n_patches, photo_id = i)
+  })
+  photos <- purrr::map_dfr(geoms, "photo")
+  patches <- purrr::map_dfr(geoms, "patches")
+
+  ggplot() +
+    geom_rect(data = patches, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+             fill = patch_fill, color = patch_color, linewidth = 0.3) +
+    geom_rect(data = photos, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+             fill = NA, color = photo_color, linewidth = 0.6) +
+    coord_fixed(ratio = 1, xlim = c(0, transect_length + photo_spacing), clip = "off") +
+    scale_x_continuous(breaks = x_breaks, expand = expansion(mult = x_expand)) +
+    labs(x = x_label, y = NULL) +
+    my.theme +
+    theme(axis.line.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.title.x = element_text(size = axis_title_size),
+          axis.text.x = element_text(size = axis_text_size),
+          panel.border = element_blank(),
+          plot.margin = plot_margin)
+}
+
+
+## a single, enlarged version of the same photo/patch design, meant as a
+## legend/callout explaining what the tiny filmstrip boxes represent -- e.g.
+## combined alongside visualize.rov.photo.filmstrip() via patchwork
+## (`filmstrip | exemplar`). `label` is placed below the box (via plot.title
+## on an otherwise unlabeled void panel).
+visualize.rov.photo.exemplar <- function(n_patches = 5, photo_aspect = 4606 / 4030,
+                                         photo_w = 3, seed = 1,
+                                         photo_color = "black", patch_color = "grey35",
+                                         patch_fill = "grey85",
+                                         label = "each small square =\n10 random points\n(5 x 10 = 50 pts/photo)") {
+  set.seed(seed)
+  photo_h <- photo_w / photo_aspect
+  geom <- build.photo.schematic.geometry(0, 0, photo_w, photo_h, n_patches = n_patches)
+
+  ggplot() +
+    geom_rect(data = geom$patches, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+             fill = patch_fill, color = patch_color, linewidth = 0.5) +
+    geom_rect(data = geom$photo, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+             fill = NA, color = photo_color, linewidth = 1) +
+    labs(title = label) +
+    coord_fixed(ratio = 1, clip = "off") +
+    theme_void() +
+    theme(plot.title = element_text(size = 11, hjust = 0.5, lineheight = 1.1,
+                                    margin = margin(t = 8)),
+          plot.margin = margin(t = 5, r = 10, b = 5, l = 10))
+}
+
+
+## combine the filmstrip + exemplar into one schematic figure, filmstrip on
+## the left (most of the width) and the enlarged exemplar box on the right
+## as a legend -- matching the two-part sketch this was designed from. Ready
+## to stack (via patchwork's `/`) directly under a same-x-range per-transect
+## line plot, e.g. visualize.photo.level() for a single transect.
+## `n_patches` is shared between the filmstrip and exemplar so the "5 boxes =
+## 50 points" story stays consistent between them; other filmstrip-only
+## styling args (photo_w, colors, seed, etc.) pass through via `...`.
+## `show_exemplar = FALSE` drops the legend/callout box and returns just the
+## filmstrip -- kept as a toggle (rather than deleting the exemplar code)
+## since the plan is to bring it back for a larger combined figure later.
+visualize.rov.sampling.schematic <- function(transect_length = 30, n_patches = 5,
+                                             main_width_ratio = 3.2, exemplar_width_ratio = 1,
+                                             show_exemplar = TRUE,
+                                             ...) {
+  filmstrip <- visualize.rov.photo.filmstrip(transect_length = transect_length,
+                                             n_patches = n_patches, ...)
+
+  if (!show_exemplar) return(filmstrip)
+
+  exemplar <- visualize.rov.photo.exemplar(n_patches = n_patches)
+
+  (filmstrip | exemplar) +
+    patchwork::plot_layout(widths = c(main_width_ratio, exemplar_width_ratio))
+}
+
+
+## build one transect x pass's first `n_photos` photos, in actual capture
+## order (Time), for use with visualize.rov.sampling.with.transects() below.
+## `photo_index` (1, 2, 3, ...) is what that function plots against -- *not*
+## distance_m -- because the schematic's 30 boxes represent an idealized "1
+## photo/meter" model, not these particular photos' real (noisy, unevenly-
+## spaced, sometimes direction-reversing-on-the-return-leg) GPS distances.
+## distance_m is still computed (via add.transect.distance(), grouped across
+## both passes so it stays anchored to the transect's true start) and kept
+## in the output for reference/inspection, just not used for x-position.
+build.transect.pass.photos <- function(data, site_name, season_name, transect_num, pass_name, n_photos = 30) {
+  data %>%
+    filter(site == site_name, season == season_name, transect %in% 1:6) %>%
+    add.transect.distance() %>%
+    filter(transect == transect_num, pass == pass_name) %>%
+    arrange(Time) %>%
+    mutate(photo_index = dplyr::row_number()) %>%
+    filter(photo_index <= n_photos)
+}
+
+
+## stack one or more real transects' photo-level proportion lines -- via
+## visualize.photo.level(), the same function/styling used by the
+## proportion_across_space figure family (data_visualization.R), so colors/
+## point-and-line style/theme match exactly -- directly above
+## visualize.rov.sampling.schematic(), so the schematic reads as "this is
+## what generated the lines above."
+##
+## `transects` is a list of row specs, each `list(data = <from
+## build.transect.pass.photos()>, color = <hex>)`, drawn top to bottom in the
+## order given; the *last* one sits directly above the schematic. Each row's
+## `transect` column must hold a single, constant value (one transect per
+## row) -- that value both picks the row's facet-strip label ("Transect N",
+## via visualize.photo.level()'s existing labeller) and is matched against
+## `color`.
+##
+## Alignment: every row plots `photo_index` (1..n) on x, matching the
+## schematic's box centers (also 1..transect_length) exactly by
+## construction -- photo #1 lands under box #1's center, photo #30 under box
+## #30's, with no distance-based fudging needed. All rows and the schematic
+## share the identical unpadded x range (`coord_*(xlim = c(0,
+## transect_length + photo_spacing), expand = FALSE` / `x_expand = 0`), so
+## nothing drifts out of alignment panel to panel. (An earlier distance_m-
+## based version of this figure had the real line appear to "start at zero"
+## before the first box -- that was because a transect's very first photo is
+## distance_m = 0 by definition, one full meter left of where box #1 -- at
+## x = 1 -- was centered. Indexing by ordinal photo position instead of
+## distance removes that mismatch entirely.)
+##
+## Spacing: the schematic gets a fixed absolute height (`schematic_height_in`)
+## rather than a share of the total figure height, and the seam between the
+## last data row and the schematic has both margins pulled to 0, so the
+## filmstrip sits flush against that row's x-axis line regardless of the
+## overall ggsave() height requested; default ggplot spacing is left between
+## stacked data rows themselves. `show_exemplar` is left off (FALSE) here by
+## default -- the legend/callout box isn't part of this stacked view for now
+## (still available by passing schematic_args = list(show_exemplar = TRUE)).
+##
+## Text sizing matches the ROV-diver 1:1 head-to-head figures
+## (visualize.head.to.head(), visualize.abundance.pairs()): axis titles at
+## 25, axis text at 16, strip-style "Transect N" row labels at 20.
+visualize.rov.sampling.with.transects <- function(transects, category,
+                                                   transect_length = 30, photo_spacing = 1,
+                                                   y_label = paste("proportion", gsub("_", " ", category)),
+                                                   axis_title_size = 25, axis_text_size = 16,
+                                                   strip_text_size = 20,
+                                                   y_limits = c(0, 1),
+                                                   schematic_height_in = 0.4,
+                                                   schematic_args = list()) {
+  x_range <- c(0, transect_length + photo_spacing)
+  x_breaks <- c(1, seq(5, transect_length, 5))
+
+  row_plots <- purrr::map(transects, function(tr) {
+    ## reuse visualize.photo.level()'s existing distance_m-keyed x mapping/
+    ## styling/strip-labelling machinery by handing it photo_index under the
+    ## distance_m name -- confined to this local copy, doesn't touch tr$data
+    plot_data <- tr$data %>% mutate(distance_m = photo_index)
+    transect_num <- unique(plot_data$transect)
+    stopifnot(length(transect_num) == 1)
+
+    visualize.photo.level(
+      data = plot_data,
+      category = category,
+      transect_order = transect_num,
+      colors = setNames(tr$color, transect_num),
+      ncol = 1,
+      x_label = NULL,
+      y_label = y_label,
+      strip_text_size = strip_text_size,
+      y_limits = y_limits
+    ) +
+      scale_x_continuous(breaks = x_breaks) +
+      coord_cartesian(xlim = x_range, ylim = y_limits, expand = FALSE) +
+      theme(axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.y = element_text(size = axis_title_size),
+            axis.text.y = element_text(size = axis_text_size))
+  })
+
+  ## tight seam only between the last data row and the schematic; default
+  ## spacing preserved between stacked data rows above it
+  n <- length(row_plots)
+  row_plots[[n]] <- row_plots[[n]] + theme(plot.margin = margin(t = 5.5, r = 5.5, b = 0, l = 5.5))
+
+  schematic_defaults <- list(transect_length = transect_length, photo_spacing = photo_spacing,
+                             x_label = "Distance along 30m transect", x_breaks = x_breaks,
+                             axis_title_size = axis_title_size, axis_text_size = axis_text_size,
+                             x_expand = 0, show_exemplar = FALSE,
+                             plot_margin = margin(t = 0, r = 5.5, b = 5.5, l = 5.5))
+  schematic <- do.call(visualize.rov.sampling.schematic, utils::modifyList(schematic_defaults, schematic_args))
+
+  ## flat (non-nested) stack -- required for axis_titles = "collect" to
+  ## actually collapse the repeated "proportion ..." y-axis title into one
+  ## shared label (nesting via `/`/`|` operators breaks that collection; see
+  ## visualize.kelp.standardized.overlay.stack()'s with-photos branch for the
+  ## same fix applied there)
+  patchwork::wrap_plots(c(row_plots, list(schematic)), ncol = 1) +
+    patchwork::plot_layout(heights = c(rep(grid::unit(1, "null"), n), grid::unit(schematic_height_in, "in")),
+                           axes = "collect", axis_titles = "collect")
+}
+## END ROV sampling schematic ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

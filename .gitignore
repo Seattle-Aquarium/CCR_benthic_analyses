@@ -1,0 +1,62 @@
+/ROV_diver_comparison/report/main/main.pdf
+# too large for GitHub (144 MB, exceeds the 100 MB push limit); see README for the Dropbox link
+/ROV_diver_comparison/report/figs/categories.png
+
+# -----------------------------------------------------------------------------
+# LaTeX build files to ignore
+# -----------------------------------------------------------------------------
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.lol
+*.nav
+*.snm
+*.maf
+*.mtc
+*.mtc0
+
+# -----------------------------------------------------------------------------
+# Machine-specific notes (local paths, not relevant to other collaborators)
+# -----------------------------------------------------------------------------
+CLAUDE_R_ENVIRONMENT.md
+
+# -----------------------------------------------------------------------------
+# Editor/IDE specific files
+# -----------------------------------------------------------------------------
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# -----------------------------------------------------------------------------
+# Output files
+# -----------------------------------------------------------------------------
+*.dvi
+*.ps
+*.Rhistory
+
+# -----------------------------------------------------------------------------
+# Build directories (e.g., if using latexmk, texlive, or Overleaf local)
+# -----------------------------------------------------------------------------
+latex.out/
+build/
+
+# -----------------------------------------------------------------------------
+# Custom folders to ignore (for now)
+# -----------------------------------------------------------------------------
+
+data_output/patches/
+results/patches/

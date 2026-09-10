@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"/c/Users/WILLIA~1/AppData/Local/Temp/claude/c--Users-williamsm-OneDrive---Seattle-Aquarium-Documents-GitHub-CCR-benthic-analyses/cfcb10fa-8b5d-4607-b71b-24230ab5153d/scratchpad\")",
+      "Bash(python join_percent_cover_telemetry.py \"C:\\\\Users\\\\WILLIA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-williamsm-OneDrive---Seattle-Aquarium-Documents-GitHub-CCR-benthic-analyses\\\\cfcb10fa-8b5d-4607-b71b-24230ab5153d\\\\scratchpad\\\\percent_test.csv\" \"C:\\\\Users\\\\WILLIA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-williamsm-OneDrive---Seattle-Aquarium-Documents-GitHub-CCR-benthic-analyses\\\\cfcb10fa-8b5d-4607-b71b-24230ab5153d\\\\scratchpad\\\\telemetry_test.csv\" \"C:\\\\Users\\\\WILLIA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-williamsm-OneDrive---Seattle-Aquarium-Documents-GitHub-CCR-benthic-analyses\\\\cfcb10fa-8b5d-4607-b71b-24230ab5153d\\\\scratchpad\\\\joined_test.csv\")",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import percent_cover_telemetry\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\WILLIA~1\\AppData\\Local\\Temp\\claude\\c--Users-williamsm-OneDrive---Seattle-Aquarium-Documents-GitHub-CCR-benthic-analyses\\cfcb10fa-8b5d-4607-b71b-24230ab5153d\\scratchpad"
+    ]
+  }
+}
