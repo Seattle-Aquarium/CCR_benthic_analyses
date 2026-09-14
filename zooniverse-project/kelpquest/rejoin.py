@@ -59,6 +59,15 @@ STATUS_NAME = "subject_status.csv"
 #: was "a person needs to look at this".
 _DEAD_END = {"deny_pred", "voted_review", "multi_consensus_unmapped"}
 
+#: Said once, wherever an unmapped label is reported. It names the fix rather
+#: than the file, because the fix is two clicks on this page -- the older
+#: advice was to edit the expansions table in the script, which meant finding
+#: the script, editing Python, and being the sort of person who would.
+UNMAPPED_ADVICE = (
+    "Some multi-choice consensus labels are not in the labelset, so those "
+    "points were left as Review. Map them under 'Labels the labelset could "
+    "not name' on this page, then run the stage again.")
+
 STATUS_LABELS = {
     "verified": "Verified — label settled",
     "needs_toolbox": "Needs review in Toolbox",
@@ -76,6 +85,10 @@ class RejoinResult:
     by_reason: dict[str, int] = field(default_factory=dict)
     subject_sets_seen: int = 0
     workflows_seen: dict[str, int] = field(default_factory=dict)
+    #: (raw choice text, how many points) for consensus labels the labelset
+    #: could not name. Filled on a check run too, so they can be mapped
+    #: before anything is written.
+    unmapped: list[tuple[str, int]] = field(default_factory=list)
     outputs: list[Path] = field(default_factory=list)
     dry_run: bool = False
     cancelled: bool = False
@@ -313,6 +326,12 @@ def rejoin(toolbox_csv: str | Path,
     result.by_reason = {str(k): int(v) for k, v in
                         unresolved["status_reason"].value_counts().items()}
 
+    # Worked out before the dry-run branch: a check should say which labels
+    # need mapping, so they can be mapped before the run that writes.
+    result.unmapped = unmapped_labels(merged)
+    if result.unmapped:
+        result.warnings.append(UNMAPPED_ADVICE)
+
     if dry_run:
         for name in (TOOLBOX_IMPORT_NAME, QAQC_NAME, STATUS_NAME):
             result.lines.append(f"would write {name}")
@@ -352,13 +371,9 @@ def rejoin(toolbox_csv: str | Path,
     status.to_csv(status_path, index=False)
     result.outputs.append(status_path)
 
-    unmapped = _unmapped_report(merged, out)
+    unmapped = _unmapped_report(result.unmapped, out)
     if unmapped is not None:
         result.outputs.append(unmapped)
-        result.warnings.append(
-            "Some multi-choice consensus labels are not in the labelset — see "
-            f"{UNMAPPED_NAME}. Add them to the expansions table in "
-            f"{LINKER.name}.")
 
     if progress:
         progress(1.0, "Rejoined.")
@@ -471,22 +486,146 @@ def _write_qaqc(merged, path: Path) -> None:
     log.info(f"Wrote QA/QC: {path}  ({len(qa):,} rows)")
 
 
-def _unmapped_report(merged, out: Path) -> Path | None:
-    """Which consensus labels the labelset could not name, and how often."""
+def unmapped_labels(merged) -> list[tuple[str, int]]:
+    """Which consensus labels the labelset could not name, and how often.
+
+    Computed whether or not anything is being written, because the answer is
+    the same on a check run and it is what the GUI needs in order to offer the
+    mapping. The raw choice text is kept as it came off Zooniverse -- image
+    markdown and all -- so it matches the CSV and so somebody can see which
+    button a volunteer actually pressed.
+    """
     import pandas as pd
 
+    if "zoon_status" not in merged.columns:
+        return []
     rows = merged[merged["zoon_status"] == "multi_consensus_unmapped"]
     if rows.empty:
-        return None
+        return []
     labels = pd.Series(dtype=object)
     for col in ("m_exp_top_label", "m_top_label"):
         if col in rows.columns:
             labels = pd.concat([labels, rows[col].dropna().astype(str)])
     if labels.empty:
-        return None
+        return []
     counts = labels.value_counts()
+    return [(str(name), int(n)) for name, n in counts.items()]
+
+
+def _unmapped_report(pairs: list[tuple[str, int]], out: Path) -> Path | None:
+    """Write the unmapped labels out, matching the script's own report."""
+    import pandas as pd
+
+    if not pairs:
+        return None
     target = out / UNMAPPED_NAME
-    pd.DataFrame({"raw_label": counts.index,
-                  "count": counts.values}).to_csv(target, index=False)
+    pd.DataFrame({"raw_label": [p[0] for p in pairs],
+                  "count": [p[1] for p in pairs]}).to_csv(target, index=False)
     log.info(f"Wrote unmapped labels: {target}")
     return target
+
+
+# --------------------------------------------------------------------------
+#  Mapping a label the labelset does not have
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class ExpansionResult:
+    """What came of an attempt to map some choice text onto label codes."""
+
+    added: dict[str, str] = field(default_factory=dict)
+    rejected: list[tuple[str, str, str]] = field(default_factory=list)
+    path: Path | None = None
+
+    @property
+    def ok(self) -> bool:
+        return bool(self.added) and not self.rejected
+
+    def summary(self) -> str:
+        out = []
+        if self.added:
+            out.append(f"{len(self.added)} label(s) mapped in "
+                       f"{self.path.name if self.path else 'the label table'}:")
+            out += [f"  {raw}  →  {code}"
+                    for raw, code in self.added.items()]
+            out.append("")
+            out.append("Run stage 7 again — those points will resolve now.")
+        for raw, code, why in self.rejected:
+            out.append(f"Not mapped: {raw} → {code or '(nothing chosen)'} — "
+                       f"{why}")
+        return "\n".join(out)
+
+
+def clean_choice(raw: str) -> str:
+    """The choice text with its image markdown stripped.
+
+    A Zooniverse choice is often ``![](some-url) Sugar``, and the rules match
+    on the ``Sugar`` part. Showing the raw string in the GUI would put a line
+    of URL on screen, and storing the raw string as a mapping key would not
+    match what the rules look up, so both go through here.
+    """
+    return _load_linker().clean_markdown_labels(str(raw or ""))
+
+
+def label_choices(labelset_json: str | Path) -> list[tuple[str, str]]:
+    """(short code, long name) for every label, for the GUI to offer."""
+    from .labelset import Labelset
+
+    labels = Labelset.load(labelset_json)
+    return [(lab.code, lab.long_name) for lab in labels.labels]
+
+
+def expansion_table() -> tuple[dict[str, str], Path]:
+    """The mappings in force, and the file additions are written to."""
+    linker = _load_linker()
+    return dict(linker.load_expansions()), Path(linker.EXPANSIONS_PATH)
+
+
+def add_expansions(mapping: dict[str, str],
+                   labelset_json: str | Path) -> ExpansionResult:
+    """Record "this choice text means that label code".
+
+    Each code is resolved against the labelset before anything is written. An
+    expansion pointing at a code the labelset does not have silently resolves
+    to nothing, so the next run would report the very same label as unmapped
+    with no hint as to why -- far worse than refusing it here and saying so.
+
+    Written to the file the linker reads, so the next run of the app *and* of
+    ``zooni_to_toolbox_annot.py`` from the command line both pick it up. There
+    is one mapping table, not one per tool.
+    """
+    linker = _load_linker()
+    labelset_raw = json.loads(Path(labelset_json).read_text(encoding="utf-8"))
+    label_map = linker.build_label_map(labelset_raw)
+
+    result = ExpansionResult()
+    keep: dict[str, str] = {}
+    for raw, code in (mapping or {}).items():
+        raw_text = str(raw or "").strip()
+        code = str(code or "").strip()
+        if not raw_text:
+            continue
+        if not code:
+            result.rejected.append((raw_text, code, "no label code chosen"))
+            continue
+        # The stored key is the cleaned text, because that is what the rules
+        # look up: the raw choice still carries the image markdown that a
+        # volunteer saw on the button.
+        cleaned = linker.clean_markdown_labels(raw_text)
+        # Resolve through the public mapper with an empty expansions table, so
+        # this asks only "does the labelset have this code?".
+        short, _long = linker.map_to_toolbox_codes(code, label_map, {}, {})
+        if not short:
+            result.rejected.append(
+                (raw_text, code,
+                 f"the labelset has no label '{code}'"))
+            continue
+        keep[cleaned] = short
+        result.added[cleaned] = short
+
+    if keep:
+        result.path = Path(linker.save_expansions(keep))
+        log.info(f"Mapped {len(keep)} label(s) in {result.path}: "
+                 + ", ".join(f"{k} -> {v}" for k, v in keep.items()))
+    return result

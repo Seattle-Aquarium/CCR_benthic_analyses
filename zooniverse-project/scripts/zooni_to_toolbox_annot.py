@@ -31,8 +31,12 @@ Label determination rules (applied in priority order):
        - Zooniverse choice text is cleaned: image markdown (![img](url) Label)
          is reduced to the trailing text ("Label"); if no text follows the
          image, the alt text is used instead.
-       - Cleaned text is looked up in the labelset JSON, then in a built-in
-         expansions table (common alt-text shortcuts → short label codes).
+       - Cleaned text is looked up in the labelset JSON, then in an
+         expansions table (choice text → short label code): DEFAULT_EXPANSIONS
+         below, merged with label_expansions.json beside this script. That
+         file is where a new choice gets mapped — by hand, or by stage 7 of
+         the Kelp Quest app, which writes it when it reports an unmapped
+         label. No code edit is needed for a new label.
        - Ambiguous or project-specific mappings can be added to
          manual_overrides in main().
        - If the label cannot be mapped → Label = "Review", Verified = FALSE,
@@ -347,40 +351,127 @@ def load_labelset_map(labelset_json_path: str):
             label_map[_norm_key(long_c)]  = (short_c or long_c, long_c)
     return label_map
 
+# ------------------------------------------------------------
+#  Expansions: volunteer-facing choice text -> labelset short code
+# ------------------------------------------------------------
+# A Zooniverse choice is written for somebody to read on a button -- "Sugar",
+# "5-rib" -- not for the labelset, which calls those KE_sugar and KE_5rib.
+# Where the cleaned choice text is not itself a labelset code, this says which
+# code it meant.
+#
+# Additions go in a JSON file beside this script rather than in the dict below,
+# and load_expansions merges the two. A new workflow choice then needs no code
+# edit: the Kelp Quest GUI writes that file when it reports an unmapped label,
+# and the next run of either the GUI or this script picks it up. Keeping the
+# defaults in code means a correction made here is not shadowed by a stale
+# copy of it in the file.
+DEFAULT_EXPANSIONS = {
+    "cca":          "RE_CCA",
+    "sugar":        "KE_sugar",
+    "leafy":        "RE_leaf",
+    "green_algae":  "GR_ulva",
+    "boulder":      "SU_bould",
+    "cobble":       "SU_cob",
+    "pebble":       "SU_peb",
+    "bushy":        "RE_bush",
+    "silt":         "SU_silt",
+    "brown_algae":  "BR_sarg",
+    "shell":        "SU_shell",
+    "unknown_cannot_be_determined_from_image": "unknown",
+    "sand":         "SU_sand",
+    "branching":    "RE_branch",
+    "sieve":         "KE_sieve",
+    "filamentous":   "RE_fil",
+    "sessile_invert": "SI",
+    "5-rib":           "KE_5rib",
+    "anthropogenic_debris": "SU_anth",
+    "bull":              "KE_bull",
+    "holdfast":          "KE_holdfas",
+    "mobile_species":     "MS",
+    "stipe":              "KE_stipe",
+
+}
+
+#: Where additions live: ``{"choice text": "SHORT_CODE"}``.
+EXPANSIONS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "label_expansions.json")
+
+
+def load_expansions(path: str | None = None) -> dict:
+    """DEFAULT_EXPANSIONS plus whatever has been added since.
+
+    Keys come back normalised, so the caller can look up ``_norm_key(text)``
+    directly. A missing file is the normal case -- it only exists once
+    somebody has added a mapping.
+    """
+    table = {_norm_key(k): v for k, v in DEFAULT_EXPANSIONS.items()}
+    p = path or EXPANSIONS_PATH
+    if not os.path.isfile(p):
+        return table
+    try:
+        with open(p, "r", encoding="utf-8") as fh:
+            extra = json.load(fh)
+    except (OSError, ValueError) as exc:
+        print(f"WARNING: could not read {p}: {exc}\n"
+              "         Using the built-in expansions only.")
+        return table
+    if not isinstance(extra, dict):
+        print(f"WARNING: {p} should be a JSON object of "
+              '{"choice text": "SHORT_CODE"}. Ignoring it.')
+        return table
+    for raw, code in extra.items():
+        code = norm_str(code)
+        if code:
+            table[_norm_key(raw)] = code
+    return table
+
+
+def save_expansions(additions: dict, path: str | None = None) -> str:
+    """Merge `additions` into the expansions file; returns where it went.
+
+    Only what differs from DEFAULT_EXPANSIONS is written. Writing the whole
+    merged table would freeze a copy of the defaults, so a later correction to
+    the dict above would be silently overridden by the file.
+    """
+    p = path or EXPANSIONS_PATH
+    current: dict = {}
+    if os.path.isfile(p):
+        try:
+            with open(p, "r", encoding="utf-8") as fh:
+                loaded = json.load(fh)
+            if isinstance(loaded, dict):
+                current = {_norm_key(k): norm_str(v)
+                           for k, v in loaded.items() if norm_str(v)}
+        except (OSError, ValueError):
+            pass          # a file we cannot read is replaced, not appended to
+    defaults = {_norm_key(k): v for k, v in DEFAULT_EXPANSIONS.items()}
+    for raw, code in (additions or {}).items():
+        key, code = _norm_key(raw), norm_str(code)
+        if not key or not code:
+            continue
+        if defaults.get(key) == code:
+            current.pop(key, None)   # already the default; nothing to record
+        else:
+            current[key] = code
+    os.makedirs(os.path.dirname(os.path.abspath(p)), exist_ok=True)
+    with open(p, "w", encoding="utf-8") as fh:
+        json.dump(dict(sorted(current.items())), fh, indent=2,
+                  ensure_ascii=False)
+        fh.write("\n")
+    return p
+
+
 def map_to_toolbox_codes(consensus_label: str, label_map: dict,
-                         manual_overrides: dict | None = None):
+                         manual_overrides: dict | None = None,
+                         expansions: dict | None = None):
     raw = norm_str(consensus_label)
     if manual_overrides and raw in manual_overrides:
         return manual_overrides[raw]
     k = _norm_key(raw)
     if k in label_map:
         return label_map[k]
-    expansions = {
-        "cca":          "RE_CCA",
-        "sugar":        "KE_sugar",
-        "leafy":        "RE_leaf",
-        "green_algae":  "GR_ulva",
-        "boulder":      "SU_bould",
-        "cobble":       "SU_cob",
-        "pebble":       "SU_peb",
-        "bushy":        "RE_bush",
-        "silt":         "SU_silt",
-        "brown_algae":  "BR_sarg",
-        "shell":        "SU_shell",
-        "unknown_cannot_be_determined_from_image": "unknown",
-        "sand":         "SU_sand",
-        "branching":    "RE_branch",
-        "sieve":         "KE_sieve",
-        "filamentous":   "RE_fil",
-        "sessile_invert": "SI",
-        "5-rib":           "KE_5rib",
-        "anthropogenic_debris": "SU_anth",
-        "bull":              "KE_bull",
-        "holdfast":          "KE_holdfas",
-        "mobile_species":     "MS",
-        "stipe":              "KE_stipe",
-
-    }
+    if expansions is None:
+        expansions = load_expansions()
     if k in expansions:
         kk = _norm_key(expansions[k])
         if kk in label_map:
@@ -681,6 +772,7 @@ def link_annotations(ds: pd.DataFrame,
                      zc: pd.DataFrame,
                      label_map: dict,
                      manual_overrides: dict | None = None,
+                     expansions: dict | None = None,
                      *,
                      use_yn: bool = True,
                      use_yn_exp: bool = True,
@@ -704,6 +796,10 @@ def link_annotations(ds: pd.DataFrame,
     rather than its own copy of them.
     """
     manual_overrides = manual_overrides or {}
+    # Read once here, not inside map_to_toolbox_codes: that is called per
+    # consensus label, and re-reading the file thousands of times would be a
+    # lot of stat() calls for a table that cannot change mid-run.
+    expansions = load_expansions() if expansions is None else expansions
 
     z_meta = zc["subject_data"].apply(extract_subject_fields)
     z = pd.concat([zc.reset_index(drop=True), z_meta.reset_index(drop=True)],
@@ -805,7 +901,8 @@ def link_annotations(ds: pd.DataFrame,
             mapped = merged.loc[mask, label_col].apply(
                 lambda x: pd.Series(
                     map_to_toolbox_codes(clean_markdown_labels(x),
-                                        label_map, manual_overrides),
+                                        label_map, manual_overrides,
+                                        expansions),
                     index=["tb_short", "tb_long"]
                 )
             )
@@ -1062,7 +1159,10 @@ def main():
     print(merged["zoon_status"].value_counts(dropna=False))
     if len(unmapped_rows) > 0:
         print("\nWARNING: Some multi-consensus labels could not be mapped to the labelset.")
-        print("Add these to manual_overrides or expansions in map_to_toolbox_codes().")
+        print(f"Map them by adding them to {EXPANSIONS_PATH}")
+        print('  {"choice text": "SHORT_CODE"}   — e.g. {"Ribbon": "KE_ribbon"}')
+        print("or on stage 7 of the Kelp Quest app, which writes that file for you.")
+        print("Then run this again; the newly mapped points will resolve.")
 
 
 if __name__ == "__main__":

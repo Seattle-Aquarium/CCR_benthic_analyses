@@ -299,6 +299,17 @@ class App(ctk.CTk):
     def warn(self, message: str) -> None:
         messagebox.showinfo(APP_NAME, message)
 
+    def log_lines(self, text: str, warn: bool = False) -> None:
+        """Put something in the log pane from a panel's own button.
+
+        Panels normally say nothing directly -- the footer's Run reports
+        through the stage result. A button that acts on its own, like mapping
+        a label, has no stage result to report through, and its outcome
+        belongs in the same scrolling record as everything else.
+        """
+        for line in str(text).splitlines():
+            self._log(line, "warn" if warn else None)
+
     # ------------------------------------------------------------------
     #  running
     # ------------------------------------------------------------------

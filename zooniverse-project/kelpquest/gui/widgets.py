@@ -120,6 +120,25 @@ def checkbox(master, text: str, command=None, variable=None) -> ctk.CTkCheckBox:
                            corner_radius=4, border_width=2)
 
 
+def combobox(master, values, variable=None, width: int = 200,
+             command=None) -> ctk.CTkComboBox:
+    """A dropdown that can also be typed into.
+
+    Editable rather than a plain option menu: the label list is thirty-odd
+    entries and typing three characters beats scrolling to find one. What is
+    typed is still checked against the list by the caller, so a typo is
+    refused rather than silently stored.
+    """
+    return ctk.CTkComboBox(
+        master, values=list(values), variable=variable, width=width,
+        command=command, font=T.FONT_BODY, dropdown_font=T.FONT_BODY,
+        text_color=T.TEXT, fg_color=T.FIELD_BG, border_color=T.FIELD_BORDER,
+        button_color=T.FIELD_BORDER, button_hover_color=T.ACCENT,
+        dropdown_fg_color=T.SURFACE, dropdown_text_color=T.TEXT,
+        dropdown_hover_color=T.SURFACE_ALT,
+        border_width=1, corner_radius=6)
+
+
 def textbox(master, height: int = 120) -> ctk.CTkTextbox:
     box = ctk.CTkTextbox(master, height=height, font=T.FONT_MONO,
                          fg_color=T.FIELD_BG, text_color=T.TEXT,

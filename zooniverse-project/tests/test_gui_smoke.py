@@ -164,3 +164,87 @@ def test_composing_the_transect_id_does_not_recurse(app):
         panel.number.set("T6")
         app.update()
     assert app.panels["transect"].prefix.get() == "EBM_W25"
+
+
+def test_the_unmapped_label_card_is_hidden_until_there_are_some(app):
+    """An empty 'labels the labelset could not name' card is a puzzle, not
+    information."""
+    panel = app.panels["rejoin"]
+    panel._show_unmapped([])
+    app.update()
+    assert not panel.unmapped_card.winfo_ismapped()
+
+
+def test_an_unmapped_label_gets_a_row_and_a_labelset_dropdown(app, tmp_path):
+    """The codes come from the labelset, so a label added to the project turns
+    up in the dropdown without a code change here."""
+    import json
+
+    labelset = tmp_path / "labelset.json"
+    labelset.write_text(json.dumps([
+        {"short_label_code": "SU_silt", "long_label_code": "substrate - Silt"},
+        {"short_label_code": "KE_sugar", "long_label_code": "kelp - Sugar"},
+    ]), encoding="utf-8")
+    was = app.cfg.classify.labelset
+    app.cfg.classify.labelset = str(labelset)
+    try:
+        panel = app.panels["rejoin"]
+        panel._show_unmapped([("![](https://x/y.png) Ribbon", 12)])
+        app.update()
+        assert panel.unmapped_card.winfo_ismapped()
+        assert len(panel._unmapped) == 1
+        raw, picker = panel._unmapped[0]
+        # The raw choice is kept for the mapping; the row shows it cleaned.
+        assert raw == "![](https://x/y.png) Ribbon"
+        assert "SU_silt — substrate - Silt" in picker.cget("values")
+    finally:
+        app.cfg.classify.labelset = was
+        app.panels["rejoin"]._show_unmapped([])
+        app.update()
+
+
+def test_mapping_with_nothing_picked_says_so_rather_than_saving(app, tmp_path):
+    import json
+
+    labelset = tmp_path / "labelset.json"
+    labelset.write_text(json.dumps(
+        [{"short_label_code": "SU_silt", "long_label_code": "silt"}]),
+        encoding="utf-8")
+    was = app.cfg.classify.labelset
+    app.cfg.classify.labelset = str(labelset)
+    try:
+        panel = app.panels["rejoin"]
+        panel._show_unmapped([("Ribbon", 3)])
+        app.update()
+        panel._add_expansions()
+        app.update()
+        assert "Pick a label" in panel.map_note.cget("text")
+    finally:
+        app.cfg.classify.labelset = was
+        app.panels["rejoin"]._show_unmapped([])
+        app.update()
+
+
+def test_the_report_stage_can_be_filtered_to_one_transect(app):
+    """The shared multiple-choice and expert sets carry every transect's
+    subjects, so without this a report meant for one summarises all of them."""
+    app.panels["transect"].prefix.set("EBM_W25")
+    app.panels["transect"].number.set("T6")
+    app.select("report")
+    app.update()
+    panel = app.panels["report"]
+    panel.load()
+    app.update()
+    # Defaults to the transect stage 1 was pointed at rather than being typed
+    # a second time.
+    assert panel.transect.get() == "EBM_W25_T6"
+    app.collect_all()
+    assert app.cfg.report.transect_id == "EBM_W25_T6"
+
+
+def test_the_report_stage_knows_where_the_analysis_tool_is(app):
+    """It shipped as analyze_; the docs say analyse_. Stage 8 once reported it
+    missing while it sat in the scripts folder."""
+    app.select("report")
+    app.update()
+    assert "missing" not in app.panels["report"].tool.cget("text")

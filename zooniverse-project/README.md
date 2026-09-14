@@ -28,7 +28,7 @@ zooniverse-project/
 │   ├── toolbox_to_subjects.py          ← extract patches from Toolbox annotations
 │   ├── import_subjects.py              ← upload patches to Zooniverse
 │   ├── export_subjectset.py            ← export classifications for one subject set
-│   ├── analyse_classifications.py      ← generate Excel summary report
+│   ├── analyze_classifications.py      ← generate Excel summary report
 │   └── config.example.env              ← credentials template
 ├── tests/
 └── exports/                            ← downloaded classification CSVs (git-ignored)
@@ -233,6 +233,31 @@ Outputs land in the folder you choose:
 | `subject_status.csv` | every point with its status, reason, subject IDs and retirement |
 | `unmapped_multi_consensus_labels.csv` | consensus labels the labelset could not name, with counts |
 
+### Labels the labelset could not name
+
+Sometimes the volunteers agree and the point still will not resolve, because
+their answer is not a labelset code. A Zooniverse choice is written to be read
+on a button — `Wood`, `Sugar`, `5-rib` — while the labelset calls those
+`SU_wood`, `KE_sugar`, `KE_5rib`. An **expansions table** maps one to the
+other, and a choice it does not cover comes back as
+`zoon_status = multi_consensus_unmapped` and `Label = Review`.
+
+Stage 7 lists those on the page, one row each with its point count and a
+dropdown of the labelset's codes. Pick a label, press **Map these labels**, and
+run the stage again — those points resolve. It writes
+`scripts/label_expansions.json`, which is the same file
+`zooni_to_toolbox_annot.py` reads, so a mapping made in the app is in force on
+the command line too. Built-in defaults stay in `DEFAULT_EXPANSIONS` in that
+script and the file holds only the additions, so a later correction to a
+default is not shadowed by a stale copy of it.
+
+A code the labelset does not have is refused rather than written. An expansion
+pointing at a missing code resolves to nothing, so the next run would report
+the very same label as unmapped with no hint as to why.
+
+A check run lists the unmapped labels too, so they can be mapped before the run
+that writes anything.
+
 ### Settings that matter
 
 | Setting | Default | Why |
@@ -264,7 +289,7 @@ Outputs land in the folder you choose:
   goes in `tracker.xlsx`.
 - **Credentials** come from `scripts/.env`, the same file the scripts use. The
   app never writes them anywhere.
-- **The report** delegates to `scripts/analyse_classifications.py`, and the
+- **The report** delegates to `scripts/analyze_classifications.py`, and the
   rejoin to `scripts/zooni_to_toolbox_annot.py`, so the sheets and the rules
   each have one implementation rather than two to keep in step.
 
@@ -324,7 +349,7 @@ CoralNet-Toolbox
    exports/  *.csv
      │
      ▼
- analyse_classifications.py
+ analyze_classifications.py
      │  builds multi-sheet Excel summary report
      ▼
    reports/  *.xlsx
@@ -517,9 +542,9 @@ After export: add a row to the **Export Log** sheet in `tracker.xlsx` and set th
 
 ---
 
-### `analyse_classifications.py` — Build an Excel summary report
+### `analyze_classifications.py` — Build an Excel summary report
 
-Reads a raw or flattened Zooniverse classification export CSV and produces a formatted multi-sheet Excel report (overview, workflow summary, subject summary, user summary, answer breakdown, source image summary, and time stats).
+Reads a raw or flattened Zooniverse classification export CSV and produces a formatted multi-sheet Excel report (overview, transect completion, workflow summary, subject summary, user summary, answer breakdown, source image summary, and time stats).
 
 Current script behavior uses a GUI form for inputs.
 
@@ -527,8 +552,13 @@ Current script behavior uses a GUI form for inputs.
 
 - Export CSV (required)
 - Output folder
+- Optional transect ID filter — **use this.** The multiple-choice and expert
+  subject sets are shared by the whole project, so an export of them carries
+  every transect's subjects. Without the filter a report meant for one
+  transect summarises all of them.
 - Optional workflow ID filter
 - Optional source image filter
+- Optional date range
 
 **Output files**
 

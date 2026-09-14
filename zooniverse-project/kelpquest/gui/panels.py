@@ -36,6 +36,7 @@ from .widgets import (
     PathField,
     button,
     checkbox,
+    combobox,
     hint,
     label,
     set_text,
@@ -1014,6 +1015,28 @@ class RejoinPanel(StagePanel):
         self.status = textbox(c0.body, height=170)
         self.status.grid(row=0, column=0, sticky="ew")
 
+        # Right under the counts, because it is the one thing on this page a
+        # person can act on immediately: these points are unresolved only
+        # because nothing knows which label the volunteers' answer means.
+        # Hidden until a run finds some -- an empty card is a puzzle.
+        self.unmapped_card = self.card(
+            "Labels the labelset could not name",
+            "The volunteers agreed, but their answer does not match a label "
+            "in the labelset, so those points were left as Review. Say which "
+            "label each one means and they will resolve on the next run.")
+        self.unmapped_rows = ctk.CTkFrame(self.unmapped_card.body,
+                                          fg_color="transparent")
+        self.unmapped_rows.grid(row=0, column=0, sticky="ew")
+        self.unmapped_rows.grid_columnconfigure(0, weight=1)
+        self.map_btn = button(self.unmapped_card.body, "Map these labels",
+                              self._add_expansions, "ghost", width=160)
+        self.map_btn.grid(row=1, column=0, sticky="w", pady=(10, 0))
+        self.map_note = hint(self.unmapped_card.body, "")
+        self.map_note.grid(row=2, column=0, sticky="ew", pady=(6, 0))
+        self._unmapped: list[tuple[str, object]] = []
+        self._code_for: dict[str, str] = {}
+        self.unmapped_card.grid_remove()
+
         c1 = self.card("What to join",
                        "The Toolbox sheet stage 4 wrote for this transect, "
                        "and the combined export from stage 6.")
@@ -1160,6 +1183,95 @@ class RejoinPanel(StagePanel):
         # card with that pushes the numbers out of view.
         block = result.advance.get("status_block")
         set_text(self.status, block or result.summary())
+        self._show_unmapped(result.advance.get("unmapped") or [])
+
+    # ---- mapping a label the labelset does not have --------------
+
+    def _show_unmapped(self, pairs) -> None:
+        """One row per label the rules could not map, with a code to pick."""
+        for child in self.unmapped_rows.winfo_children():
+            child.destroy()
+        self._unmapped = []
+        if not pairs:
+            self.unmapped_card.grid_remove()
+            return
+
+        try:
+            choices = rejoin.label_choices(self.cfg.classify.labelset)
+        except (OSError, ValueError) as exc:
+            self.unmapped_card.grid()
+            label(self.unmapped_rows,
+                  f"Could not read the labelset: {exc}").grid(
+                      row=0, column=0, sticky="ew")
+            self.map_btn.configure(state="disabled")
+            return
+
+        # "CODE — long name" reads better in a dropdown than a bare code, and
+        # the code is recovered from this map rather than by splitting the
+        # string back apart on a dash the long names also contain.
+        self._code_for = {f"{code} — {long_name}": code
+                          for code, long_name in choices}
+        values = list(self._code_for)
+        self.map_btn.configure(state="normal")
+        for i, (raw, count) in enumerate(pairs):
+            row = ctk.CTkFrame(self.unmapped_rows, fg_color="transparent")
+            row.grid(row=i, column=0, sticky="ew", pady=3)
+            # The gap goes between the name and the count, so the count sits
+            # next to the dropdown it belongs with rather than stranded beside
+            # the label with a hand's width of nothing after it.
+            row.grid_columnconfigure(0, weight=1)
+            # The raw choice text can be a whole line of image markdown, so it
+            # is shown cleaned -- the same text the rules look up.
+            shown = rejoin.clean_choice(raw)
+            label(row, f"{shown}", font=T.FONT_BODY).grid(
+                row=0, column=0, sticky="w")
+            label(row, f"{count:,} point(s)", muted=True).grid(
+                row=0, column=1, sticky="e", padx=(10, 12))
+            picker = combobox(row, values, width=260)
+            picker.set("")
+            picker.grid(row=0, column=2, sticky="e")
+            self._unmapped.append((raw, picker))
+        self.map_note.configure(
+            text="Written to label_expansions.json beside "
+                 f"{rejoin.LINKER.name}, so the command-line script uses the "
+                 "same mappings. Leave a row blank to skip it.",
+            text_color=T.TEXT_MUTED)
+        self.unmapped_card.grid()
+
+    def _add_expansions(self) -> None:
+        mapping = {}
+        for raw, picker in self._unmapped:
+            chosen = picker.get().strip()
+            if not chosen:
+                continue
+            # Typed as well as picked: accept a bare code too.
+            mapping[raw] = self._code_for.get(chosen, chosen)
+        if not mapping:
+            self.map_note.configure(
+                text="Pick a label for at least one row first.",
+                text_color=T.WARN)
+            return
+        try:
+            outcome = rejoin.add_expansions(mapping, self.cfg.classify.labelset)
+        except Exception as exc:
+            self.map_note.configure(text=f"Could not save the mapping: {exc}",
+                                    text_color=T.WARN)
+            return
+        self.app.log_lines(outcome.summary(), warn=not outcome.ok)
+        self.map_note.configure(
+            text=" · ".join(line.strip()
+                            for line in outcome.summary().splitlines()
+                            if line.strip()),
+            text_color=T.TEXT_MUTED if outcome.ok else T.WARN)
+        # A row that took is settled; freezing its picker stops it being
+        # mapped twice and shows at a glance which ones still want an answer.
+        left = 0
+        for raw, picker in self._unmapped:
+            if rejoin.clean_choice(raw) in outcome.added:
+                picker.configure(state="disabled")
+            else:
+                left += 1
+        self.map_btn.configure(state="normal" if left else "disabled")
 
 
 # --------------------------------------------------------------------------
@@ -1170,9 +1282,10 @@ class RejoinPanel(StagePanel):
 class ReportPanel(StagePanel):
     key = "report"
     title = "8.  Build the report"
-    subtitle = ("A multi-sheet Excel summary of an export: overview, per "
-                "workflow, per subject, per volunteer, the answer breakdown, "
-                "per source still, and classification times.")
+    subtitle = ("A multi-sheet Excel summary of an export: overview, how far "
+                "along each transect is, per workflow, per subject, per "
+                "volunteer, the answer breakdown, per source still, and "
+                "classification times.")
     run_text = "Build the report"
     check_text = "Check only — do not write the workbook"
 
@@ -1188,20 +1301,38 @@ class ReportPanel(StagePanel):
                                 title="Where should the workbook go?")
         self.output.grid(row=1, column=0, sticky="ew", pady=(8, 0))
 
-        c2 = self.card("Filters",
-                       "Both optional. Leave them empty to summarise the whole "
-                       "export.")
+        c2 = self.card(
+            "Filters",
+            "Transect first. The multiple-choice and expert subject sets are "
+            "shared by the whole project, so an export of them carries every "
+            "transect's subjects — without this filter a report meant for one "
+            "transect summarises all of them.")
+        self.transect = Field(c2.body, "Transect ID", width=230,
+                              hint_text="all transects", caption_width=150,
+                              validate=self._check_transects)
         self.workflow = Field(c2.body, "Workflow ID", width=120,
                               hint_text="all", caption_width=150,
                               validate=_check_digits("one workflow only"))
         self.source = Field(c2.body, "Source image", width=230,
                             hint_text="all", caption_width=150,
                             validate=lambda s: (True, "that still only"))
-        self.stack(c2, self.workflow, self.source)
+        self.stack(c2, self.transect, self.workflow, self.source)
+        hint(c2.body, "Matched against the transect_id stamped on each "
+                      "subject, so it has to be exact — EBM_W25_T6, not "
+                      "EBM_T6. Several can be separated by commas. All three "
+                      "filters are optional."
+             ).grid(row=3, column=0, sticky="ew", pady=(8, 0))
 
         c3 = self.card("Analysis tool")
         self.tool = label(c3.body, "", muted=True)
         self.tool.grid(row=0, column=0, sticky="ew")
+
+    @staticmethod
+    def _check_transects(text: str) -> tuple[bool, str]:
+        ids = [t.strip() for t in text.split(",") if t.strip()]
+        if not ids:
+            return False, "e.g. EBM_W25_T6"
+        return True, f"{len(ids)} transect(s)" if len(ids) > 1 else "that one"
 
     def _csv_changed(self, path: str) -> None:
         if not path:
@@ -1223,10 +1354,14 @@ class ReportPanel(StagePanel):
         self.output.set(r.output_dir)
         self.workflow.set(r.workflow_id)
         self.source.set(r.source_image)
+        # Defaults to the transect stage 1 was pointed at, which is almost
+        # always the one being reported on. Typed once, not twice.
+        self.transect.set(r.transect_id or self.cfg.transect_id)
+        tool = report.analyser_path()
         self.tool.configure(
-            text=(f"Delegates to {report.ANALYSER.name} in scripts/."
+            text=(f"Delegates to {tool.name} in scripts/."
                   if report.available()
-                  else f"{report.ANALYSER} is missing — it ships alongside "
+                  else f"{tool} is missing — it ships alongside "
                        "this app in the scripts folder."),
             text_color=T.TEXT_MUTED if report.available() else T.WARN)
 
@@ -1236,11 +1371,12 @@ class ReportPanel(StagePanel):
         r.output_dir = self.output.get()
         r.workflow_id = self.workflow.get()
         r.source_image = self.source.get()
+        r.transect_id = self.transect.get()
 
     def validate(self) -> str | None:
         if not report.available():
-            return (f"The analysis tool is missing: {report.ANALYSER}. It "
-                    "ships alongside this app in the scripts folder.")
+            return (f"The analysis tool is missing: {report.analyser_path()}. "
+                    "It ships alongside this app in the scripts folder.")
         if not self.export_csv.get():
             return "Choose the classifications export CSV."
         if not Path(self.export_csv.get()).is_file():

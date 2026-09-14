@@ -131,6 +131,11 @@ class ReportSettings:
     output_dir: str = ""
     workflow_id: str = ""
     source_image: str = ""
+    #: Which transect(s) to summarise. Not cosmetic: the multiple-choice
+    #: and expert subject sets are shared across the whole project, so an
+    #: export of them carries every transect's subjects. Left empty, a
+    #: report meant for one transect quietly summarises all of them.
+    transect_id: str = ""
 
 
 @dataclass

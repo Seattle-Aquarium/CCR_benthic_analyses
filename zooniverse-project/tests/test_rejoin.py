@@ -359,3 +359,185 @@ def test_a_missing_input_is_reported_not_raised(tmp_path: Path, labelset: Path):
     with pytest.raises(FileNotFoundError):
         rejoin.rejoin(tmp_path / "nope.csv", tmp_path / "also-nope.csv",
                       labelset, tmp_path / "out")
+
+
+# --------------------------------------------------------------------------
+#  mapping a consensus label the labelset does not have
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def expansions_file(tmp_path: Path, monkeypatch):
+    """Redirect the expansions file into tmp_path.
+
+    Without this, every test that maps a label would append to the real
+    scripts/label_expansions.json -- a project file the next run of the linker
+    reads. A test must not change what the pipeline does.
+    """
+    path = tmp_path / "label_expansions.json"
+    linker = rejoin._load_linker()
+    monkeypatch.setattr(linker, "EXPANSIONS_PATH", str(path))
+    return path
+
+
+@pytest.fixture
+def unmapped_scenario(tmp_path: Path, labelset: Path):
+    """One point whose multi-choice consensus is a label nobody has mapped.
+
+    Three crowd votes for the same choice is consensus by the rules, so the
+    volunteers have answered -- the point is unresolved only because nothing
+    knows which labelset code "Ribbon" means.
+    """
+    toolbox = _toolbox_csv(tmp_path / "toolbox.csv", [(10, 20)])
+    classifications = Export().add(
+        MULTI_CROWD, _multi("Ribbon"), "s1", 10, 20, times=3
+    ).write(tmp_path / "classifications.csv")
+    return toolbox, classifications, labelset, tmp_path / "out"
+
+
+def test_an_unmapped_consensus_label_is_reported_with_its_count(
+        unmapped_scenario, expansions_file):
+    toolbox, classifications, labelset, out = unmapped_scenario
+    result = rejoin.rejoin(toolbox, classifications, labelset, out,
+                           dry_run=False)
+    assert result.unmapped == [("Ribbon", 1)]
+    assert any("not in the labelset" in w for w in result.warnings)
+
+
+def test_a_check_reports_the_unmapped_labels_too(unmapped_scenario,
+                                                 expansions_file):
+    """So they can be mapped before the run that writes, rather than after."""
+    toolbox, classifications, labelset, out = unmapped_scenario
+    result = rejoin.rejoin(toolbox, classifications, labelset, out,
+                           dry_run=True)
+    assert result.unmapped == [("Ribbon", 1)]
+    assert not out.exists() or not list(out.glob("*.csv"))
+
+
+def test_mapping_the_label_resolves_the_point_on_the_next_run(
+        unmapped_scenario, expansions_file):
+    """The whole point of the exercise: after the mapping those points carry a
+    real label instead of Review."""
+    import pandas as pd
+
+    toolbox, classifications, labelset, out = unmapped_scenario
+    before = rejoin.rejoin(toolbox, classifications, labelset, out,
+                           dry_run=True)
+    assert before.counts["needs_toolbox"] == 1
+
+    outcome = rejoin.add_expansions({"Ribbon": "SU_silt"}, labelset)
+    assert outcome.ok, outcome.rejected
+    assert outcome.added == {"Ribbon": "SU_silt"}
+    assert expansions_file.is_file()
+
+    after = rejoin.rejoin(toolbox, classifications, labelset, out,
+                          dry_run=False)
+    assert after.unmapped == []
+    assert after.counts["verified"] == 1
+    written = pd.read_csv(out / rejoin.TOOLBOX_IMPORT_NAME)
+    assert written.iloc[0]["Label"] == "SU_silt"
+
+
+def test_a_code_the_labelset_does_not_have_is_refused_not_written(
+        unmapped_scenario, expansions_file):
+    """An expansion pointing at a missing code resolves to nothing, so the
+    next run would report the same label as unmapped with no clue why."""
+    _toolbox, _classifications, labelset, _out = unmapped_scenario
+    outcome = rejoin.add_expansions({"Ribbon": "KE_ribbon"}, labelset)
+    assert not outcome.ok
+    assert not outcome.added
+    assert outcome.rejected[0][0] == "Ribbon"
+    assert "no label" in outcome.rejected[0][2]
+    assert not expansions_file.exists()
+
+
+def test_a_row_left_blank_is_skipped_rather_than_stored_empty(
+        unmapped_scenario, expansions_file):
+    _toolbox, _classifications, labelset, _out = unmapped_scenario
+    outcome = rejoin.add_expansions({"Ribbon": "", "Sieve": "SU_silt"},
+                                    labelset)
+    assert outcome.added == {"Sieve": "SU_silt"}
+    assert outcome.rejected[0][0] == "Ribbon"
+
+
+def test_the_stored_key_is_the_cleaned_choice_text(unmapped_scenario,
+                                                   expansions_file):
+    """A Zooniverse choice usually carries the image markdown a volunteer saw
+    on the button. The rules look up the cleaned text, so storing the raw
+    string would never match."""
+    _toolbox, _classifications, labelset, _out = unmapped_scenario
+    outcome = rejoin.add_expansions(
+        {"![ribbon](https://example.org/a.png) Ribbon": "SU_silt"}, labelset)
+    assert outcome.added == {"Ribbon": "SU_silt"}
+
+
+def test_clean_choice_falls_back_to_the_alt_text():
+    assert rejoin.clean_choice("![red_algae](https://x/y.png)") == "red_algae"
+    assert rejoin.clean_choice("![](https://x/y.png) Silt") == "Silt"
+
+
+def test_the_file_holds_additions_only_not_a_copy_of_the_defaults(
+        unmapped_scenario, expansions_file):
+    """Writing the merged table would freeze the defaults, so a later
+    correction in the script would be shadowed by a stale copy of it."""
+    _toolbox, _classifications, labelset, _out = unmapped_scenario
+    rejoin.add_expansions({"Ribbon": "SU_silt"}, labelset)
+    stored = json.loads(expansions_file.read_text(encoding="utf-8"))
+    assert stored == {"ribbon": "SU_silt"}
+    linker = rejoin._load_linker()
+    assert "sugar" in linker.DEFAULT_EXPANSIONS
+    assert "sugar" not in stored
+
+
+def test_the_defaults_are_still_in_force_alongside_an_addition(
+        unmapped_scenario, expansions_file):
+    _toolbox, _classifications, labelset, _out = unmapped_scenario
+    rejoin.add_expansions({"Ribbon": "SU_silt"}, labelset)
+    table, path = rejoin.expansion_table()
+    assert path == expansions_file
+    assert table["ribbon"] == "SU_silt"
+    assert table["cca"] == "RE_CCA"          # a default, untouched
+
+
+def test_mapping_the_same_label_again_replaces_it(unmapped_scenario,
+                                                  expansions_file):
+    _toolbox, _classifications, labelset, _out = unmapped_scenario
+    rejoin.add_expansions({"Ribbon": "SU_silt"}, labelset)
+    rejoin.add_expansions({"Ribbon": "SU_bould"}, labelset)
+    stored = json.loads(expansions_file.read_text(encoding="utf-8"))
+    assert stored == {"ribbon": "SU_bould"}
+
+
+def test_a_corrupt_expansions_file_does_not_stop_a_run(unmapped_scenario,
+                                                       expansions_file):
+    """It is a file somebody may have hand-edited. Falling back to the
+    built-in table with a warning beats refusing to rejoin anything."""
+    expansions_file.write_text("{not json", encoding="utf-8")
+    linker = rejoin._load_linker()
+    assert linker.load_expansions()["cca"] == "RE_CCA"
+
+    toolbox, classifications, labelset, out = unmapped_scenario
+    result = rejoin.rejoin(toolbox, classifications, labelset, out,
+                           dry_run=True)
+    assert result.ok
+
+
+def test_the_label_choices_come_from_the_labelset(labelset: Path):
+    """The dropdown is built from the labelset rather than a list in the GUI,
+    so a label added to the project appears without a code change."""
+    choices = rejoin.label_choices(labelset)
+    assert ("SU_silt", "substrate - Silt") in choices
+    assert len(choices) == 2
+
+
+def test_the_linker_reads_the_same_file_the_app_writes(unmapped_scenario,
+                                                       expansions_file):
+    """One mapping table, not one per tool: a label mapped in the app has to
+    be in force for the command-line script too."""
+    _toolbox, _classifications, labelset, _out = unmapped_scenario
+    rejoin.add_expansions({"Ribbon": "SU_silt"}, labelset)
+    linker = rejoin._load_linker()
+    label_map = linker.build_label_map(
+        json.loads(Path(labelset).read_text(encoding="utf-8")))
+    assert linker.map_to_toolbox_codes("Ribbon", label_map) == (
+        "SU_silt", "substrate - Silt")

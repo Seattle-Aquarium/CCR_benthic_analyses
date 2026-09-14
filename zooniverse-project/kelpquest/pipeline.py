@@ -714,6 +714,7 @@ def run_rejoin(ctx: Context, progress: Progress | None = None,
         res.outputs = list(outcome.outputs)
         res.advance["status_counts"] = outcome.counts
         res.advance["status_block"] = outcome.status_block()
+        res.advance["unmapped"] = list(outcome.unmapped)
         return res
 
     return _guard("rejoin", ctx.preview, work)
@@ -740,6 +741,7 @@ def run_report(ctx: Context, progress: Progress | None = None,
             cfg.report.export_csv, out_dir,
             workflow_id=cfg.report.workflow_id,
             source_image=cfg.report.source_image,
+            transect_id=cfg.report.transect_id,
             dry_run=ctx.preview, progress=progress, cancel=cancel)
 
         res.counts = {"rows": outcome.rows}
