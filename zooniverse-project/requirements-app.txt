@@ -1,0 +1,31 @@
+# Kelp Quest desktop app (kelpquest/), on top of what the scripts need.
+#
+# run_KelpQuest.bat installs this into a private environment. Install torch
+# yourself first if this machine has a CUDA GPU worth using -- the launcher
+# fetches the CPU wheel, which is a few hundred MB rather than a few GB, and
+# leaves an existing install alone.
+
+-r requirements.txt
+
+customtkinter>=5.2.0
+pillow>=10.0.0
+
+# Held below 5 deliberately, and not because of a bug we cannot work around
+# -- the label outline is drawn through a dilated mask now, so it is correct
+# on either. It is the typeface: OpenCV 5 replaced the Hershey stroke font
+# with a bundled TrueType one, so the same label comes out in a different
+# face. Thousands of patches are already on Zooniverse in the old face, and
+# the task should not change appearance underneath the volunteers.
+#
+# OpenCV 5 also saturates putText's thickness at 2, which is a regression
+# worth waiting out.
+opencv-python-headless<5
+
+# Classification. Ultralytics pulls torch and torchvision if they are absent.
+ultralytics>=8.3.0
+
+# panoptes-client imports python-magic, which loads a native libmagic. On
+# Windows the plain python-magic wheel ships no magic database and the load
+# dies with an access violation -- a segfault, taking the whole app with it.
+# This wheel bundles both the library and the database.
+python-magic-bin>=0.4.14; sys_platform == "win32"

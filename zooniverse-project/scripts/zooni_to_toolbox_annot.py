@@ -675,61 +675,39 @@ def export_toolbox_json(merged: pd.DataFrame,
 
 
 # ============================================================
-# Main
+# The rules
 # ============================================================
-def main():
-    args = get_args_via_gui()
+def link_annotations(ds: pd.DataFrame,
+                     zc: pd.DataFrame,
+                     label_map: dict,
+                     manual_overrides: dict | None = None,
+                     *,
+                     use_yn: bool = True,
+                     use_yn_exp: bool = True,
+                     use_multi: bool = True,
+                     use_multi_exp: bool = True) -> pd.DataFrame:
+    """
+    Apply the label determination rules to a Toolbox annotation table.
 
-    print("\n--- Zooniverse Workflows → Toolbox Linker ---\n")
-    use_yn        = args["use_yn"]
-    use_yn_exp    = args["use_yn_exp"]
-    use_multi     = args["use_multi"]
-    use_multi_exp = args["use_multi_exp"]
+    ds  : Toolbox annotation.csv as a DataFrame (see REQUIRED_TOOLBOX_COLUMNS)
+    zc  : Zooniverse classification export as a DataFrame, raw -- subject
+          fields are extracted here, so several subject-set exports can simply
+          be concatenated before calling (dedupe on classification_id first).
 
-    any_yesno = use_yn or use_yn_exp
-    any_multi = use_multi or use_multi_exp
+    Returns the merged table with Label / Long Label / Verified / zoon_status
+    set per the rules in this module's docstring, plus every vote column used
+    to reach them. INNER JOIN: only points matched in at least one selected
+    workflow come back, so a caller wanting the whole Toolbox table should
+    left-join this onto it.
 
-    os.makedirs(args["outdir"], exist_ok=True)
+    Extracted from main() so the GUI in kelpquest/ applies exactly these rules
+    rather than its own copy of them.
+    """
+    manual_overrides = manual_overrides or {}
 
-    # ── Load labelset ─────────────────────────────────────────────────────────
-    with open(args["labelset"], "r", encoding="utf-8") as f:
-        labelset_raw = json.load(f)
-    if not isinstance(labelset_raw, list) or (labelset_raw and not isinstance(labelset_raw[0], dict)):
-        raise ValueError(
-            f"Labelset JSON does not look right — expected a list of label objects "
-            f"(each with 'short_label_code' / 'long_label_code').\n"
-            f"Got: {type(labelset_raw).__name__}. "
-            f"Did you accidentally select the annotation JSON instead?"
-        )
-    label_map = {}
-    for it in labelset_raw:
-        short_c = norm_str(it.get("short_label_code", ""))
-        long_c  = norm_str(it.get("long_label_code", ""))
-        if short_c:
-            label_map[_norm_key(short_c)] = (short_c, long_c or short_c)
-        if long_c:
-            label_map[_norm_key(long_c)]  = (short_c or long_c, long_c)
-
-    manual_overrides: dict = {
-        # Labels that intentionally mean "needs review" — not a mapping gap
-        "Not sure (needs expert review)": ("Review", "Review"),
-    }
-
-    # ── Load input annotation JSON (optional) ─────────────────────────────────
-    raw_json = None
-    if args.get("annot_json"):
-        print("Loading Toolbox annotation JSON...")
-        raw_json = load_toolbox_annotation_json(args["annot_json"])
-        total_in = sum(len(v) for v in raw_json.values())
-        print(f"  Loaded {len(raw_json)} images, {total_in} annotations from JSON.")
-
-    # ── Load CSVs ─────────────────────────────────────────────────────────────
-    ds = pd.read_csv(args["dataset"])
-    ensure_required_columns(ds)
-
-    zc = pd.read_csv(args["zoo"])
     z_meta = zc["subject_data"].apply(extract_subject_fields)
-    z = pd.concat([zc, z_meta], axis=1)
+    z = pd.concat([zc.reset_index(drop=True), z_meta.reset_index(drop=True)],
+                  axis=1)
 
     # ── Aggregate votes per selected workflow ─────────────────────────────────
     votes_yn     = aggregate_yesno_votes(z, WORKFLOW_YESNO,        "yn")     if use_yn      else None
@@ -738,22 +716,23 @@ def main():
     votes_m_exp  = aggregate_multi_votes(z, WORKFLOW_MULTI_EXPERT, "m_exp")  if use_multi_exp else None
 
     # ── Build join keys ───────────────────────────────────────────────────────
+    ds = ds.copy()
     ds["source_image"] = ds["Name"].astype(str).str.replace(".jpg", "", regex=False)
     ds["Row_int"]    = pd.to_numeric(ds["Row"],    errors="coerce")
     ds["Column_int"] = pd.to_numeric(ds["Column"], errors="coerce")
     ds_keyed = ds.dropna(subset=["source_image", "Row_int", "Column_int"]).copy()
 
     key_cols = ["source_image", "Row_int", "Column_int"]
-    keys_any = pd.concat(
-        [v[key_cols] for v in [votes_yn, votes_yn_exp, votes_m, votes_m_exp]
-         if v is not None],
-        axis=0
-    ).dropna().drop_duplicates()
+    present = [v for v in [votes_yn, votes_yn_exp, votes_m, votes_m_exp]
+               if v is not None]
+    if not present:
+        raise ValueError("Select at least one workflow.")
+    keys_any = pd.concat([v[key_cols] for v in present],
+                         axis=0).dropna().drop_duplicates()
 
     merged = ds_keyed.merge(keys_any, on=key_cols, how="inner")
-    for v in [votes_yn, votes_yn_exp, votes_m, votes_m_exp]:
-        if v is not None:
-            merged = merged.merge(v, on=key_cols, how="left")
+    for v in present:
+        merged = merged.merge(v, on=key_cols, how="left")
 
     # ── Numeric safety ────────────────────────────────────────────────────────
     int_cols  = ["yn_n", "yn_yes", "yn_no",
@@ -867,6 +846,79 @@ def main():
         merged = merged.drop(columns=["_orig_Label", "_orig_Long"], errors="ignore")
 
     # Everything else stays Review / False
+    return merged
+
+
+def build_label_map(labelset_raw: list) -> dict:
+    """Short/long label code -> (short, long), keyed on a normalised form."""
+    label_map = {}
+    for it in labelset_raw:
+        short_c = norm_str(it.get("short_label_code", ""))
+        long_c  = norm_str(it.get("long_label_code", ""))
+        if short_c:
+            label_map[_norm_key(short_c)] = (short_c, long_c or short_c)
+        if long_c:
+            label_map[_norm_key(long_c)]  = (short_c or long_c, long_c)
+    return label_map
+
+
+#: Labels that intentionally mean "needs review" rather than a mapping gap.
+DEFAULT_MANUAL_OVERRIDES = {
+    "Not sure (needs expert review)": ("Review", "Review"),
+}
+
+
+# ============================================================
+# Main
+# ============================================================
+def main():
+    args = get_args_via_gui()
+
+    print("\n--- Zooniverse Workflows → Toolbox Linker ---\n")
+    use_yn        = args["use_yn"]
+    use_yn_exp    = args["use_yn_exp"]
+    use_multi     = args["use_multi"]
+    use_multi_exp = args["use_multi_exp"]
+
+    os.makedirs(args["outdir"], exist_ok=True)
+
+    # ── Load labelset ─────────────────────────────────────────────────────────
+    with open(args["labelset"], "r", encoding="utf-8") as f:
+        labelset_raw = json.load(f)
+    if not isinstance(labelset_raw, list) or (labelset_raw and not isinstance(labelset_raw[0], dict)):
+        raise ValueError(
+            f"Labelset JSON does not look right — expected a list of label objects "
+            f"(each with 'short_label_code' / 'long_label_code').\n"
+            f"Got: {type(labelset_raw).__name__}. "
+            f"Did you accidentally select the annotation JSON instead?"
+        )
+    label_map = build_label_map(labelset_raw)
+    manual_overrides: dict = dict(DEFAULT_MANUAL_OVERRIDES)
+
+    # ── Load input annotation JSON (optional) ─────────────────────────────────
+    raw_json = None
+    if args.get("annot_json"):
+        print("Loading Toolbox annotation JSON...")
+        raw_json = load_toolbox_annotation_json(args["annot_json"])
+        total_in = sum(len(v) for v in raw_json.values())
+        print(f"  Loaded {len(raw_json)} images, {total_in} annotations from JSON.")
+
+    # ── Load CSVs ─────────────────────────────────────────────────────────────
+    ds = pd.read_csv(args["dataset"])
+    ensure_required_columns(ds)
+    zc = pd.read_csv(args["zoo"], low_memory=False)
+
+    # ── Apply the rules ───────────────────────────────────────────────────────
+    merged = link_annotations(
+        ds, zc, label_map, manual_overrides,
+        use_yn=use_yn, use_yn_exp=use_yn_exp,
+        use_multi=use_multi, use_multi_exp=use_multi_exp,
+    )
+
+    # Re-derive the flags the reports below need. They are cheap, and keeping
+    # link_annotations returning a plain table means the GUI does not have to
+    # unpack a bundle of masks it will not use.
+    multi_exp_consensus = merged["zoon_status"].eq("multi_expert")
 
     # ── Export toolbox CSV ────────────────────────────────────────────────────
     out_csv = os.path.join(args["outdir"], "toolbox_import.csv")

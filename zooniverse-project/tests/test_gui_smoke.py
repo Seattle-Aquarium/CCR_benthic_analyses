@@ -1,0 +1,166 @@
+"""
+That the window builds, and that its layout is the size it should be.
+
+Checked by asking the widgets rather than by photographing the screen. It gives
+a number and a cause instead of an impression, and a screen grab captures a
+region: if the app is not frontmost at that instant it silently photographs
+whatever is, which on a real desktop can be somebody's private browser tab.
+
+Skipped where there is no display, so the suite still runs headless.
+"""
+
+from __future__ import annotations
+
+import sys
+import tkinter
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+ctk = pytest.importorskip("customtkinter")
+
+#: Panel keys, in rail order. Imported rather than restated so a new stage
+#: cannot be added without the smoke test noticing.
+from kelpquest.pipeline import ORDER as STAGES  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def settings_path(tmp_path_factory) -> Path:
+    return tmp_path_factory.mktemp("kelpquest") / "settings.json"
+
+
+@pytest.fixture(scope="module")
+def app(settings_path):
+    """One window for the whole module, realised and ready to measure.
+
+    Module-scoped on purpose. Creating and tearing down a Tk root per test
+    intermittently fails with "tk wasn't installed properly" -- Tk does not
+    much like being re-initialised inside one interpreter -- and a flaky skip
+    in a smoke test is worse than no smoke test. Nothing here mutates state
+    another test depends on.
+    """
+    import kelpquest.config as config
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(config, "CONFIG_PATH", settings_path)
+        from kelpquest.gui.app import App
+
+        try:
+            window = App()
+        except tkinter.TclError as exc:
+            # Only a real display failure is a skip. Catching Exception here
+            # once turned a genuine crash -- a panel reading a config field
+            # that had been renamed -- into eleven "no display available"
+            # skips, which is a worse outcome than a red test.
+            pytest.skip(f"no display available: {exc}")
+        for _ in range(8):
+            window.update()
+        yield window
+        window.destroy()
+
+
+def test_every_panel_builds(app):
+    assert list(app.panels) == list(STAGES)
+
+
+def test_panels_are_laid_out_not_collapsed(app):
+    for key in STAGES:
+        app.select(key)
+        for _ in range(4):
+            app.update()
+        panel = app.panels[key]
+        assert panel.winfo_width() > 200, f"{key} has no width"
+        assert panel.winfo_height() > 150, f"{key} has no height"
+
+
+def test_the_rail_fits_every_row(app):
+    """A CTkFrame defaults to 200px in both directions and keeps it with
+    propagation off, which once made every rail row 200px tall and pushed the
+    last stage off the bottom of the window."""
+    bottom = max(b.winfo_y() + b.winfo_height()
+                 for b in app.rail._buttons.values())
+    assert bottom <= app.rail.winfo_height()
+
+
+def test_the_rail_shows_status_with_a_mark_not_only_colour(app):
+    """Colour is never the only signal."""
+    app.rail.set_status("transect", "done")
+    app.update()
+    assert app.rail.MARKS["done"] in app.rail._buttons["transect"].cget("text")
+
+
+def test_the_run_button_says_what_it_will_do(app):
+    app.select("patches")
+    app.check_var.set(True)
+    app._check_toggled()
+    app.update()
+    assert app.run_btn.cget("text") == "Check"
+    app.check_var.set(False)
+    app._check_toggled()
+    app.update()
+    assert app.run_btn.cget("text") == app.panels["patches"].run_text
+
+
+def test_a_read_only_stage_hides_the_check_box(app):
+    """Stage 1 only ever reads; offering a check would imply Run writes."""
+    app.select("transect")
+    app.update()
+    assert not app.check_box.winfo_ismapped()
+    app.select("patches")
+    app.update()
+    assert app.check_box.winfo_ismapped()
+
+
+def test_the_window_fits_the_screen(app):
+    """The footer carries Stop and the progress bar; off-screen is unusable."""
+    assert app.winfo_rooty() + app.winfo_height() <= app.winfo_screenheight() * 3
+    scaling = ctk.ScalingTracker.get_window_scaling(app) or 1.0
+    assert app.winfo_height() / scaling <= app.winfo_screenheight()
+
+
+def test_both_themes_apply(app):
+    for wanted in ("light", "dark"):
+        app.theme_switch.select() if wanted == "dark" else app.theme_switch.deselect()
+        app._toggle_theme()
+        app.update()
+        assert app.mode == wanted
+
+
+def test_settings_survive_a_round_trip(app, settings_path, tmp_path):
+    panel = app.panels["transect"]
+    panel.site.set("EBM")
+    panel.number.set("T6")
+    panel.prefix.set("EBM_W25")
+    panel.output.set(str(tmp_path / "out"))
+    app.save_config()
+
+    from kelpquest.config import AppConfig
+
+    back = AppConfig.load(settings_path)
+    assert back.site_name == "EBM"
+    assert back.transect_number == "T6"
+    assert back.transect_id == "EBM_W25_T6"
+
+
+def test_the_transect_id_is_composed_not_typed_twice(app):
+    """The prefix is asked for once; the number is appended."""
+    panel = app.panels["transect"]
+    panel.prefix.set("EBM_W25")
+    panel.number.set("T3")
+    app.collect_all()
+    assert app.cfg.transect_id == "EBM_W25_T3"
+    # And the field says so, rather than leaving it to be worked out.
+    assert "EBM_W25_T3" in panel.prefix.status.cget("text")
+
+
+def test_composing_the_transect_id_does_not_recurse(app):
+    """Both halves' change handlers touch the other's note; without a
+    notify=False path that pair calls itself until Tk runs out of stack."""
+    panel = app.panels["transect"]
+    for value in ("EBM_W25", "CNL_S24", "EBM_W25"):
+        panel.prefix.set(value)
+        panel.number.set("T6")
+        app.update()
+    assert app.panels["transect"].prefix.get() == "EBM_W25"

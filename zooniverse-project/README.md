@@ -44,7 +44,7 @@ It does not need CoralNet-Toolbox upstream: it scatters its own annotation
 points, so the Toolbox sheet becomes something the run *produces*, ready to
 import and verify.
 
-Seven stages down the left, the selected stage's settings in the middle, one
+Eight stages down the left, the selected stage's settings in the middle, one
 shared log and progress bar along the bottom. Finishing a stage fills in the
 next stage's inputs and moves the selection there, so paths are never retyped.
 
@@ -65,11 +65,14 @@ transect folder ─► 1 · Transect folder    scan; identity read from the tele
                    ▼
                    5 · Upload to Zooniverse   one subject per patch, resumable
                    │
-                   ▼       (volunteers classify)
-                   6 · Export classifications  fresh export, waited for
+                   ▼       (volunteers classify; subjects move between sets)
+                   6 · Export classifications  every set they passed through
                    │
                    ▼
-                   7 · Build the report   multi-sheet Excel summary
+                   7 · Rejoin to Toolbox  the label rules + where every point stands
+                   │
+                   ▼
+                   8 · Build the report   multi-sheet Excel summary
 ```
 
 Every stage runs on its own, so a step can be redone without redoing the
@@ -148,6 +151,88 @@ telemetry — are hidden from volunteers by Zooniverse. They are for the analysi
 afterwards; a depth or a confidence score on screen is context nobody was asked
 to weigh while deciding whether they agree with the model.
 
+### Subjects move, so the export takes several sets
+
+A subject does not sit still. It starts in the yes/no set; on retirement it may
+move to the multiple-choice set, and from there to an expert set. Its
+classifications stay with whichever set it was in at the time, so **exporting
+only the set a transect was uploaded into makes every subject that has moved on
+look like one nobody has classified.**
+
+Stage 6 therefore takes a list of subject set IDs. **List the project's sets**
+fetches them with names and subject counts, because which sets hold a
+transect's subjects is not knowable from the upload log. It writes one CSV per
+set plus a combined one, deduplicated on `classification_id` — a subject that
+belongs to two sets comes back in both exports, and counting its votes twice
+would push points over thresholds they had not earned.
+
+### Where every point stands
+
+Stage 7 applies the label rules and then answers the question the rules do not:
+how much is actually done. Every annotation point lands in exactly one of four
+buckets, and the split that matters is the middle two.
+
+| | Meaning |
+|---|---|
+| **Verified** | a rule resolved it; the label is settled. The card also says how many of these are retired on Zooniverse. |
+| **Needs review in Toolbox** | unresolved *and* Zooniverse is finished with it — denied, voted "not sure", a consensus label the labelset does not have, or retired on count without agreement. No more votes are coming. |
+| **Still being classified on Zooniverse** | unresolved, but not retired everywhere it lives. More votes are still arriving. |
+| **No classifications found** | nothing in the exports given. Either never uploaded, or the set it moved to was not exported. |
+
+"Retired but unresolved" versus "not retired and unresolved" is the whole point
+of the column: the first is a job for a person, the second is a waiting game.
+
+On the transect this was built against — Centennial T1, with only its original
+subject set exported:
+
+```
+3,100 annotation point(s) in the transect
+3,043 matched a classification
+
+  Verified — label settled                   648   20.9%
+    of which retired on Zooniverse           509
+  Needs review in Toolbox                    151    4.9%
+  Still being classified on Zooniverse     2,244   72.4%
+  No classifications found                    57    1.8%
+
+Why the unresolved ones are unresolved:
+  waiting for more votes                   2,244
+  denied in yes/no                           125
+  retired without consensus                   26
+```
+
+Adding the multiple-choice and expert sets to stage 6 moves a large share of
+those 2,244 into Verified or Needs Toolbox — they are not waiting, they are
+waiting *somewhere that export could not see*.
+
+### The rules
+
+Stage 7 does not decide labels itself. It calls `link_annotations` in
+`scripts/zooni_to_toolbox_annot.py`, which holds the determination rules that
+mirror the Caesar configuration, so there is one copy of them rather than two
+to keep in step. The panel shows them as configured:
+
+| Workflow | Threshold | Effect |
+|---|---|---|
+| Multi-choice expert | n ≥ 1, ≥ 67% agree | label mapped from the labelset, Verified |
+| Multi-choice crowd | n ≥ 3, ≥ 67% agree | same; expert wins if both reached consensus |
+| Yes/No expert | n ≥ 1, ≥ 75% Yes | keeps the model's label, Verified |
+| Yes/No crowd | n ≥ 5, ≥ 75% Yes | same, unless an expert denied |
+
+Both multi-choice results override a yes/no denial. Anything else stays
+`Review` / unverified. The four checkboxes let you drop a workflow — useful for
+working out why a point resolved the way it did, not for a normal run.
+
+Outputs land in the folder you choose:
+
+| File | What it is |
+|---|---|
+| `toolbox_import.csv` | Toolbox's own columns, ready to import |
+| `toolbox_import_annotations.json` | written when you supply the annotation JSON, so the pixel-level fields survive |
+| `qaqc_classifications.csv` | every point with its vote counts and why it resolved as it did |
+| `subject_status.csv` | every point with its status, reason, subject IDs and retirement |
+| `unmapped_multi_consensus_labels.csv` | consensus labels the labelset could not name, with counts |
+
 ### Settings that matter
 
 | Setting | Default | Why |
@@ -179,8 +264,9 @@ to weigh while deciding whether they agree with the model.
   goes in `tracker.xlsx`.
 - **Credentials** come from `scripts/.env`, the same file the scripts use. The
   app never writes them anywhere.
-- **The report** delegates to `scripts/analyse_classifications.py`, so there is
-  one implementation of those seven sheets rather than two to keep in step.
+- **The report** delegates to `scripts/analyse_classifications.py`, and the
+  rejoin to `scripts/zooni_to_toolbox_annot.py`, so the sheets and the rules
+  each have one implementation rather than two to keep in step.
 
 ### If uploading and exporting refuse to start
 
