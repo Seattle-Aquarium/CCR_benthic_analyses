@@ -105,6 +105,17 @@ class ExportSettings:
     subject_set_ids: str = ""
     output_dir: str = ""
     combined_csv: str = ""
+    #: Take a set's export from the folder when it is already there,
+    #: instead of asking Zooniverse to build the same thing again. The
+    #: multiple-choice and expert sets are shared by the whole project,
+    #: so working through transects one at a time their exports are the
+    #: same file every time, and the big one takes minutes to build.
+    #: Off by default: a reused export is as stale as its file, and a
+    #: point that reached consensus since will read as still being
+    #: classified -- a wrong answer rather than a slow one.
+    reuse_existing: bool = False
+    #: Ids to download even so, for a set that has collected votes since.
+    refresh_ids: str = ""
 
 
 @dataclass

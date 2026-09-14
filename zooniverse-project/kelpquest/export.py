@@ -32,12 +32,25 @@ log = get_logger("export")
 WAIT_TIMEOUT_S = 1800
 
 
+#: What was downloaded, when, so a later run can reuse it instead of asking
+#: Zooniverse to build the same thing again. Lives beside the exports.
+EXPORT_LOG_NAME = "export_log.csv"
+
+LOG_HEAD = ["subject_set_id", "subject_set_name", "file", "generated_at",
+            "bytes"]
+
+
 @dataclass
 class ExportResult:
     subject_set_ids: list[str] = field(default_factory=list)
     #: id -> display name, for whatever was reachable.
     subject_set_names: dict[str, str] = field(default_factory=dict)
     per_set_csv: list[Path] = field(default_factory=list)
+    #: Which sets were downloaded now, and which came off disk. Both go into
+    #: the combine; they are kept apart so the report can say which is which,
+    #: because a reused export is only as current as its file.
+    generated: list[str] = field(default_factory=list)
+    reused: dict[str, Path] = field(default_factory=dict)
     combined_csv: Path | None = None
     rows: int = 0
     duplicates_dropped: int = 0
@@ -67,12 +80,122 @@ class ExportResult:
         return "\n".join(out)
 
 
+def _safe_stem(subject_set_id: str, subject_set_name: str = "") -> str:
+    stem = (subject_set_name or f"subjectset_{subject_set_id}").strip()
+    return "".join(c if (c.isalnum() or c in "-_") else "_" for c in stem)
+
+
 def default_csv_name(subject_set_id: str, subject_set_name: str = "") -> str:
     from datetime import date
 
-    stem = (subject_set_name or f"subjectset_{subject_set_id}").strip()
-    safe = "".join(c if (c.isalnum() or c in "-_") else "_" for c in stem)
+    safe = _safe_stem(subject_set_id, subject_set_name)
     return f"{date.today():%Y_%m_%d}_{safe}_classifications.csv"
+
+
+# --------------------------------------------------------------------------
+#  Reusing what has already been downloaded
+# --------------------------------------------------------------------------
+#
+# The multiple-choice and expert subject sets are shared by the whole project.
+# Working through transects one at a time, their exports are the same file
+# every time -- and the multiple-choice one is nearly 200 MB, which Zooniverse
+# takes minutes to build. Only the transect's own yes/no set is genuinely new.
+# So a set that is already on disk can be taken from there, and the combine
+# runs over the mixture.
+#
+# The cost of that is staleness: votes cast since the file was downloaded are
+# not in it, and a point that has reached consensus since will read as still
+# being classified. That is a wrong answer rather than a slow one, so reuse is
+# off unless asked for, and every reused file is reported with its age.
+
+
+def read_log(output_dir: str | Path) -> list[dict]:
+    """Every recorded download, oldest first. Missing log is not an error."""
+    import csv
+
+    path = Path(output_dir) / EXPORT_LOG_NAME
+    if not path.is_file():
+        return []
+    try:
+        with path.open(newline="", encoding="utf-8") as fh:
+            return [row for row in csv.DictReader(fh)
+                    if (row.get("subject_set_id") or "").strip()]
+    except (OSError, ValueError) as exc:
+        log.warning(f"Could not read {path.name}: {exc}")
+        return []
+
+
+def record(output_dir: str | Path, subject_set_id: str,
+           subject_set_name: str, target: Path) -> None:
+    """Note that this file is this subject set's export, downloaded now.
+
+    Appended rather than rewritten: the history of what was downloaded when is
+    worth having, and the newest row for an id wins.
+    """
+    import csv
+    from datetime import datetime
+
+    path = Path(output_dir) / EXPORT_LOG_NAME
+    exists = path.is_file()
+    try:
+        with path.open("a", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(fh, fieldnames=LOG_HEAD)
+            if not exists:
+                writer.writeheader()
+            writer.writerow({
+                "subject_set_id": str(subject_set_id),
+                "subject_set_name": str(subject_set_name),
+                "file": Path(target).name,
+                "generated_at": f"{datetime.now():%Y-%m-%d %H:%M:%S}",
+                "bytes": Path(target).stat().st_size if Path(target).is_file()
+                else 0,
+            })
+    except OSError as exc:
+        # Not fatal: the log is a convenience, and the export itself is safe
+        # on disk. Without it, reuse falls back to matching on the filename.
+        log.warning(f"Could not update {EXPORT_LOG_NAME}: {exc}")
+
+
+def find_existing(output_dir: str | Path, subject_set_id: str,
+                  subject_set_name: str = "") -> Path | None:
+    """An export already on disk for this subject set, or None.
+
+    The log is consulted first because it is exact. Falling back to the
+    filename matters for the exports downloaded before the log existed -- the
+    set id is not in the name, but the sanitised display name is, and those
+    are unique within a project.
+    """
+    out = Path(output_dir)
+    for row in reversed(read_log(out)):
+        if str(row.get("subject_set_id") or "").strip() != str(subject_set_id):
+            continue
+        candidate = out / str(row.get("file") or "")
+        if candidate.is_file():
+            return candidate
+
+    if not subject_set_name:
+        return None
+    pattern = f"*_{_safe_stem(subject_set_id, subject_set_name)}_classifications.csv"
+    matches = [p for p in out.glob(pattern) if p.is_file()]
+    if not matches:
+        return None
+    return max(matches, key=lambda p: p.stat().st_mtime)
+
+
+def describe_age(path: str | Path) -> str:
+    """How old a file is, in the terms somebody decides staleness in."""
+    from datetime import datetime
+
+    try:
+        when = datetime.fromtimestamp(Path(path).stat().st_mtime)
+    except OSError:
+        return "age unknown"
+    days = (datetime.now().date() - when.date()).days
+    if days == 0:
+        return f"today {when:%H:%M}"
+    if days == 1:
+        return f"yesterday {when:%H:%M}"
+    return f"{days} days old ({when:%Y-%m-%d})"
 
 
 def parse_ids(text: str) -> list[str]:
@@ -122,6 +245,16 @@ def combine(csv_paths: list[Path], target: Path) -> tuple[int, int]:
     inflate the vote totals the thresholds are measured against.
     """
     import pandas as pd
+
+    # Reuse makes this reachable: a per-set export already in the folder
+    # could be named the same as the combined file, and reading a file while
+    # writing it truncates it to nothing.
+    target = Path(target)
+    clash = [p for p in csv_paths if Path(p).resolve() == target.resolve()]
+    if clash:
+        raise ValueError(
+            f"The combined CSV would overwrite one of the exports it is "
+            f"reading ({target.name}). Give the combined file its own name.")
 
     frames = []
     for path in csv_paths:
@@ -183,6 +316,8 @@ def _fetch_one(subject_set_id: str, target: Path,
 def export(subject_set_ids, output_dir: str | Path,
            combined_name: str = "",
            dry_run: bool = True,
+           reuse_existing: bool = False,
+           refresh_ids=(),
            progress: Callable[[float, str], None] | None = None,
            cancel: threading.Event | None = None) -> ExportResult:
     """Export several subject sets and combine them into one CSV.
@@ -193,6 +328,12 @@ def export(subject_set_ids, output_dir: str | Path,
     the full picture for a transect needs every set its subjects have passed
     through. The combined CSV is deduplicated on classification_id, since a
     subject that is a member of two sets comes back in both exports.
+
+    With ``reuse_existing``, a set whose export is already in the folder is
+    taken from there rather than generated again -- the shared multiple-choice
+    and expert sets are the same file for every transect, and only the
+    transect's own yes/no set is new. Ids in ``refresh_ids`` are downloaded
+    anyway, for a set that has collected votes since.
     """
     ids = subject_set_ids if isinstance(subject_set_ids, list) \
         else parse_ids(subject_set_ids)
@@ -203,11 +344,14 @@ def export(subject_set_ids, output_dir: str | Path,
             "set's Zooniverse URL. Several can be separated by commas.")
 
     out = Path(output_dir)
+    force = set(refresh_ids if isinstance(refresh_ids, (list, set, tuple))
+                else parse_ids(refresh_ids))
 
     # ---- check: name every set and count its subjects, generate nothing ----
     if progress:
         progress(0.05, "Asking Zooniverse about the subject sets…")
     total_subjects = 0
+    plan: dict[str, Path | None] = {}
     for i, set_id in enumerate(ids):
         if cancel is not None and cancel.is_set():
             result.cancelled = True
@@ -219,7 +363,20 @@ def export(subject_set_ids, output_dir: str | Path,
             continue
         result.subject_set_names[set_id] = name
         total_subjects += count
-        result.lines.append(f"  {set_id}  {name}  —  {count:,} subject(s)")
+
+        existing = (find_existing(out, set_id, name)
+                    if reuse_existing and set_id not in force else None)
+        plan[set_id] = existing
+        if existing is not None:
+            note = (f"reuse {existing.name}  "
+                    f"({existing.stat().st_size / 1e6:,.0f} MB, "
+                    f"{describe_age(existing)})")
+        elif set_id in force:
+            note = "generate afresh (asked for)"
+        else:
+            note = "generate"
+        result.lines.append(f"  {set_id}  {name}  —  {count:,} subject(s)  "
+                            f"·  {note}")
         if progress:
             progress(0.05 + 0.15 * (i + 1) / len(ids), f"Checked {set_id}…")
     result.lines.insert(0, f"{len(result.subject_set_names)} subject set(s), "
@@ -227,6 +384,23 @@ def export(subject_set_ids, output_dir: str | Path,
 
     if result.errors:
         return result
+
+    to_generate = [i for i in ids if plan.get(i) is None]
+    if reuse_existing:
+        reusing = [i for i in ids if plan.get(i) is not None]
+        result.lines.append(
+            f"{len(reusing)} reused from the folder, "
+            f"{len(to_generate)} to generate.")
+        if reusing:
+            oldest = min((plan[i] for i in reusing),
+                         key=lambda p: p.stat().st_mtime)
+            result.warnings.append(
+                f"{len(reusing)} export(s) are being reused rather than "
+                f"generated, the oldest from {describe_age(oldest)}. Votes "
+                "cast since then are not in them, so a point that has reached "
+                "consensus since will read as still being classified. Tick it "
+                "off, or name the set under 'generate these again', to get "
+                "current numbers.")
 
     if dry_run:
         result.lines.append(f"Exports would be written into {out}, then "
@@ -241,11 +415,29 @@ def export(subject_set_ids, output_dir: str | Path,
         if cancel is not None and cancel.is_set():
             result.cancelled = True
             break
+        name = result.subject_set_names.get(set_id, set_id)
+
+        existing = plan.get(set_id)
+        if existing is not None:
+            result.per_set_csv.append(existing)
+            result.reused[set_id] = existing
+            log.info(f"Reusing {existing.name} for subject set {set_id} "
+                     f"('{name}', {describe_age(existing)})")
+            # Recorded now so the next run finds it by id rather than by
+            # matching the filename.
+            if not any(str(r.get("subject_set_id")) == str(set_id)
+                       and r.get("file") == existing.name
+                       for r in read_log(out)):
+                record(out, set_id, name, existing)
+            if progress:
+                progress(0.2 + 0.6 * (i + 1) / len(ids),
+                         f"Reused {existing.name}")
+            continue
+
         if progress:
             progress(0.2 + 0.6 * i / len(ids),
                      f"Generating the export for {set_id} — this can take "
                      "several minutes…")
-        name = result.subject_set_names.get(set_id, set_id)
         target = out / default_csv_name(set_id, name)
         try:
             content = _fetch_one(set_id, target, result)
@@ -259,7 +451,9 @@ def export(subject_set_ids, output_dir: str | Path,
             continue
         target.write_bytes(content)
         result.per_set_csv.append(target)
+        result.generated.append(set_id)
         result.bytes_written += len(content)
+        record(out, set_id, name, target)
         log.info(f"Saved {target.name} ({len(content) / 1e6:.1f} MB)")
 
     if not result.per_set_csv:

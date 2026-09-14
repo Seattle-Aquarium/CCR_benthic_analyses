@@ -152,6 +152,53 @@ def default_xlsx_name(workflow_id: str = "", source_image: str = "",
     return "_".join(bits) + ".xlsx"
 
 
+def transects_in(export_csv: str | Path,
+                 cancel: threading.Event | None = None
+                 ) -> list[tuple[str, int, int]]:
+    """(transect id, classification rows, distinct subjects), biggest first.
+
+    Read by streaming the CSV rather than by flattening it: this is what the
+    filter box needs filled in, and a full flatten of a 250 MB export takes
+    twenty seconds against three for this. The empty id is reported as such
+    rather than dropped -- subjects uploaded before transect_id was stamped
+    have none, and they are exactly the rows a filter cannot see.
+    """
+    import csv
+    import json
+    from collections import defaultdict
+
+    # A subject_data cell is a few hundred bytes, well under the 128 KB
+    # default, but an annotations cell on a long workflow is not.
+    csv.field_size_limit(10_000_000)
+
+    rows: dict[str, int] = defaultdict(int)
+    subjects: dict[str, set] = defaultdict(set)
+    with Path(export_csv).open(newline="", encoding="utf-8") as fh:
+        for i, row in enumerate(csv.DictReader(fh)):
+            if cancel is not None and (i % 2000 == 0) and cancel.is_set():
+                break
+            cell = row.get("subject_data") or ""
+            key = ""
+            # Cheap pre-check: most of the cost here is json.loads, and an
+            # export with no transect ids at all should not pay it per row.
+            if "transect_id" in cell:
+                try:
+                    data = json.loads(cell)
+                except ValueError:
+                    data = {}
+                for meta in data.values():
+                    if isinstance(meta, dict):
+                        key = str(meta.get("transect_id") or "").strip()
+                        break
+            rows[key] += 1
+            subjects[key].add(row.get("subject_ids"))
+    out = [(key, n, len(subjects[key])) for key, n in rows.items()]
+    out.sort(key=lambda r: (-r[1], r[0]))
+    log.info(f"{Path(export_csv).name}: {len(out)} transect(s), "
+             f"{sum(r[1] for r in out):,} classification(s)")
+    return out
+
+
 def build(export_csv: str | Path, output_dir: str | Path,
           workflow_id: str = "", source_image: str = "",
           transect_id: str = "",

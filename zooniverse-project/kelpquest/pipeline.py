@@ -659,9 +659,14 @@ def run_export(ctx: Context, progress: Progress | None = None,
         outcome = export_mod.export(
             ids, cfg.export.output_dir,
             combined_name=cfg.export.combined_csv,
+            reuse_existing=cfg.export.reuse_existing,
+            refresh_ids=cfg.export.refresh_ids,
             dry_run=ctx.preview, progress=progress, cancel=cancel)
 
         res.counts = {"sets": len(ids), "rows": outcome.rows}
+        if outcome.reused:
+            res.counts["reused"] = len(outcome.reused)
+            res.counts["downloaded"] = len(outcome.generated)
         res.cancelled = outcome.cancelled
         res.lines.append(outcome.summary())
         res.warnings.extend(outcome.warnings)

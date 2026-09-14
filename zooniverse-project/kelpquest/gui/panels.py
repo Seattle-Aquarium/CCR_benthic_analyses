@@ -894,6 +894,24 @@ class ExportPanel(StagePanel):
                       "remembering."
              ).grid(row=3, column=0, sticky="ew", pady=(6, 0))
 
+        c3 = self.card(
+            "Don't download what you already have",
+            "The multiple-choice and expert sets are shared by the whole "
+            "project, so working through transects one at a time their "
+            "exports are the same file every time — and the big one takes "
+            "minutes for Zooniverse to build. Only the transect's own yes/no "
+            "set is new.")
+        self.reuse = ctk.BooleanVar(value=False)
+        checkbox(c3.body, "Reuse exports already in the folder",
+                 command=self._reuse_toggled, variable=self.reuse).grid(
+                     row=0, column=0, sticky="w")
+        self.refresh = Field(c3.body, "…but re-download", width=300,
+                             hint_text="none", caption_width=150,
+                             validate=self._check_refresh)
+        self.refresh.grid(row=1, column=0, sticky="ew", pady=(10, 0))
+        self.reuse_note = hint(c3.body, "")
+        self.reuse_note.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+
         c2 = self.card("Where to save them",
                        "One CSV per subject set, plus a combined one with "
                        "duplicate classifications dropped. The combined file "
@@ -915,7 +933,64 @@ class ExportPanel(StagePanel):
         ids = export.parse_ids(text)
         if not ids:
             return False, "digits, separated by commas"
+        self._update_reuse_note()
         return True, f"{len(ids)} subject set(s)"
+
+    def _check_refresh(self, text: str) -> tuple[bool, str]:
+        ids = export.parse_ids(text)
+        if not ids:
+            return False, "subject set IDs, or leave empty"
+        return True, f"{len(ids)} downloaded anyway"
+
+    def _reuse_toggled(self) -> None:
+        self.refresh.enable(bool(self.reuse.get()))
+        self._update_reuse_note()
+
+    def _update_reuse_note(self) -> None:
+        """Say which of the listed sets are already on disk, and how old.
+
+        Age is the whole decision. A reused export has none of the votes cast
+        since it was downloaded, so a point that reached consensus in the
+        meantime reads as still being classified -- and an operator can only
+        weigh that if the file's date is on screen next to the choice.
+        """
+        if not hasattr(self, "reuse_note"):
+            return
+        if not self.reuse.get():
+            self.reuse_note.configure(
+                text="Every set listed above will be generated fresh, which "
+                     "is the safe answer and the slow one.",
+                text_color=T.TEXT_MUTED)
+            return
+        folder = self.output.get() if hasattr(self, "output") else ""
+        ids = export.parse_ids(self.set_ids.get())
+        if not folder or not ids:
+            self.reuse_note.configure(text="", text_color=T.TEXT_MUTED)
+            return
+        found, missing = [], []
+        for set_id in ids:
+            # By id from the log, or by the sanitised set name in the
+            # filename for exports downloaded before the log existed. The
+            # name needs Zooniverse, so only the log is consulted here.
+            existing = export.find_existing(folder, set_id)
+            if existing is None:
+                missing.append(set_id)
+            else:
+                found.append(f"{set_id} ({export.describe_age(existing)})")
+        bits = []
+        if found:
+            bits.append("already downloaded: " + ", ".join(found))
+        if missing:
+            # Not "will be generated": the run itself also matches on the
+            # subject set's display name, which needs Zooniverse and so
+            # cannot be checked from here. Saying they would be downloaded
+            # would be wrong for every export that predates the log.
+            bits.append(f"{len(missing)} not in {export.EXPORT_LOG_NAME}; the "
+                        "run also matches on the set's name, so those may "
+                        "still be reused — the check says which.")
+        self.reuse_note.configure(text="  ·  ".join(bits) or
+                                  "Nothing downloaded into this folder yet.",
+                                  text_color=T.TEXT_MUTED)
 
     def _list_sets(self) -> None:
         """Fetch the project's subject sets so the operator can pick.
@@ -942,8 +1017,14 @@ class ExportPanel(StagePanel):
         if not sets:
             set_text(self.sets_box, "The project has no subject sets.")
             return
-        lines = [f"{'ID':<9} {'subjects':>9}  name"]
-        lines += [f"{sid:<9} {count:>9,}  {name}" for sid, name, count in sets]
+        # Which ones are already downloaded, so a set can be picked *and* the
+        # decision about re-downloading it made from the same list.
+        folder = self.output.get()
+        lines = [f"{'ID':<9} {'subjects':>9}  {'on disk':<22} name"]
+        for sid, name, count in sets:
+            existing = export.find_existing(folder, sid, name) if folder else None
+            have = export.describe_age(existing) if existing else "—"
+            lines.append(f"{sid:<9} {count:>9,}  {have:<22} {name}")
         lines += ["", "Copy the IDs you want into the box above."]
         set_text(self.sets_box, "\n".join(lines))
 
@@ -953,6 +1034,16 @@ class ExportPanel(StagePanel):
         root = Path(__file__).resolve().parent.parent.parent / "exports"
         self.output.set(e.output_dir or str(root))
         self.combined.set(e.combined_csv or self._suggest_combined())
+        self.reuse.set(e.reuse_existing)
+        self.refresh.set(e.refresh_ids)
+        self._reuse_toggled()
+        # The combined file is named per transect, and the name sticks in the
+        # config. Moving to the next transect without changing it would
+        # overwrite the previous one's combined export, which is the file its
+        # stage 7 reads.
+        suggested = self._suggest_combined()
+        if self.combined.get() and self.combined.get() != suggested:
+            self.combined.note(f"stage 1 says {suggested}", ok=False)
 
     def _suggest_combined(self) -> str:
         stem = metadata.sheet_stem(self.cfg.site_name, self.cfg.survey_date,
@@ -965,6 +1056,8 @@ class ExportPanel(StagePanel):
         e.subject_set_ids = self.set_ids.get()
         e.output_dir = self.output.get()
         e.combined_csv = self.combined.get()
+        e.reuse_existing = bool(self.reuse.get())
+        e.refresh_ids = self.refresh.get()
 
     def validate(self) -> str | None:
         if not export.parse_ids(self.set_ids.get()):
@@ -982,10 +1075,26 @@ class ExportPanel(StagePanel):
 
     def confirm(self) -> str | None:
         ids = export.parse_ids(self.set_ids.get())
+        combined = Path(self.output.get()) / (self.combined.get()
+                                              or "all_classifications.csv")
+        note = ""
+        if combined.is_file():
+            note = (f"\n\n{combined.name} already exists "
+                    f"({export.describe_age(combined)}) and will be "
+                    "overwritten. If that is another transect's combined "
+                    "export, change the name first.")
+        if self.reuse.get():
+            forced = export.parse_ids(self.refresh.get())
+            return (f"Generate exports for {len(ids)} subject set(s), reusing "
+                    "any already in the folder?\n\n" + ", ".join(ids)
+                    + (f"\n\nRe-downloaded anyway: {', '.join(forced)}"
+                       if forced else "")
+                    + "\n\nReused exports have none of the votes cast since "
+                      "they were downloaded." + note)
         return (f"Ask Zooniverse to generate a fresh classifications export "
                 f"for {len(ids)} subject set(s)?\n\n" + ", ".join(ids)
                 + "\n\nEach one can take several minutes while their servers "
-                  "build it.")
+                  "build it." + note)
 
 
 # --------------------------------------------------------------------------
@@ -1302,26 +1411,35 @@ class ReportPanel(StagePanel):
         self.output.grid(row=1, column=0, sticky="ew", pady=(8, 0))
 
         c2 = self.card(
-            "Filters",
-            "Transect first. The multiple-choice and expert subject sets are "
-            "shared by the whole project, so an export of them carries every "
-            "transect's subjects — without this filter a report meant for one "
-            "transect summarises all of them.")
-        self.transect = Field(c2.body, "Transect ID", width=230,
+            "Which transects",
+            "One, several, or all of them. The multiple-choice and expert "
+            "subject sets are shared by the whole project, so an export of "
+            "them carries every transect's subjects — left empty, a report "
+            "meant for one transect summarises all of them.")
+        self.transect = Field(c2.body, "Transect IDs", width=360,
                               hint_text="all transects", caption_width=150,
                               validate=self._check_transects)
-        self.workflow = Field(c2.body, "Workflow ID", width=120,
-                              hint_text="all", caption_width=150,
-                              validate=_check_digits("one workflow only"))
-        self.source = Field(c2.body, "Source image", width=230,
-                            hint_text="all", caption_width=150,
-                            validate=lambda s: (True, "that still only"))
-        self.stack(c2, self.transect, self.workflow, self.source)
+        self.transect.grid(row=0, column=0, sticky="ew")
+        button(c2.body, "List the transects in this export",
+               self._list_transects, "ghost", width=220).grid(
+                   row=1, column=0, sticky="w", pady=(8, 0))
+        self.transects_box = textbox(c2.body, height=150)
+        self.transects_box.grid(row=2, column=0, sticky="ew", pady=(8, 0))
         hint(c2.body, "Matched against the transect_id stamped on each "
                       "subject, so it has to be exact — EBM_W25_T6, not "
-                      "EBM_T6. Several can be separated by commas. All three "
-                      "filters are optional."
-             ).grid(row=3, column=0, sticky="ew", pady=(8, 0))
+                      "EBM_T6. Separate several with commas; the per-transect "
+                      "sheet then has a row each, which is how two transects "
+                      "get compared."
+             ).grid(row=3, column=0, sticky="ew", pady=(6, 0))
+
+        c4 = self.card("Other filters", "Both optional.")
+        self.workflow = Field(c4.body, "Workflow ID", width=120,
+                              hint_text="all", caption_width=150,
+                              validate=_check_digits("one workflow only"))
+        self.source = Field(c4.body, "Source image", width=230,
+                            hint_text="all", caption_width=150,
+                            validate=lambda s: (True, "that still only"))
+        self.stack(c4, self.workflow, self.source)
 
         c3 = self.card("Analysis tool")
         self.tool = label(c3.body, "", muted=True)
@@ -1333,6 +1451,41 @@ class ReportPanel(StagePanel):
         if not ids:
             return False, "e.g. EBM_W25_T6"
         return True, f"{len(ids)} transect(s)" if len(ids) > 1 else "that one"
+
+    def _list_transects(self) -> None:
+        """What is actually in the export, so the filter can be filled in.
+
+        Guessing is not good enough here: an export of the shared sets holds
+        whichever transects happened to be in them, which is not something
+        anybody can recall. Streamed rather than flattened -- three seconds
+        against twenty on a 250 MB file.
+        """
+        path = self.export_csv.get()
+        if not path or not Path(path).is_file():
+            self.app.warn("Choose the classifications export CSV first.")
+            return
+        size = Path(path).stat().st_size / 1e6
+        set_text(self.transects_box,
+                 f"Reading {Path(path).name} ({size:,.0f} MB)…")
+        self.update_idletasks()
+        try:
+            found = report.transects_in(path)
+        except (OSError, ValueError) as exc:
+            set_text(self.transects_box, f"Could not read the export: {exc}")
+            return
+        if not found:
+            set_text(self.transects_box, "That export has no rows.")
+            return
+        lines = [f"{'transect':<14} {'classifications':>15} {'subjects':>9}"]
+        for key, rows, subjects in found:
+            lines.append(f"{key or '(no transect_id)':<14} {rows:>15,} "
+                         f"{subjects:>9,}")
+        lines += ["", "Copy the ones you want into the box above, "
+                      "comma-separated."]
+        named = [key for key, _r, _s in found if key]
+        if len(named) > 1:
+            lines.append(f"All of them: {', '.join(named)}")
+        set_text(self.transects_box, "\n".join(lines))
 
     def _csv_changed(self, path: str) -> None:
         if not path:

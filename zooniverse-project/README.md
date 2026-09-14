@@ -166,6 +166,34 @@ set plus a combined one, deduplicated on `classification_id` — a subject that
 belongs to two sets comes back in both exports, and counting its votes twice
 would push points over thresholds they had not earned.
 
+### Don't download the same 200 MB twice
+
+The multiple-choice and expert sets are shared by the whole project, so working
+through transects one at a time **their exports are the same file every time**
+— and the multiple-choice one runs to a couple of hundred megabytes that
+Zooniverse takes minutes to build. Only the transect's own yes/no set is
+genuinely new.
+
+Tick **Reuse exports already in the folder** and a set whose export is already
+there is taken from disk; the rest are generated. The combine still runs across
+the mixture, so stage 7 gets the same complete combined CSV either way.
+
+A set is matched to a file by `export_log.csv`, which stage 6 writes as it
+downloads, and failing that by the sanitised subject-set name in the filename —
+so exports downloaded before the log existed are reused too rather than being
+fetched again once.
+
+**Reuse trades a correct answer for a fast one.** A reused export has none of
+the votes cast since it was downloaded, so a point that has reached consensus
+in the meantime reads as still being classified. That is why it is off by
+default, why every reused file is listed with its age, and why the run warns
+with the age of the oldest. For a set that has collected votes since, name it
+under **…but re-download** and it is fetched even so.
+
+Give each transect's combined CSV its own name. It is the file that transect's
+stage 7 reads, and the panel flags it when the stored name no longer matches
+the transect stage 1 is pointed at.
+
 ### Where every point stands
 
 Stage 7 applies the label rules and then answers the question the rules do not:
@@ -292,6 +320,21 @@ that writes anything.
 - **The report** delegates to `scripts/analyze_classifications.py`, and the
   rejoin to `scripts/zooni_to_toolbox_annot.py`, so the sheets and the rules
   each have one implementation rather than two to keep in step.
+
+### One transect, several, or all of them
+
+Stage 8's **Transect IDs** box takes a comma-separated list, and the workbook's
+per-transect sheet then carries a row each — which is how two transects get
+compared. **List the transects in this export** says what is actually in the
+file, with classification and subject counts, because an export of the shared
+sets holds whichever transects happened to be in them and that is not something
+anybody can recall. It streams the CSV rather than flattening it: three seconds
+against twenty on a 250 MB export.
+
+Left empty, every transect in the export is summarised. The filter matches the
+`transect_id` stamped on each subject, so it has to be exact — `EBM_W25_T6`,
+not `EBM_T6` — and subjects uploaded before that field existed carry none, so a
+filtered report cannot see them. An unfiltered run says how many those are.
 
 ### If uploading and exporting refuse to start
 

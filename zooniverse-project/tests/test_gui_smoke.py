@@ -248,3 +248,117 @@ def test_the_report_stage_knows_where_the_analysis_tool_is(app):
     app.select("report")
     app.update()
     assert "missing" not in app.panels["report"].tool.cget("text")
+
+
+def test_reuse_is_off_until_it_is_asked_for(app):
+    """A reused export has none of the votes cast since it was downloaded, so
+    the default is the correct answer rather than the fast one."""
+    app.select("export")
+    app.update()
+    panel = app.panels["export"]
+    panel.reuse.set(False)
+    panel._reuse_toggled()
+    app.update()
+    assert "generated fresh" in panel.reuse_note.cget("text")
+
+
+def test_the_re_download_field_only_matters_when_reuse_is_on(app):
+    app.select("export")
+    app.update()
+    panel = app.panels["export"]
+    panel.reuse.set(True)
+    panel._reuse_toggled()
+    app.update()
+    assert panel.refresh.entry.cget("state") == "normal"
+    panel.reuse.set(False)
+    panel._reuse_toggled()
+    app.update()
+    assert panel.refresh.entry.cget("state") == "disabled"
+
+
+def test_the_panel_says_which_sets_are_already_downloaded(app, tmp_path):
+    """The file's age is the whole decision, so it goes on screen next to
+    the choice rather than being left to be looked up."""
+    from kelpquest import export
+
+    folder = tmp_path / "exports"
+    folder.mkdir()
+    existing = folder / "an_export.csv"
+    existing.write_text("classification_id\n1\n", encoding="utf-8")
+    export.record(folder, "136818", "Multiple Choice - Part 2", existing)
+
+    app.select("export")
+    panel = app.panels["export"]
+    was_out, was_ids = panel.output.get(), panel.set_ids.get()
+    try:
+        panel.output.set(str(folder))
+        panel.set_ids.set("136807, 136818")
+        panel.reuse.set(True)
+        panel._reuse_toggled()
+        app.update()
+        text = panel.reuse_note.cget("text")
+        assert "136818" in text and "today" in text
+        # And it does not claim the other one will be downloaded: the run
+        # matches on the set's name too, which needs Zooniverse.
+        assert "may still be reused" in text
+    finally:
+        panel.output.set(was_out)
+        panel.set_ids.set(was_ids)
+        panel.reuse.set(False)
+        panel._reuse_toggled()
+
+
+def test_the_export_settings_survive_a_round_trip(app, settings_path):
+    app.select("export")
+    panel = app.panels["export"]
+    panel.reuse.set(True)
+    panel.refresh.set("136818")
+    app.save_config()
+    from kelpquest.config import AppConfig
+
+    back = AppConfig.load(settings_path)
+    assert back.export.reuse_existing is True
+    assert back.export.refresh_ids == "136818"
+    panel.reuse.set(False)
+    panel.refresh.set("")
+
+
+def test_stage_8_lists_the_transects_in_the_export(app, tmp_path):
+    """An export of the shared subject sets holds whichever transects happened
+    to be in them, which is not something anybody can recall."""
+    import csv
+    import json
+
+    path = tmp_path / "export.csv"
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["classification_id", "subject_ids", "subject_data"])
+        for i, transect in enumerate(["EBM_W25_T6", "EBM_W25_T6",
+                                      "PKB_S25_T1"]):
+            w.writerow([i, f"s{i}", json.dumps(
+                {f"s{i}": {"transect_id": transect, "row": 1, "column": 2}})])
+
+    app.select("report")
+    panel = app.panels["report"]
+    was = panel.export_csv.get()
+    try:
+        panel.export_csv.set(str(path))
+        panel._list_transects()
+        app.update()
+        shown = panel.transects_box.get("1.0", "end")
+        assert "EBM_W25_T6" in shown and "PKB_S25_T1" in shown
+        # Both, comma-separated, ready to paste into the filter.
+        assert "EBM_W25_T6, PKB_S25_T1" in shown
+    finally:
+        panel.export_csv.set(was)
+
+
+def test_the_transect_filter_takes_several(app):
+    app.select("report")
+    panel = app.panels["report"]
+    panel.transect.set("EBM_W25_T6, PKB_S25_T1")
+    panel.transect.refresh()
+    app.update()
+    assert "2 transect(s)" in panel.transect.status.cget("text")
+    app.collect_all()
+    assert app.cfg.report.transect_id == "EBM_W25_T6, PKB_S25_T1"
