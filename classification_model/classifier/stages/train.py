@@ -223,6 +223,12 @@ def _run(cfg, progress, cancel) -> StageResult:
                         f"{missing} - check the spelling.")
         res.say(f"Augmentation: {cfg.augmentation} - "
                 f"{PRESET_NOTES.get(cfg.augmentation, '')}")
+        if cfg.notes.strip():
+            res.say(f"Notes to record: {cfg.notes.strip()[:120]}"
+                    + ("..." if len(cfg.notes.strip()) > 120 else ""))
+        else:
+            res.say("No notes entered - the run folder will record the "
+                    "settings but not what this run was trying. Worth a line.")
         bad = unknown_arguments(cfg.extra_args)
         if bad:
             res.say(f"WARNING - not valid Ultralytics arguments, the run will "
@@ -474,6 +480,72 @@ def _attach_epoch_progress(model, cfg, progress: ProgressCB | None, cancel) -> N
         log.debug(f"Could not attach epoch callback: {ex}")
 
 
+RUN_NOTES = "run_notes.md"
+
+
+def write_run_notes(save_dir: Path, cfg, outputs: dict) -> Path | None:
+    """Leave a human-readable record beside the weights.
+
+    Ultralytics already writes args.yaml and results.csv, which between them
+    say what was set and how it went. What they cannot say is *why* -- what
+    this run was trying that the last one was not -- and that is the part
+    nobody can reconstruct three months later. So the operator's own words go
+    here, next to the settings that were actually used, in a form that pastes
+    straight into a report. Stage 5 reads it back when comparing runs.
+    """
+    from datetime import datetime
+
+    from ..config import AUGMENTATION_PRESETS
+
+    try:
+        preset = AUGMENTATION_PRESETS.get(cfg.augmentation, {})
+        interesting = ("hsv_s", "degrees", "translate", "mixup", "dropout",
+                       "weight_decay", "erasing", "scale")
+        preset_line = ", ".join(f"{k}={preset[k]}" for k in interesting
+                                if k in preset) or "Ultralytics defaults"
+        extras = ", ".join(f"{k}={v}" for k, v in (cfg.extra_args or {}).items())
+        excluded = ", ".join(cfg.exclude_classes) if cfg.exclude_classes else "none"
+        metrics = outputs.get("metrics", {}) or {}
+        top1 = metrics.get("metrics/accuracy_top1")
+
+        lines = [
+            f"# {save_dir.parent.name} / {save_dir.name}",
+            "",
+            f"- **Trained:** {datetime.now():%Y-%m-%d %H:%M}",
+            f"- **Base model:** `{cfg.model}`",
+            f"- **Dataset:** `{cfg.data_dir}`",
+            f"- **Classes left out:** {excluded}",
+            f"- **Augmentation preset:** {cfg.augmentation}  ({preset_line})",
+            f"- **Hand-set arguments:** {extras or 'none'}",
+            f"- **Schedule:** epochs={cfg.epochs}, patience={cfg.patience}, "
+            f"imgsz={cfg.imgsz}, batch={cfg.batch or 'auto'}, seed={cfg.seed}",
+            "",
+            "## What changed in this run, and why",
+            "",
+            cfg.notes.strip() or "_(no notes were entered for this run)_",
+            "",
+            "## How training went",
+            "",
+        ]
+        if outputs.get("best_epoch"):
+            lines.append(f"- Best epoch {outputs['best_epoch']} of "
+                         f"{outputs.get('epochs_run', cfg.epochs)} run")
+        if top1 is not None:
+            lines.append(f"- Internal validation top-1: {top1:.2%}  "
+                         f"(val/ shares the training pipeline -- the held-out "
+                         f"number from stage 4 is the one to report)")
+        lines.append("")
+        lines.append("_Held-out results and the comparison verdict are added by "
+                     "stages 4 and 5; see model_history.md at the models root._")
+
+        path = save_dir / RUN_NOTES
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return path
+    except Exception as ex:      # a missing note must never fail a finished run
+        log.warning(f"Could not write {RUN_NOTES}: {ex}")
+        return None
+
+
 def _collect_outputs(model, save_dir, cfg, res: StageResult) -> None:
     """Record where the weights landed and how the run actually went."""
     if not save_dir:
@@ -518,6 +590,11 @@ def _collect_outputs(model, save_dir, cfg, res: StageResult) -> None:
         # trainer.epoch is the 0-based loop counter.
         ran, best = int(last_epoch) + 1, int(best_epoch)
         res.outputs.update({"best_epoch": best, "epochs_run": ran})
+
+    notes_path = write_run_notes(save_dir, cfg, res.outputs)
+    if notes_path:
+        res.outputs["run_notes"] = str(notes_path)
+        log.info(f"Run notes written to {notes_path}")
         res.say(f"Best epoch {best} of {ran} run (limit {cfg.epochs}).")
         if ran < cfg.epochs:
             res.say(f"Early stopping fired - no improvement for "

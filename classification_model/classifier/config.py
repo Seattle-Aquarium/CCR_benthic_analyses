@@ -214,6 +214,12 @@ class TrainConfig:
     #: Which entry of ``AUGMENTATION_PRESETS`` to train with.
     augmentation: str = "standard"
 
+    #: What changed in this run and why, in the operator's words. Written
+    #: into the run folder as run_notes.md alongside the settings the run
+    #: actually used, and read back by stage 5 -- so a comparison months later
+    #: can say not just that model B beat model A but what B was trying.
+    notes: str = ""
+
     #: Anything else to hand Ultralytics, as ``{key: value}``. Applied last,
     #: so it overrides the preset. Validated against Ultralytics' own argument
     #: list before the run starts, because a typo here is otherwise a crash
@@ -281,6 +287,12 @@ class CompareConfig:
     #: recognised, so this is whatever was typed into stage 3's Output folder.
     runs: list[str] = field(default_factory=list)
     output_dir: str = ""
+
+    #: Optional. Every run folder beneath this is included automatically, so
+    #: "compare everything I have ever trained" is one field rather than a
+    #: list to maintain. The decisions log lives here too, since it has to
+    #: outlive any single comparison.
+    models_root: str = ""
 
     #: Reads and reports without writing the workbook. On by default like
     #: every other stage, though this one only ever writes a report.

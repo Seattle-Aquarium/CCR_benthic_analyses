@@ -461,6 +461,21 @@ class TrainPanel(StagePanel):
              ).grid(row=2, column=0, sticky="w", pady=(4, 0))
 
         c = self.card(
+            "Notes for the record",
+            "What is different about this run, and why you are trying it. "
+            "Written into the run folder beside the weights, and read back by "
+            "stage 5 - so the comparison months from now says what each model "
+            "was for, not only how it scored.")
+        self.notes = ctk.CTkTextbox(
+            c.body, height=72, font=T.FONT_BODY, fg_color=T.FIELD_BG,
+            text_color=T.TEXT, border_width=1, border_color=T.BORDER,
+            corner_radius=6, wrap="word")
+        self.notes.grid(row=0, column=0, sticky="ew")
+        hint(c.body, "e.g.  Raised KE_sieve cap to 4000 after it scored 0.21; "
+                     "everything else as 08_24."
+             ).grid(row=1, column=0, sticky="w", pady=(6, 0))
+
+        c = self.card(
             "Starting weights",
             "A stock Ultralytics name (yolo26s-cls.pt, downloaded on first use) "
             "starts from ImageNet features. Browse to a best.pt from an earlier "
@@ -636,6 +651,8 @@ class TrainPanel(StagePanel):
         self.name.insert(0, cfg.name)
         self.exclude_classes.delete(0, "end")
         self.exclude_classes.insert(0, ", ".join(cfg.exclude_classes or []))
+        self.notes.delete("1.0", "end")
+        self.notes.insert("1.0", cfg.notes)
         self.augmentation.set(cfg.augmentation if cfg.augmentation
                               in AUGMENTATION_PRESETS else "standard")
         self.extra_args.delete("1.0", "end")
@@ -661,6 +678,7 @@ class TrainPanel(StagePanel):
         cfg.exclude_classes = [c.strip() for c
                                in self.exclude_classes.get().split(",")
                                if c.strip()]
+        cfg.notes = self.notes.get("1.0", "end").strip()
         cfg.augmentation = self.augmentation.get()
         cfg.extra_args = _parse_extra_args(self.extra_args.get("1.0", "end"))
         cfg.validate_only = bool(self.preview.get())
@@ -801,7 +819,8 @@ class ComparePanel(StagePanel):
             "stage 4 also wrote its reports into. A run only joins the "
             "ranking once it has been evaluated on the held-out set.")
         self.runs = PathList(c.body, mode="folder", add_text="+ Add model…",
-                             empty_text="No model selected yet.")
+                             empty_text="No model selected yet - or set a "
+                                        "models root below.")
         self.runs.grid(row=0, column=0, sticky="ew")
         hint(c.body,
              "Models are only ranked against each other when they were "
@@ -811,6 +830,19 @@ class ComparePanel(StagePanel):
              ).grid(row=1, column=0, sticky="w", pady=(10, 0))
 
         c = self.card(
+            "Models root",
+            "Optional. Every run folder beneath it is compared automatically, "
+            "so this is 'compare everything I have trained' in one field. The "
+            "record lives here too: model_history.md, regenerated from the run "
+            "folders each time, and decisions.md, which only ever grows.")
+        self.models_root = PathRow(c.body, "Models root", "folder")
+        self.models_root.grid(row=0, column=0, sticky="ew")
+        hint(c.body,
+             "An archive/ folder beneath it is skipped. Runs without a stage 4 "
+             "evaluation appear in the history but not the ranking."
+             ).grid(row=1, column=0, sticky="w", pady=(8, 0))
+
+        c = self.card(
             "Report",
             "One workbook plus two figures: the ranking and why, per-class F1 "
             "for every model, the training curves, and what to try next.")
@@ -818,25 +850,28 @@ class ComparePanel(StagePanel):
         self.out.grid(row=0, column=0, sticky="ew")
         hint(c.body,
              "Writes model_comparison.xlsx, model_comparison_curves.png and "
-             "model_comparison_per_class.png."
+             "model_comparison_per_class.png. With no models root set, the "
+             "history and decisions files land here as well."
              ).grid(row=1, column=0, sticky="w", pady=(8, 0))
 
     def load(self) -> None:
         cfg: CompareConfig = self.state.compare
         self.runs.set(cfg.runs)
+        self.models_root.set(cfg.models_root)
         self.out.set(cfg.output_dir)
         self.preview.set(cfg.preview_only)
 
     def collect(self) -> None:
         cfg: CompareConfig = self.state.compare
         cfg.runs = self.runs.get()
+        cfg.models_root = self.models_root.get()
         cfg.output_dir = self.out.get()
         cfg.preview_only = bool(self.preview.get())
 
     def validate(self) -> str | None:
-        if len(self.runs.get()) < 2:
-            return ("Add at least two model folders - a comparison needs "
-                    "something to compare against.")
+        if len(self.runs.get()) < 2 and not self.models_root.get():
+            return ("Add at least two model folders, or set a models root - "
+                    "a comparison needs something to compare against.")
         if not self.preview.get() and not self.out.get():
             return "Choose an output folder for the comparison report."
         return None

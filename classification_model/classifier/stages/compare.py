@@ -44,6 +44,8 @@ from . import StageResult, guard
 log = get_logger("compare")
 
 WORKBOOK_NAME = "model_comparison.xlsx"
+HISTORY_MD = "model_history.md"
+DECISIONS_MD = "decisions.md"
 CURVES_PNG = "model_comparison_curves.png"
 PER_CLASS_PNG = "model_comparison_per_class.png"
 
@@ -158,6 +160,10 @@ class ModelRun:
     detail_csv: Path | None = None
     report_csv: Path | None = None
 
+    #: The operator's own record of what this run was trying, if stage 3
+    #: wrote one. Empty for runs that predate it.
+    notes: dict = field(default_factory=dict)
+
     #: Filled in by the readers below.
     curve: dict = field(default_factory=dict)
     detail: pd.DataFrame | None = None
@@ -214,6 +220,7 @@ def discover(run_dir: str | Path) -> ModelRun:
     return ModelRun(
         name=name,
         root=root,
+        notes=read_notes(_first(root, ["run_notes.md", "*/run_notes.md"])),
         results_csv=_first(root, ["results.csv", "*/results.csv"]),
         args_yaml=_first(root, ["args.yaml", "*/args.yaml"]),
         weights=_first(root, ["weights/best.pt", "*/weights/best.pt"]),
@@ -222,6 +229,48 @@ def discover(run_dir: str | Path) -> ModelRun:
         report_csv=_first(root, ["*_accuracy_report.csv",
                                  "*/*_accuracy_report.csv"]),
     )
+
+
+def discover_all(models_root: str | Path) -> list[str]:
+    """Every run folder beneath *models_root*.
+
+    A run is anything holding a results.csv, directly or one level down --
+    the two layouts stage 3 and Ultralytics produce between them. Returned as
+    the folder the operator would recognise (the parent, when the run sits in
+    a ``train/`` subfolder), sorted so the history reads oldest first.
+    """
+    root = Path(models_root)
+    if not root.is_dir():
+        return []
+    found: dict[str, float] = {}
+    for csv in list(root.glob("*/results.csv")) + list(root.glob("*/*/results.csv")):
+        run = csv.parent
+        if run.name.lower() in ("train", "weights"):
+            run = run.parent
+        if run == root or "archive" in {p.name.lower() for p in run.relative_to(root).parents} \
+                or run.name.lower() == "archive":
+            continue
+        found[str(run)] = csv.stat().st_mtime
+    return [p for p, _ in sorted(found.items(), key=lambda kv: kv[1])]
+
+
+def read_notes(path: Path | None) -> dict:
+    """Pull the operator's words and the recorded settings out of run_notes.md."""
+    if not path or not path.is_file():
+        return {}
+    text = path.read_text(encoding="utf-8", errors="replace")
+    out: dict = {"path": str(path)}
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("- **") and ":**" in s:
+            key, _, value = s[4:].partition(":**")
+            out[key.strip().lower().replace(" ", "_")] = value.strip().strip("`")
+    marker = "## What changed in this run, and why"
+    if marker in text:
+        body = text.split(marker, 1)[1].split("\n## ", 1)[0].strip()
+        if not body.startswith("_(no notes"):
+            out["why"] = body
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -483,8 +532,47 @@ def read_args(path: Path) -> dict:
         log.debug(f"Could not read {path}: {ex}")
         return {}
     keep = ("model", "data", "epochs", "patience", "imgsz", "batch",
-            "optimizer", "lr0", "weight_decay", "device", "seed")
+            "optimizer", "lr0", "weight_decay", "device", "seed",
+            # enough to tell which preset a run used, or that it used none
+            "hsv_h", "hsv_s", "hsv_v", "degrees", "translate", "shear",
+            "scale", "erasing", "auto_augment", "fliplr", "flipud",
+            "mixup", "cutmix", "dropout")
     return {k: raw.get(k) for k in keep if k in raw}
+
+
+def infer_preset(args: dict) -> str:
+    """Name the preset a run used, from the values Ultralytics recorded.
+
+    Runs from before run_notes.md existed still have args.yaml, and every
+    preset sets a distinctive combination -- so the history can say
+    "stronger" for a run nobody labelled at the time. A run matching none of
+    them is reported as custom, with the values that make it so.
+    """
+    from ..config import AUGMENTATION_PRESETS
+
+    if not args:
+        return "-"
+
+    def same(a, b) -> bool:
+        if a is None or b is None:
+            return (a is None or str(a).lower() == "none") and \
+                   (b is None or str(b).lower() == "none")
+        try:
+            return abs(float(a) - float(b)) < 1e-9
+        except (TypeError, ValueError):
+            return str(a) == str(b)
+
+    for name, preset in AUGMENTATION_PRESETS.items():
+        if preset and all(same(args.get(k), v) for k, v in preset.items()):
+            return name
+    stock = {"scale": 0.5, "erasing": 0.4, "auto_augment": "randaugment",
+             "flipud": 0.0, "mixup": 0.0, "dropout": 0.0}
+    if all(same(args.get(k), v) for k, v in stock.items()):
+        return "ultralytics defaults"
+    shown = [f"{k}={args[k]}" for k in ("hsv_s", "degrees", "mixup", "dropout",
+                                        "weight_decay", "erasing", "scale")
+             if k in args]
+    return "custom (" + ", ".join(shown[:4]) + ")"
 
 
 # --------------------------------------------------------------------------
@@ -1049,8 +1137,16 @@ def _run(cfg, progress, cancel) -> StageResult:
     st = Stages(progress).plan(read=45, analyse=25, write=30)
 
     runs = [r for r in cfg.runs if str(r).strip()]
+    if cfg.models_root.strip():
+        found = discover_all(cfg.models_root)
+        added = [f for f in found if not any(_same_run(f, r) for r in runs)]
+        if added:
+            log.info(f"Models root: {len(added)} run folder(s) found under "
+                     f"{Path(cfg.models_root).name}")
+        runs = runs + added
     if len(runs) < 2:
-        res.errors.append("Select at least two model run folders to compare.")
+        res.errors.append("Select at least two model run folders to compare, "
+                          "or a models root with at least two runs beneath it.")
         return res
     for r in runs:
         if not Path(r).is_dir():
@@ -1141,7 +1237,19 @@ def _run(cfg, progress, cancel) -> StageResult:
     digest["workbook"] = written["workbook"]
     res.outputs["digest"] = digest
 
+    # The record. History is regenerated from the run folders every time, so
+    # it cannot drift from them; decisions are appended, never rewritten, so
+    # a choice made in June is still there in December with its reasons.
+    record_dir = Path(cfg.models_root) if cfg.models_root.strip() else out
+    history = write_history(models, winner, record_dir)
+    decision = append_decision(models, winner, digest, record_dir)
+    res.outputs["history"] = str(history)
+    res.outputs["decisions"] = str(decision)
+    digest["history"] = str(history)
+
     res.say(f"Full detail: {written['workbook']}")
+    res.say(f"History: {history}")
+    res.say(f"Decision logged: {decision}")
     return res
 
 
@@ -1266,6 +1374,151 @@ def _write_workbook(models, matrix, winner, rationale, shared, out: Path) -> dic
         if png:
             written["per_class_png"] = str(png)
     return written
+
+
+def _run_date(m: ModelRun) -> str:
+    """When the run was trained: from its notes if it has them, else the file."""
+    from datetime import datetime
+
+    if m.notes.get("trained"):
+        return m.notes["trained"]
+    src = m.results_csv or m.args_yaml
+    if src and src.exists():
+        return datetime.fromtimestamp(src.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+    return "-"
+
+
+def _fmt(v, spec: str = ".3f") -> str:
+    return "-" if v is None else format(v, spec)
+
+
+def write_history(models: list[ModelRun], winner, record_dir: Path) -> Path:
+    """One document, regenerated: every run, what it tried, how it did.
+
+    Ordered oldest first so it reads as the story of the model. The table is
+    for scanning; the sections below it are for the report -- each carries the
+    operator's own words from run_notes.md, which is the one thing no file
+    Ultralytics writes can supply.
+    """
+    from datetime import datetime
+
+    record_dir.mkdir(parents=True, exist_ok=True)
+    ordered = sorted(models, key=_run_date)
+
+    lines = [
+        "# Model history",
+        "",
+        f"_Regenerated by stage 5 on {datetime.now():%Y-%m-%d %H:%M} from the "
+        f"run folders themselves. Oldest first. Held-out figures are macro F1 "
+        f"and top-1 on unseen images; a dash means that run has not been "
+        f"through stage 4._",
+        "",
+        "| # | run | trained | base model | preset | best epoch | macro F1 | "
+        "top-1 | what it was trying |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for i, m in enumerate(ordered, 1):
+        why = (m.notes.get("why") or "").replace("\n", " ").replace("|", "/")
+        why = why if len(why) <= 90 else why[:87] + "..."
+        base = m.notes.get("base_model") or str(m.args.get("model", "-"))
+        base = Path(base).name if base and base != "-" else "-"
+        preset = (m.notes.get("augmentation_preset", "").split("  (")[0]
+                  or infer_preset(m.args))
+        best = (f"{m.curve['best_epoch']}/{m.curve['epochs_total']}"
+                if m.curve.get("best_epoch") else "-")
+        mark = " **(chosen)**" if winner is m else ""
+        lines.append(
+            f"| {i} | {m.name}{mark} | {_run_date(m)} | {base} | {preset} | "
+            f"{best} | {_fmt(m.overall.get('macro_f1'))} | "
+            f"{_fmt(m.overall.get('top1_accuracy'), '.1%')} | {why or '_not recorded_'} |")
+
+    lines += ["", "---", "", "## Run by run", ""]
+    for m in ordered:
+        lines += [f"### {m.name}" + ("  <- current choice" if winner is m else ""),
+                  "",
+                  f"- **Trained:** {_run_date(m)}",
+                  f"- **Base model:** `{m.notes.get('base_model') or m.args.get('model', '-')}`",
+                  f"- **Dataset:** `{m.notes.get('dataset') or m.args.get('data', '-')}`"]
+        if m.notes.get("classes_left_out"):
+            lines.append(f"- **Classes left out:** {m.notes['classes_left_out']}")
+        if m.notes.get("augmentation_preset"):
+            lines.append(f"- **Augmentation:** {m.notes['augmentation_preset']}")
+        elif m.args:
+            lines.append(f"- **Augmentation:** {infer_preset(m.args)}  "
+                         f"(inferred from args.yaml)")
+        if m.notes.get("hand-set_arguments", "none") != "none":
+            lines.append(f"- **Hand-set:** {m.notes['hand-set_arguments']}")
+        if m.notes.get("schedule"):
+            lines.append(f"- **Schedule:** {m.notes['schedule']}")
+        lines += ["", "**What changed, and why**", "",
+                  m.notes.get("why") or "_Not recorded - this run predates run "
+                  "notes, or none were entered._", ""]
+        if m.curve:
+            lines += ["**Training**", "",
+                      f"- Best epoch {m.curve.get('best_epoch')} of "
+                      f"{m.curve.get('epochs_total')}; {m.curve.get('verdict', '-')}"
+                      + (f" - {weights_note(m.curve)}" if m.curve.get('verdict')
+                         in ('overfitting', 'mild overfitting') else ""),
+                      ""]
+        if m.has_holdout:
+            pc = m.per_class[m.per_class["support"] >= MIN_CHART_SUPPORT]
+            weak = pc.nsmallest(3, "f1")
+            lines += ["**Held-out**", "",
+                      f"- Macro F1 {m.overall['macro_f1']:.3f} "
+                      f"({describe_f1(m.overall['macro_f1'])}), top-1 "
+                      f"{m.overall['top1_accuracy']:.1%} on "
+                      f"{m.overall['images']:,} unseen images",
+                      f"- Weakest well-sampled classes: "
+                      + ", ".join(f"{r.label} ({r.f1:.2f})" for r in weak.itertuples()),
+                      ""]
+        else:
+            lines += ["**Held-out:** not yet evaluated (run stage 4).", ""]
+
+    path = record_dir / HISTORY_MD
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def append_decision(models: list[ModelRun], winner, digest: dict,
+                    record_dir: Path) -> Path:
+    """One dated entry per comparison, appended. Never rewritten.
+
+    A history document says where things stand; this says what was decided
+    and why, at the time, in order. Those are the two questions a report asks.
+    """
+    from datetime import datetime
+
+    record_dir.mkdir(parents=True, exist_ok=True)
+    path = record_dir / DECISIONS_MD
+    fresh = not path.exists()
+
+    entry = [f"## {datetime.now():%Y-%m-%d %H:%M} - compared {len(models)} model(s)", ""]
+    if winner:
+        entry.append(f"**Recommended: {winner.name}**")
+        entry.append("")
+        for line in digest.get("why", []):
+            entry.append(f"- {line}")
+        if winner.notes.get("why"):
+            entry += ["", f"_What it was trying:_ {winner.notes['why']}"]
+    else:
+        entry.append("**No recommendation** - see the caveats.")
+    if digest.get("caveats"):
+        entry += ["", "Caveats:"] + [f"- {c}" for c in digest["caveats"]]
+    entry += ["", "Compared: " + ", ".join(m.name for m in models), "", "---", ""]
+
+    with open(path, "a", encoding="utf-8") as fh:
+        if fresh:
+            fh.write("# Decisions\n\n_Appended by stage 5 each time a comparison "
+                     "is committed. Newest at the bottom._\n\n---\n\n")
+        fh.write("\n".join(entry) + "\n")
+    return path
+
+
+def _same_run(a: str, b: str) -> bool:
+    try:
+        return Path(a).resolve() == Path(b).resolve()
+    except OSError:
+        return str(a).strip() == str(b).strip()
 
 
 def _sheet(name: str) -> str:
