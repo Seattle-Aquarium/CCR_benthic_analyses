@@ -460,21 +460,30 @@ class TrainPanel(StagePanel):
              "Folders are moved aside for the run and restored afterwards."
              ).grid(row=2, column=0, sticky="w", pady=(4, 0))
 
-        c = self.card("Model and schedule")
-        g = self.grid_body(c)
-        label(g, "Base model", muted=True).grid(row=0, column=0, sticky="w",
-                                                padx=(0, 6), pady=5)
-        self.model = entry(g, "yolo26s-cls.pt", width=220)
-        self.model.grid(row=0, column=1, sticky="w", pady=5)
-        hint(g, "downloaded on first use").grid(row=0, column=2, sticky="w",
-                                                padx=(12, 0))
+        c = self.card(
+            "Starting weights",
+            "A stock Ultralytics name (yolo26s-cls.pt, downloaded on first use) "
+            "starts from ImageNet features. Browse to a best.pt from an earlier "
+            "run to continue from what that model already knows.")
+        self.model = PathRow(c.body, "Base model", "file",
+                             filetypes=[("PyTorch weights", "*.pt"),
+                                        ("All files", "*.*")])
+        self.model.grid(row=0, column=0, sticky="ew")
+        hint(c.body,
+             "Starting from an earlier model means its training data counts "
+             "as seen by this one. The held-out set must be independent of "
+             "every dataset in that lineage, not only the one trained on here."
+             ).grid(row=1, column=0, sticky="w", pady=(8, 0))
 
-        self.epochs = Field(g, 1, 0, "Epochs", int)
-        self.patience = Field(g, 2, 0, "Patience", int,
+        c = self.card("Schedule")
+        g = self.grid_body(c)
+
+        self.epochs = Field(g, 0, 0, "Epochs", int)
+        self.patience = Field(g, 1, 0, "Patience", int,
                               note="stop after this many epochs without improving")
-        self.imgsz = Field(g, 3, 0, "Image size", int,
+        self.imgsz = Field(g, 2, 0, "Image size", int,
                            note="the main driver of GPU memory use")
-        self.seed = Field(g, 4, 0, "Seed", int)
+        self.seed = Field(g, 3, 0, "Seed", int)
 
         hint(c.body,
              "Ultralytics defaults patience to 100, which with 100 epochs can "
@@ -614,8 +623,7 @@ class TrainPanel(StagePanel):
         cfg: TrainConfig = self.state.train
         self.data.set(cfg.data_dir)
         self.exclude_mismatched.set(cfg.exclude_mismatched)
-        self.model.delete(0, "end")
-        self.model.insert(0, cfg.model)
+        self.model.set(cfg.model)
         self.epochs.set(cfg.epochs)
         self.patience.set(cfg.patience)
         self.imgsz.set(cfg.imgsz)
