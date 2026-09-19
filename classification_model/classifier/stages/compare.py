@@ -1288,11 +1288,13 @@ def _align_holdouts(scored: list[ModelRun], res: StageResult):
     log.warning(f"Held-out sets differ ({sizes}). Comparing on the "
                 f"{len(common):,} images all models were scored on; {detail}.")
     res.warnings.append(
-        f"These models were evaluated on different held-out sets ({sizes}), "
-        f"which usually means the folder shrank between runs as stage 2 "
-        f"quarantined newly found leaks. They are compared here on the "
-        f"{len(common):,} images common to all of them, so the figures below "
-        f"will not match the ones printed by stage 4 at the time.")
+        f"These models were evaluated on different held-out sets ({sizes}). "
+        f"That usually means either the folder shrank between runs as stage 2 "
+        f"quarantined newly found leaks, or the models were trained on "
+        f"different class sets and stage 4 set aside the classes each one "
+        f"does not know. They are compared here on the {len(common):,} images "
+        f"common to all of them, so the figures below will not match the "
+        f"ones printed by stage 4 at the time.")
     return True, frozenset(common)
 
 
