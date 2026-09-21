@@ -1485,6 +1485,8 @@ def write_history(models: list[ModelRun], winner, record_dir: Path) -> Path:
         elif m.args:
             lines.append(f"- **Augmentation:** {infer_preset(m.args)}  "
                          f"(inferred from args.yaml)")
+        if m.notes.get("extra_transforms"):
+            lines.append(f"- **Extra transforms:** {m.notes['extra_transforms']}")
         if m.notes.get("hand-set_arguments", "none") != "none":
             lines.append(f"- **Hand-set:** {m.notes['hand-set_arguments']}")
         if m.notes.get("schedule"):

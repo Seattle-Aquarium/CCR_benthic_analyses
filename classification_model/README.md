@@ -144,34 +144,51 @@ reproduce stock behaviour. The pipeline also enables **vertical flip**, which
 stock leaves off: the seafloor has no canonical "up", so a patch flipped
 top-to-bottom is as valid a training example as the original.
 
-**What is left to vary** is colour and flips — and colour is genuinely useful
-underwater, where hue and saturation shift hard with depth and turbidity. Beyond
-augmentation proper, two regularisers: **dropout** on the classifier head, and
-**weight decay** in the optimiser. Both make the model work harder to memorise.
+**What Ultralytics itself can vary** is colour and flips. Colour is genuinely
+useful underwater, where hue and saturation shift hard with depth and
+turbidity; `hsv_v` drives both brightness and contrast. Beyond augmentation
+proper, two regularisers: **dropout** on the classifier head, and **weight
+decay** in the optimiser. Both make the model work harder to memorise.
 
-| preset | colour jitter (h / s / v) | flips | dropout | weight decay | use it when |
-|---|---|---|---|---|---|
-| **standard** | 0.015 / 0.7 / 0.4 | both, 50% | 0 | 0.0005 | the default; what every run so far has used |
-| **stronger** | 0.03 / 0.8 / 0.5 | both, 50% | 0.2 | 0.001 | a run overfits — validation loss climbing while training loss falls, best epoch early |
-| **lighter** | 0.01 / 0.4 / 0.3 | both, 50% | 0 | 0.0005 | a run underfits — validation loss *below* training loss, or still improving at the last epoch |
-| **ultralytics defaults** | stock | horizontal only | 0 | 0.0005 | never for a real model; here to measure the pipeline's choices against stock |
+**What is added from outside.** Ultralytics builds its classification
+transforms from torchvision, and that path reads only `hsv_*`, `fliplr`,
+`flipud`, `scale`, `erasing` and `auto_augment`. Its geometric arguments —
+`degrees`, `translate`, `shear` — and mixing ones — `mixup`, `cutmix` — belong
+to the detection augmenter and are **silently ignored** for classification:
+they can be passed, they appear in `args.yaml`, and nothing happens. (An early
+version of `stronger` set `degrees=180` and `mixup=0.15` believing otherwise;
+its gain came from the colour jitter and the regularisers.) So the pipeline
+adds three transforms of its own, spliced into Ultralytics' chain by a trainer
+subclass (`classifier/augment.py`). All three keep the annotated point exactly
+where it is:
+
+| transform | what it does | why it is safe, and useful |
+|---|---|---|
+| **rot90** | rotates by 0°, 90°, 180° or 270°, chosen uniformly | a pixel permutation — no interpolation, no padded corners. With the two flips it gives all eight orientations a seafloor patch can legitimately take; the seafloor has no "up" and the model should not learn one |
+| **center_zoom** | half the time, zooms in on the centre by up to a set fraction and resizes back | ROV altitude varies, so the same taxon is seen at slightly different scales. This is what random-resized crop would be if it were pinned to the centre: nothing enters from outside the frame, and the point stays put |
+| **blur** | some of the time, a mild Gaussian blur (σ up to 1.5 px at training size) | turbidity and focus vary shot to shot; a model that needs every edge crisp is memorising the good frames |
+
+These never appear in `args.yaml`, because there is no argument for them.
+`run_notes.md` in each run folder records them, and the training log prints
+what was added.
+
+| preset | colour jitter (h / s / v) | flips | rot90 | zoom | blur | dropout | weight decay | use it when |
+|---|---|---|---|---|---|---|---|---|
+| **standard** | 0.015 / 0.7 / 0.4 | both | yes | — | — | 0 | 0.0005 | the default |
+| **stronger** | 0.03 / 0.8 / 0.5 | both | yes | to 1.15× | 25% | 0.2 | 0.001 | a run overfits — validation loss climbing while training loss falls, best epoch early |
+| **lighter** | 0.01 / 0.4 / 0.3 | both | yes | — | — | 0 | 0.0005 | a run underfits — validation loss *below* training loss, or still improving at the last epoch |
+| **ultralytics defaults** | stock | horizontal | — | — | — | 0 | 0.0005 | never for a real model; here to measure the pipeline's choices against stock |
 
 Crop, erasing and RandAugment are off in the first three and stock in the
-fourth. The panel shows the exact values under whichever preset is selected,
-and `run_notes.md` in each run folder records what that run actually used.
+fourth. Rotation is on for every real preset because it costs nothing and
+teaches orientation invariance; zoom and blur are the strength knobs. The
+panel shows the exact values under whichever preset is selected.
 
-**Why there is no rotation or mixup.** Ultralytics builds its classification
-transforms from torchvision, and that path reads only `hsv_*`, `fliplr`,
-`flipud`, `scale`, `erasing` and `auto_augment`. The geometric arguments —
-`degrees`, `translate`, `shear` — and the mixing ones — `mixup`, `cutmix` —
-belong to the detection augmenter and are **silently ignored** for
-classification: they can be passed, they appear in `args.yaml`, and nothing
-happens. An earlier version of the `stronger` preset set `degrees=180` and
-`mixup=0.15` believing otherwise; the improvement it produced came from the
-colour jitter and the regularisers. The presets now set only what takes effect,
-so the recorded settings say what happened. Stage 5 infers the preset of older
-runs from their `args.yaml` by the values that *do* apply, so they are
-classified correctly regardless.
+Runs from before rotation was added — `2026_09_09_HSIL_EBpt3_strong_aug` and
+earlier — used the same colour, flip and regulariser settings without the
+three extras. Stage 5 infers the preset of such runs from their `args.yaml`,
+which cannot see the extras, so the history labels them by the Ultralytics
+values and their `run_notes.md`, where present, says what else applied.
 
 **Anything else** takes `KEY=VALUE` lines for arguments the presets do not
 cover, applied after the preset. Names are checked against Ultralytics' own

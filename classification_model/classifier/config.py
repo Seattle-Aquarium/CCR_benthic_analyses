@@ -179,13 +179,30 @@ AUGMENTATION_PRESETS: dict[str, dict] = {
     "ultralytics defaults": {},
 }
 
+#: What each preset adds *outside* Ultralytics -- see ``classifier.augment``.
+#: These reach the images through a trainer subclass, not through arguments,
+#: so they never appear in args.yaml; run_notes.md is where they are recorded.
+#: All three keep the annotated point at the centre of the patch.
+#:
+#: rot90 is on for every real preset: a seafloor patch has no "up", rotation
+#: by right angles is exact (no interpolation, no padded corners), and with
+#: the two flips it covers all eight orientations. Zoom and blur are the
+#: strength knobs and belong to "stronger" only.
+CUSTOM_AUGMENTATIONS: dict[str, dict] = {
+    "standard": {"rot90": True, "center_zoom": 0.0, "blur": 0.0},
+    "stronger": {"rot90": True, "center_zoom": 0.15, "blur": 0.25},
+    "lighter": {"rot90": True, "center_zoom": 0.0, "blur": 0.0},
+    "ultralytics defaults": {},
+}
+
 #: What each preset is for, in the words the panel shows.
 PRESET_NOTES = {
-    "standard": "Colour jitter and flips. What every run so far has used.",
-    "stronger": "Wider colour jitter, dropout 0.2 on the head, double the "
+    "standard": "Colour jitter, flips and right-angle rotation.",
+    "stronger": "Wider colour jitter, centre-pinned zoom to 1.15x, mild blur "
+                "a quarter of the time, dropout 0.2 on the head, double the "
                 "weight decay. Use when a run overfits.",
-    "lighter": "Less colour distortion. Use when a run underfits or was "
-               "still improving when it stopped.",
+    "lighter": "Less colour distortion; flips and rotation only. Use when a "
+               "run underfits or was still improving when it stopped.",
     "ultralytics defaults": "Stock Ultralytics, including random-resized-crop "
                             "and random erasing - both of which can remove the "
                             "annotated point from its own patch.",

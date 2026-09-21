@@ -17,8 +17,8 @@ from pathlib import Path
 
 import customtkinter as ctk
 
-from ..config import (AUGMENTATION_PRESETS, PRESET_NOTES,
-                      BalanceConfig, CompareConfig, EvalConfig,
+from ..config import (AUGMENTATION_PRESETS, CUSTOM_AUGMENTATIONS,
+                      PRESET_NOTES, BalanceConfig, CompareConfig, EvalConfig,
                       ExtractConfig, TrainConfig)
 from . import theme as T
 from .widgets import (Card, PathList, PathRow, button, checkbox, entry,
@@ -685,9 +685,13 @@ class TrainPanel(StagePanel):
         interesting = ("hsv_h", "hsv_s", "hsv_v", "flipud", "dropout",
                        "weight_decay", "erasing", "scale")
         shown = [f"{k}={values[k]}" for k in interesting if k in values]
+        extras = CUSTOM_AUGMENTATIONS.get(name, {})
+        extra = [k if v is True else f"{k}={v}" for k, v in extras.items() if v]
         self.preset_values.configure(
             text=("Ultralytics decides everything." if not shown
-                  else "Sets  " + "   ".join(shown)))
+                  else "Sets  " + "   ".join(shown)
+                  + ("\nPlus, outside Ultralytics:  " + "   ".join(extra)
+                     if extra else "")))
 
     def _preview_path(self) -> None:
         """Show exactly where best.pt will land.

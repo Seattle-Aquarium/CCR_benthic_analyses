@@ -36,7 +36,8 @@ import shutil
 import time
 from pathlib import Path
 
-from ..config import AUGMENTATION_PRESETS, PRESET_NOTES
+from .. import augment
+from ..config import AUGMENTATION_PRESETS, CUSTOM_AUGMENTATIONS, PRESET_NOTES
 from ..fsutil import IMG_EXTS, inventory_table, looks_like_split_dataset
 from ..logging_setup import get_logger, quiet_progress
 from ..progress import ProgressCB, check_cancelled
@@ -391,6 +392,13 @@ def _train(cfg, report, res: StageResult, progress, cancel) -> StageResult:
     }
     log.info(f"Augmentation preset: {cfg.augmentation} - "
              f"{PRESET_NOTES.get(cfg.augmentation, '')}")
+    extras = CUSTOM_AUGMENTATIONS.get(cfg.augmentation, {})
+    # Ultralytics has no argument for these, so they ride in on a trainer
+    # subclass that edits the training dataset's transform chain.
+    trainer_cls = augment.make_trainer(extras) if any(extras.values()) else None
+    if trainer_cls:
+        log.info(f"Centre-preserving extras (outside Ultralytics): "
+                 f"{augment.describe(extras)}")
     if cfg.extra_args:
         log.info(f"Overridden by hand: "
                  f"{', '.join(f'{k}={v}' for k, v in cfg.extra_args.items())}")
@@ -415,7 +423,7 @@ def _train(cfg, report, res: StageResult, progress, cancel) -> StageResult:
         # log. Ultralytics' own per-batch redraws are dropped in between --
         # see quiet_progress.
         with quiet_progress():
-            results = model.train(**kwargs)
+            results = model.train(trainer=trainer_cls, **kwargs)
 
         save_dir = (getattr(results, "save_dir", None)
                     or getattr(getattr(model, "trainer", None), "save_dir", None))
@@ -547,6 +555,9 @@ def write_run_notes(save_dir: Path, cfg, outputs: dict) -> Path | None:
             f"- **Dataset:** `{cfg.data_dir}`",
             f"- **Classes left out:** {excluded}",
             f"- **Augmentation preset:** {cfg.augmentation}  ({preset_line})",
+            f"- **Extra transforms:** "
+            f"{augment.describe(CUSTOM_AUGMENTATIONS.get(cfg.augmentation, {}))}"
+            f"  (centre-preserving, applied outside Ultralytics; not in args.yaml)",
             f"- **Hand-set arguments:** {extras or 'none'}",
             f"- **Schedule:** epochs={cfg.epochs}, patience={cfg.patience}, "
             f"imgsz={cfg.imgsz}, batch={cfg.batch or 'auto'}, seed={cfg.seed}",
