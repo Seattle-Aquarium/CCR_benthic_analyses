@@ -119,11 +119,71 @@ was lost to this — val loss climbing every epoch, top-1 stuck at 2–3%, exact
 1/n for the class count. Mismatched folders are moved aside for the run and
 restored afterwards.
 
-Online augmentation is retuned for these patches: no cutout, no random
-off-centre crop, no RandAugment, and vertical flip enabled. All four follow from
-patches being centred on their annotated point — the label describes the centre
-pixel, so an augmentation that can move or erase the centre is destroying the
-label.
+#### Augmentation
+
+Augmentation is how a model sees more than it was given: every epoch, each
+training image is shown slightly altered, so the model learns the class rather
+than the file. Stage 3 offers it as four presets, chosen from one dropdown.
+
+**The constraint that shapes all of them.** A patch is cut *centred on its
+annotated point*, and the label describes what is at that centre. An
+augmentation that is free to move, crop or erase the middle of the frame can
+therefore change what the image shows without changing its label — and the
+model is then taught, with full confidence, that a patch of bare sand is
+`KE_sieve`. Ultralytics' stock classification recipe does exactly this, three
+ways:
+
+| stock setting | what it does | why it is off here |
+|---|---|---|
+| `scale=0.5` — random-resized crop | crops a random 50–100% region and resizes it | the crop need not contain the centre; the annotated organism can leave the frame entirely |
+| `erasing=0.4` — random erasing (cutout) | blanks a random rectangle, 40% of the time | the rectangle can land on the annotated point, leaving a label with nothing under it |
+| `auto_augment=randaugment` | a random policy of geometric and colour ops | includes translate, shear and cutout — all of the above, chosen at random |
+
+All three are set to off in every preset except the one that exists to
+reproduce stock behaviour. The pipeline also enables **vertical flip**, which
+stock leaves off: the seafloor has no canonical "up", so a patch flipped
+top-to-bottom is as valid a training example as the original.
+
+**What is left to vary** is colour and flips — and colour is genuinely useful
+underwater, where hue and saturation shift hard with depth and turbidity. Beyond
+augmentation proper, two regularisers: **dropout** on the classifier head, and
+**weight decay** in the optimiser. Both make the model work harder to memorise.
+
+| preset | colour jitter (h / s / v) | flips | dropout | weight decay | use it when |
+|---|---|---|---|---|---|
+| **standard** | 0.015 / 0.7 / 0.4 | both, 50% | 0 | 0.0005 | the default; what every run so far has used |
+| **stronger** | 0.03 / 0.8 / 0.5 | both, 50% | 0.2 | 0.001 | a run overfits — validation loss climbing while training loss falls, best epoch early |
+| **lighter** | 0.01 / 0.4 / 0.3 | both, 50% | 0 | 0.0005 | a run underfits — validation loss *below* training loss, or still improving at the last epoch |
+| **ultralytics defaults** | stock | horizontal only | 0 | 0.0005 | never for a real model; here to measure the pipeline's choices against stock |
+
+Crop, erasing and RandAugment are off in the first three and stock in the
+fourth. The panel shows the exact values under whichever preset is selected,
+and `run_notes.md` in each run folder records what that run actually used.
+
+**Why there is no rotation or mixup.** Ultralytics builds its classification
+transforms from torchvision, and that path reads only `hsv_*`, `fliplr`,
+`flipud`, `scale`, `erasing` and `auto_augment`. The geometric arguments —
+`degrees`, `translate`, `shear` — and the mixing ones — `mixup`, `cutmix` —
+belong to the detection augmenter and are **silently ignored** for
+classification: they can be passed, they appear in `args.yaml`, and nothing
+happens. An earlier version of the `stronger` preset set `degrees=180` and
+`mixup=0.15` believing otherwise; the improvement it produced came from the
+colour jitter and the regularisers. The presets now set only what takes effect,
+so the recorded settings say what happened. Stage 5 infers the preset of older
+runs from their `args.yaml` by the values that *do* apply, so they are
+classified correctly regardless.
+
+**Anything else** takes `KEY=VALUE` lines for arguments the presets do not
+cover, applied after the preset. Names are checked against Ultralytics' own
+argument list before the run starts — a typo would otherwise cost the dataset
+scan before failing — but a *valid* argument the classification pipeline
+ignores (see above) passes the check and does nothing. `label_smoothing` is not
+an argument this Ultralytics version accepts at all.
+
+Not to be confused with stage 2's **offline** augmentation, which writes
+flipped, rotated and brightness-shifted copies to disk to lift undersized
+classes to the floor. Those are ordinary training files by the time stage 3
+sees them; the presets here act on every image, every epoch, in memory.
 
 On CUDA out-of-memory, **reduce Image size before Batch.** On this hardware the
 allocation tracked `imgsz` far more closely than batch size or precision;

@@ -230,12 +230,18 @@ def _run(cfg, progress, cancel) -> StageResult:
             res.say("No notes entered - the run folder will record the "
                     "settings but not what this run was trying. Worth a line.")
         bad = unknown_arguments(cfg.extra_args)
+        inert = ignored_arguments(cfg.extra_args)
         if bad:
             res.say(f"WARNING - not valid Ultralytics arguments, the run will "
                     f"refuse to start: {', '.join(bad)}")
         elif cfg.extra_args:
             res.say(f"Hand-set: "
                     f"{', '.join(f'{k}={v}' for k, v in cfg.extra_args.items())}")
+        if inert:
+            res.say(f"WARNING - valid, but the classification pipeline ignores "
+                    f"them, so they will do nothing: {', '.join(inert)}. Only "
+                    f"hsv_*, fliplr, flipud, scale, erasing and auto_augment "
+                    f"reach the images.")
         # Better to learn the GPU is idle now than an epoch into the run.
         _warn_if_cpu_by_accident(cfg, res)
         res.say("Nothing trained - clear 'Validate only' to start.")
@@ -248,6 +254,14 @@ def _run(cfg, progress, cancel) -> StageResult:
             f"Check the spelling - an unknown argument would stop the run "
             f"after the dataset has been scanned.")
         return res
+    inert = ignored_arguments(cfg.extra_args)
+    if inert:
+        res.warnings.append(
+            f"Hand-set argument(s) the classification pipeline ignores: "
+            f"{', '.join(inert)}. They are recorded but change nothing - only "
+            f"hsv_*, fliplr, flipud, scale, erasing and auto_augment reach the "
+            f"images.")
+        log.warning(f"Ignored for classification: {', '.join(inert)}")
 
     if not cfg.exclude_mismatched and (report["only_train"] or report["only_val"]):
         res.blocked.append(
@@ -259,6 +273,23 @@ def _run(cfg, progress, cancel) -> StageResult:
 
     check_cancelled(cancel, "validation")
     return _train(cfg, report, res, progress, cancel)
+
+
+#: Valid Ultralytics arguments that the *classification* pipeline never reads.
+#: They belong to the detection augmenter (RandomPerspective, Mosaic, MixUp)
+#: and are accepted without complaint, recorded in args.yaml, and do nothing.
+#: An earlier preset here set degrees=180 and mixup=0.15 on that basis.
+CLASSIFY_IGNORES = frozenset({
+    "degrees", "translate", "shear", "perspective", "mosaic", "mixup",
+    "cutmix", "copy_paste", "copy_paste_mode", "close_mosaic", "bgr",
+    "box", "cls", "dfl", "kobj", "pose", "overlap_mask", "mask_ratio",
+    "multi_scale", "rect", "single_cls",
+})
+
+
+def ignored_arguments(extra: dict | None) -> list[str]:
+    """Hand-set names that are valid but inert for classification."""
+    return sorted(k for k in (extra or {}) if k in CLASSIFY_IGNORES)
 
 
 def unknown_arguments(extra: dict | None) -> list[str]:
@@ -499,7 +530,7 @@ def write_run_notes(save_dir: Path, cfg, outputs: dict) -> Path | None:
 
     try:
         preset = AUGMENTATION_PRESETS.get(cfg.augmentation, {})
-        interesting = ("hsv_s", "degrees", "translate", "mixup", "dropout",
+        interesting = ("hsv_h", "hsv_s", "hsv_v", "flipud", "dropout",
                        "weight_decay", "erasing", "scale")
         preset_line = ", ".join(f"{k}={preset[k]}" for k in interesting
                                 if k in preset) or "Ultralytics defaults"

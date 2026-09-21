@@ -682,7 +682,7 @@ class TrainPanel(StagePanel):
             text=PRESET_NOTES.get(name, ""),
             text_color=T.WARN if name == "ultralytics defaults" else T.TEXT_MUTED)
         values = AUGMENTATION_PRESETS.get(name, {})
-        interesting = ("hsv_s", "degrees", "translate", "mixup", "dropout",
+        interesting = ("hsv_h", "hsv_s", "hsv_v", "flipud", "dropout",
                        "weight_decay", "erasing", "scale")
         shown = [f"{k}={values[k]}" for k in interesting if k in values]
         self.preset_values.configure(

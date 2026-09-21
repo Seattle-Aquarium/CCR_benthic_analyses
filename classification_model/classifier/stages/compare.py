@@ -574,8 +574,8 @@ def infer_preset(args: dict) -> str:
              "flipud": 0.0, "mixup": 0.0, "dropout": 0.0}
     if all(same(args.get(k), v) for k, v in stock.items()):
         return "ultralytics defaults"
-    shown = [f"{k}={args[k]}" for k in ("hsv_s", "degrees", "mixup", "dropout",
-                                        "weight_decay", "erasing", "scale")
+    shown = [f"{k}={args[k]}" for k in ("hsv_s", "dropout", "weight_decay",
+                                        "erasing", "scale", "auto_augment")
              if k in args]
     return "custom (" + ", ".join(shown[:4]) + ")"
 
@@ -1016,9 +1016,9 @@ def _next_steps(winner, models, shared) -> list[str]:
         steps.append(
             f"The run overfitted after epoch {winner.curve.get('best_epoch')} "
             f"of {winner.curve.get('epochs_total')}. On stage 3, set "
-            f"Augmentation to 'stronger' - more colour variation and full "
-            f"rotation, plus mixup, dropout 0.2 and double the weight decay - "
-            f"and lower Patience so the run stops nearer its best.")
+            f"Augmentation to 'stronger' - wider colour jitter, dropout 0.2 on "
+            f"the head and double the weight decay - and lower Patience so the "
+            f"run stops nearer its best.")
     elif verdict in ("underfitting", "still improving"):
         steps.append(
             "The run had not finished learning. Raise Epochs, and on stage 3 "
