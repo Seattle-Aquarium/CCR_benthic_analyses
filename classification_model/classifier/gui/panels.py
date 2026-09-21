@@ -21,7 +21,8 @@ from ..config import (AUGMENTATION_PRESETS, PRESET_NOTES,
                       BalanceConfig, CompareConfig, EvalConfig,
                       ExtractConfig, TrainConfig)
 from . import theme as T
-from .widgets import (Card, PathList, PathRow, checkbox, entry, hint, label)
+from .widgets import (Card, PathList, PathRow, button, checkbox, entry,
+                      hint, label)
 
 #: Shown in the label-authority dropdown when no dataset has been nominated.
 NO_AUTHORITY = "(no preference - resolved by path order)"
@@ -586,8 +587,15 @@ class TrainPanel(StagePanel):
                                on_change=lambda _p: self._preview_path())
         self.project.grid(row=0, column=0, sticky="ew")
 
+        s = ctk.CTkFrame(c.body, fg_color="transparent")
+        s.grid(row=1, column=0, sticky="ew", pady=(6, 0))
+        button(s, "Suggest a name", self._suggest_name, "ghost", width=150
+               ).grid(row=0, column=0, sticky="w")
+        self.suggest_note = hint(s, "")
+        self.suggest_note.grid(row=0, column=1, sticky="w", padx=(12, 0))
+
         g = ctk.CTkFrame(c.body, fg_color="transparent")
-        g.grid(row=1, column=0, sticky="ew", pady=(10, 0))
+        g.grid(row=2, column=0, sticky="ew", pady=(10, 0))
         label(g, "Run name", muted=True, width=132).grid(row=0, column=0,
                                                          sticky="w", padx=(0, 8))
         self.name = entry(g, "train", width=240)
@@ -597,7 +605,43 @@ class TrainPanel(StagePanel):
         self.name.bind("<KeyRelease>", lambda _e: self._preview_path())
 
         self.path_preview = hint(c.body, "")
-        self.path_preview.grid(row=2, column=0, sticky="w", pady=(8, 0))
+        self.path_preview.grid(row=3, column=0, sticky="w", pady=(8, 0))
+
+    def _suggest_name(self) -> None:
+        """Fill the output folder by the naming convention.
+
+        YYYY_MM_DD_<dataset>_<preset>, under the models root from stage 5 --
+        the same folder stage 5 scans, so a run named this way joins the
+        history without being pointed at. The date sorts it; the dataset says
+        what it was trained on; the preset is the most likely thing varied.
+        The operator trims the tail to whatever this run is really testing.
+        """
+        from datetime import date
+
+        root = (self.state.compare.models_root.strip()
+                or str(Path(self.project.get()).parent) if self.project.get()
+                else "")
+        if not root:
+            self.suggest_note.configure(
+                text="Set a models root on stage 5 first, so the name has "
+                     "somewhere to go.", text_color=T.WARN)
+            return
+
+        dataset = Path(self.data.get()).name if self.data.get() else "dataset"
+        # A dataset already carries its own date; two dates in one name says
+        # nothing the folder listing does not.
+        parts = dataset.split("_")
+        if len(parts) > 3 and all(p.isdigit() for p in parts[:3]):
+            dataset = "_".join(parts[3:]) or dataset
+        preset = self.augmentation.get().replace(" ", "_")
+        name = f"{date.today():%Y_%m_%d}_{dataset}_{preset}"
+
+        self.project.set(str(Path(root) / name))
+        self._preview_path()
+        self.suggest_note.configure(
+            text="Trim the tail to the one thing this run is testing - "
+                 "the full recipe is recorded in run_notes.md.",
+            text_color=T.TEXT_MUTED)
 
     def _preset_changed(self) -> None:
         """Show what the chosen preset actually does, rather than its name."""

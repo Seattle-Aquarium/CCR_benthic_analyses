@@ -45,6 +45,11 @@ log = get_logger("compare")
 
 WORKBOOK_NAME = "model_comparison.xlsx"
 HISTORY_MD = "model_history.md"
+
+#: Marks the current choice wherever it appears in the history. Markdown
+#: cannot colour a table row, so the marker has to be a character that reads
+#: at a glance in a plain-text viewer as well as a rendered one.
+STAR = "\u2b50"
 DECISIONS_MD = "decisions.md"
 CURVES_PNG = "model_comparison_curves.png"
 PER_CLASS_PNG = "model_comparison_per_class.png"
@@ -1415,6 +1420,30 @@ def write_history(models: list[ModelRun], winner, record_dir: Path) -> Path:
         f"and top-1 on unseen images; a dash means that run has not been "
         f"through stage 4._",
         "",
+    ]
+
+    # The one thing a reader opens this file to learn, before the table.
+    if winner is not None:
+        why = winner.notes.get("why", "").strip().splitlines()
+        lines += [
+            "> ## " + STAR + " Current choice: " + winner.name,
+            ">",
+            f"> **Macro F1 {winner.overall['macro_f1']:.3f} "
+            f"({describe_f1(winner.overall['macro_f1'])})  -  top-1 "
+            f"{winner.overall['top1_accuracy']:.1%}** on "
+            f"{winner.overall['images']:,} held-out images.",
+            ">",
+            f"> Trained {_run_date(winner)} from `{Path(str(winner.notes.get('base_model') or winner.args.get('model', '-'))).name}` "
+            f"with the *{(winner.notes.get('augmentation_preset', '').split('  (')[0] or infer_preset(winner.args))}* preset.",
+        ]
+        if why:
+            lines += [">", f"> _What it was trying:_ {why[0]}"]
+        lines += [">", f"> Weights: `{winner.weights}`" if winner.weights else ">",
+                  "", "---", ""]
+
+    lines += [
+        "## Every run",
+        "",
         "| # | run | trained | base model | preset | best epoch | macro F1 | "
         "top-1 | what it was trying |",
         "|---|---|---|---|---|---|---|---|---|",
@@ -1428,15 +1457,23 @@ def write_history(models: list[ModelRun], winner, record_dir: Path) -> Path:
                   or infer_preset(m.args))
         best = (f"{m.curve['best_epoch']}/{m.curve['epochs_total']}"
                 if m.curve.get("best_epoch") else "-")
-        mark = " **(chosen)**" if winner is m else ""
+        chosen = winner is m
+        name = f"{STAR} **{m.name}**" if chosen else m.name
+        f1 = _fmt(m.overall.get("macro_f1"))
+        top1 = _fmt(m.overall.get("top1_accuracy"), ".1%")
+        if chosen:
+            f1, top1 = f"**{f1}**", f"**{top1}**"
         lines.append(
-            f"| {i} | {m.name}{mark} | {_run_date(m)} | {base} | {preset} | "
-            f"{best} | {_fmt(m.overall.get('macro_f1'))} | "
-            f"{_fmt(m.overall.get('top1_accuracy'), '.1%')} | {why or '_not recorded_'} |")
+            f"| {i} | {name} | {_run_date(m)} | {base} | {preset} | "
+            f"{best} | {f1} | {top1} | {why or '_not recorded_'} |")
 
-    lines += ["", "---", "", "## Run by run", ""]
-    for m in ordered:
-        lines += [f"### {m.name}" + ("  <- current choice" if winner is m else ""),
+    lines += ["", f"{STAR} = current choice", "", "---", "", "## Run by run", ""]
+    for n, m in enumerate(ordered):
+        if n:
+            lines += ["", "---", ""]        # a rule between runs
+        heading = (f"### {STAR} {m.name}  -  current choice" if winner is m
+                   else f"### {m.name}")
+        lines += [heading,
                   "",
                   f"- **Trained:** {_run_date(m)}",
                   f"- **Base model:** `{m.notes.get('base_model') or m.args.get('model', '-')}`",
