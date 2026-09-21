@@ -142,6 +142,29 @@ class ExtractPanel(StagePanel):
         self.split_note = hint(c.body, "")
         self.split_note.grid(row=2, column=0, sticky="w", pady=(4, 0))
 
+        # Held-out mode only: shown and hidden by _split_changed.
+        self.holdout_card = self.card(
+            "Keeping the held-out set independent",
+            "Point at an existing held-out folder as the output and new patches "
+            "are added to it; points already there are skipped. Name the "
+            "training set to stay independent of, and any point on a photo "
+            "that fed it is left out before anything is cut - the hash check "
+            "cannot see two different points on the same photo, and they are "
+            "near-duplicates.")
+        self.independent_of = PathRow(self.holdout_card.body,
+                                      "Independent of", "folder")
+        self.independent_of.grid(row=0, column=0, sticky="ew")
+        g = ctk.CTkFrame(self.holdout_card.body, fg_color="transparent")
+        g.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        self.holdout_target = Field(g, 0, 0, "Target per class", int,
+                                    note="below this, a class's held-out F1 "
+                                         "is decided by one or two images")
+        hint(self.holdout_card.body,
+             "The preview lists which classes would still be missing or short "
+             "after this run, so the next round of annotation can be aimed at "
+             "them."
+             ).grid(row=2, column=0, sticky="w", pady=(8, 0))
+
         c = self.card("Split and quality")
         g = self.grid_body(c)
         self.val_frac = Field(g, 0, 0, "Val fraction", float, note="of each class")
@@ -171,18 +194,25 @@ class ExtractPanel(StagePanel):
              ).grid(row=1, column=0, sticky="w", pady=(6, 0))
 
     def _split_changed(self) -> None:
+        held_out = bool(self.no_split.get())
         self.split_note.configure(
             text=("Flat <Label>/ folders. This output feeds stage 4 only - it "
                   "must never be trained on."
-                  if self.no_split.get() else
+                  if held_out else
                   "train/ and val/ subfolders. This output feeds stage 2."),
-            text_color=T.WARN if self.no_split.get() else T.TEXT_MUTED)
+            text_color=T.WARN if held_out else T.TEXT_MUTED)
+        if held_out:
+            self.holdout_card.grid()
+        else:
+            self.holdout_card.grid_remove()
 
     def load(self) -> None:
         cfg: ExtractConfig = self.state.extract
         self.csvs.set(cfg.annotation_csvs)
         self.out.set(cfg.output_dir)
         self.no_split.set(cfg.no_split)
+        self.independent_of.set(cfg.independent_of)
+        self.holdout_target.set(cfg.holdout_target)
         self.val_frac.set(cfg.val_frac)
         self.min_val.set(cfg.min_val_count)
         self.quality.set(cfg.jpeg_quality)
@@ -199,6 +229,8 @@ class ExtractPanel(StagePanel):
         cfg.annotation_csvs = self.csvs.get()
         cfg.output_dir = self.out.get()
         cfg.no_split = bool(self.no_split.get())
+        cfg.independent_of = self.independent_of.get()
+        cfg.holdout_target = self.holdout_target.get() or 30
         cfg.val_frac = self.val_frac.get() or 0.2
         cfg.min_val_count = self.min_val.get() or 5
         cfg.jpeg_quality = self.quality.get() or 95

@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .. import hashing
+from .. import hashing, provenance
 from ..fsutil import list_class_images, looks_like_split_dataset
 from ..logging_setup import get_logger
 from ..progress import ProgressCB, Stages, check_cancelled
@@ -219,6 +219,35 @@ def _verify_independence(cfg, res: StageResult, progress, cancel) -> set[str]:
     report = hashing.audit(cfg.train_dataset_dir, cfg.eval_dir,
                            progress=progress, cancel=cancel)
     leaks = [g for g in report.groups if g.category == "holdout_leak"]
+
+    # The hash check passes two different points cut from the same photo,
+    # and those are near-duplicates. Not a block -- the existing held-out set
+    # carries a few dozen of these from before the check existed, and they
+    # do not move a number -- but reported, listed, and counted, because
+    # a new batch of held-out patches cut from the wrong transects would.
+    shared, affected = provenance.shared_photos(cfg.eval_dir, cfg.train_dataset_dir)
+    if affected:
+        total = sum(len(v) for v in list_class_images(cfg.eval_dir, None).values())
+        pct = 100.0 * len(affected) / max(1, total)
+        listing = Path(cfg.output_dir or cfg.eval_dir) / "holdout_shared_photos.csv"
+        pd.DataFrame({"held_out_patch": [str(p) for p in affected],
+                      "photo": [provenance.photo_of(p.name) for p in affected],
+                      "class": [p.parent.name for p in affected]}
+                     ).to_csv(listing, index=False)
+        res.outputs["shared_photo_patches"] = len(affected)
+        res.outputs["shared_photo_report"] = str(listing)
+        level = res.warnings
+        level.append(
+            f"{len(affected):,} held-out patch(es) ({pct:.1f}%) were cut from "
+            f"{len(shared):,} photo(s) that also fed the training set. Not "
+            f"identical images, but near-duplicates the model has effectively "
+            f"seen; they flatter the score slightly. List: {listing.name}."
+            + (" At this share the effect is negligible." if pct < 1 else
+               " At this share the held-out number is not trustworthy - "
+               "rebuild the set from transects kept out of training."))
+        log.warning(f"{len(affected):,} held-out patch(es) share a source photo "
+                    f"with training ({pct:.1f}%) - see {listing.name}")
+
     if not leaks:
         log.info("No held-out image appears in the training set.")
         return set()

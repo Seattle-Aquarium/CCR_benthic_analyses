@@ -56,6 +56,18 @@ class ExtractConfig:
     #: evaluation set is made: it must never be trained or validated on.
     no_split: bool = False
 
+    #: Held-out mode only. A training dataset whose *photos* the new patches
+    #: must not share. Any annotation point on a photo that fed this dataset
+    #: is left out before anything is cut, so a held-out set built this way
+    #: cannot be contaminated by near-duplicates -- the thing the hash check
+    #: cannot see. Blank skips the check.
+    independent_of: str = ""
+
+    #: Held-out mode only. Below this many patches a class's held-out F1 is
+    #: decided by one or two images; the coverage report says which classes
+    #: are short so the next round of annotation can be aimed.
+    holdout_target: int = 30
+
     dry_run: bool = True
 
 
