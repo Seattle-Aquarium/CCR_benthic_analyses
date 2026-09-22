@@ -72,23 +72,6 @@ F1_BANDS = ((0.30, "weak"), (0.50, "fair"), (0.70, "good"), (1.01, "strong"))
 #: enough for percent cover; beyond it the survey figure is visibly skewed.
 COVER_OK_PCT = 10
 
-#: The bottleneck codes, in words that do not assume the vocabulary.
-BOTTLENECK_WORDS = {
-    "recall": "missed",
-    "precision": "over-called",
-    "balanced": "both equally",
-    "-": "-",
-}
-
-BOTTLENECK_MEANING = {
-    "recall": ("the model does not spot it - where this class really is, it "
-               "usually calls it something else"),
-    "precision": ("the model claims it too readily - when it says this class, "
-                  "it is often something else"),
-    "balanced": "it misses it and over-calls it about equally often",
-}
-
-
 def describe_f1(value: float) -> str:
     """A one-word reading of an F1 score."""
     for edge, word in F1_BANDS:
@@ -147,6 +130,15 @@ MIN_OVERLAP_IMAGES = 500
 #: image either way swings it completely -- and they crowd the readable
 #: classes off the chart. They stay in every table; only the figure filters.
 MIN_CHART_SUPPORT = 10
+
+#: How far to trust a class's held-out figures, by how many examples decide
+#: them. Below TOO_FEW a single image moves F1 by ten points or more; below
+#: THIN the number is real but the second decimal is not.
+TOO_FEW_SUPPORT = 10
+THIN_SUPPORT = 30
+
+#: An F1 at or above this is reported as fine rather than diagnosed.
+GOOD_F1 = 0.80
 
 
 # --------------------------------------------------------------------------
@@ -303,6 +295,15 @@ def per_class_metrics(detail: pd.DataFrame) -> pd.DataFrame:
         fn = int((is_true & ~is_pred).sum())
         tn = total - tp - fp - fn
 
+        # Who this class is confused with, in each direction. "Missed as" is
+        # what the real examples got called; "absorbs" is what the false
+        # alarms really were. Naming the partner is what turns a low score
+        # into a next step.
+        missed = pred[is_true & ~is_pred]
+        taken = truth[~is_true & is_pred]
+        missed_as = _top(missed)
+        absorbs = _top(taken)
+
         precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / (tp + fn) if tp + fn else 0.0
         f1 = (2 * precision * recall / (precision + recall)
@@ -333,10 +334,117 @@ def per_class_metrics(detail: pd.DataFrame) -> pd.DataFrame:
             "bottleneck": ("-" if not (tp + fp + fn) else
                            "balanced" if abs(precision - recall) < 0.05 else
                            "recall" if recall < precision else "precision"),
+            "missed_as": missed_as[0],
+            "missed_as_share": missed_as[1],
+            "absorbs": absorbs[0],
+            "absorbs_share": absorbs[1],
         })
 
     df = pd.DataFrame(rows)
-    return df.sort_values("support", ascending=False).reset_index(drop=True)
+    df = df.sort_values("support", ascending=False).reset_index(drop=True)
+    diag = df.apply(diagnose_class, axis=1, result_type="expand")
+    return pd.concat([df, diag], axis=1)
+
+
+def _top(labels: pd.Series) -> tuple[str, float]:
+    """The commonest label in a series and its share, or ("", 0)."""
+    if len(labels) == 0:
+        return "", 0.0
+    counts = labels.value_counts()
+    return str(counts.index[0]), round(float(counts.iloc[0] / len(labels)), 3)
+
+
+def diagnose_class(r: pd.Series) -> pd.Series:
+    """Say, in words, how much to trust a class's numbers and what they mean.
+
+    A score is not a finding. Precision 0.32 on SU_cob tells nobody anything
+    until it is "two thirds of what the model calls SU_cob is really SU_bould,
+    so its reported cover is 83% too high -- give it more SU_bould, not more
+    SU_cob". These columns carry that sentence, plus the one that has to come
+    first: whether there are enough held-out examples for the sentence to mean
+    anything.
+    """
+    label, n, fp = r["label"], int(r["support"]), int(r["predicted_as"]) - int(r["correct"])
+    p, rc, f1 = float(r["precision"]), float(r["recall"]), float(r["f1"])
+    cover = r["cover_bias_pct"]
+    cover_txt = (f"Reported cover {cover:+.0f}%." if cover is not None
+                 and abs(cover) >= 10 else "")
+    missed_as, ms = r["missed_as"], r["missed_as_share"]
+    absorbs, ab = r["absorbs"], r["absorbs_share"]
+
+    # ---- how far to trust the row -------------------------------------
+    if n == 0:
+        reliability = "no held-out examples"
+    elif n < TOO_FEW_SUPPORT:
+        reliability = f"too few ({n}) - one image swings it"
+    elif n < THIN_SUPPORT:
+        reliability = f"thin ({n}) - read with caution"
+    else:
+        reliability = "ok"
+
+    # ---- what is wrong --------------------------------------------------
+    if n == 0:
+        problem = "unmeasured"
+        diagnosis = (f"No {label} in the held-out set, so nothing can be said "
+                     f"about how well it is recognised. The model still called "
+                     f"{fp} patch(es) {label}"
+                     + (f", mostly real {absorbs}" if absorbs else "") + ".")
+        suggestion = (f"Add held-out examples of {label} (stage 1, held-out "
+                      f"mode) before drawing any conclusion about it.")
+    elif int(r["correct"]) == 0:
+        problem = "never right"
+        diagnosis = (f"None of the {n} held-out {label} were recognised; they "
+                     f"were called {missed_as or 'other classes'}"
+                     + (f" ({ms:.0%} of them)" if ms else "") + ". "
+                     + (f"The model also called {fp} other patch(es) {label}"
+                        + (f", mostly real {absorbs}" if absorbs else "") + "."
+                        if fp else "It never predicted the class at all."))
+        suggestion = (f"With {n} example(s) this may be sampling, not the "
+                      f"model - see reliability. If it holds up, check whether "
+                      f"{label} and {missed_as or 'its neighbours'} are "
+                      f"separable at this patch size; if experts also struggle, "
+                      f"the class may need merging or a larger patch."
+                      if n < THIN_SUPPORT else
+                      f"Check {label}'s training folder for mislabelling as "
+                      f"{missed_as}, and whether the two are separable at this "
+                      f"patch size. If experts also struggle, merge them or use "
+                      f"a larger patch.")
+    elif f1 >= GOOD_F1:
+        problem = "good"
+        diagnosis = f"F1 {f1:.2f}. {cover_txt}".strip()
+        suggestion = "Nothing needed."
+    elif rc < p - 0.05:
+        problem = "missed"
+        diagnosis = (f"{1 - rc:.0%} of real {label} is called something else, "
+                     f"mostly {missed_as} ({ms:.0%} of the misses). {cover_txt}"
+                     ).strip()
+        suggestion = (f"More, and more varied, training examples of {label} - "
+                      f"raise its cap or floor in stage 2, or annotate more. "
+                      f"Include ones that look like {missed_as}, since that is "
+                      f"where it is being lost.")
+    elif p < rc - 0.05:
+        problem = "over-called"
+        diagnosis = (f"{1 - p:.0%} of what the model calls {label} is really "
+                     f"something else, mostly {absorbs} ({ab:.0%} of the false "
+                     f"alarms). {cover_txt}").strip()
+        suggestion = (f"More {label} examples will not help. Add examples of "
+                      f"{absorbs} - the class it is absorbing - and check "
+                      f"{label}'s training folder for {absorbs} mislabelled as "
+                      f"{label}.")
+    else:
+        problem = "weak both ways"
+        diagnosis = (f"Missed about as often as over-called (recall {rc:.2f}, "
+                     f"precision {p:.2f}). Lost to {missed_as}, absorbs "
+                     f"{absorbs}. {cover_txt}").strip()
+        suggestion = (f"No one-sided fix. Look at the {label} / {missed_as} "
+                      f"confusion directly; if the two are not separable at "
+                      f"this patch size, more data will not resolve it.")
+
+    if n and n < THIN_SUPPORT and problem not in ("unmeasured", "never right"):
+        suggestion = f"Only {n} held-out example(s), so treat this as anecdote. " + suggestion
+
+    return pd.Series({"reliability": reliability, "problem": problem,
+                      "diagnosis": diagnosis, "suggestion": suggestion})
 
 
 def overall_metrics(detail: pd.DataFrame, per_class: pd.DataFrame) -> dict:
@@ -939,7 +1047,10 @@ def build_digest(models, matrix, winner, rationale, shared, caveats) -> dict:
             "label": r.label, "support": int(r.support), "f1": float(r.f1),
             "precision": float(r.precision), "recall": float(r.recall),
             "bottleneck": r.bottleneck,
-            "problem": BOTTLENECK_WORDS.get(r.bottleneck, r.bottleneck),
+            "problem": r.problem,
+            "reliability": r.reliability,
+            "diagnosis": r.diagnosis,
+            "suggestion": r.suggestion,
             "cover_bias_pct": r.cover_bias_pct,
         } for r in seen.sort_values("headroom", ascending=False).head(5).itertuples()]
 
@@ -982,26 +1093,10 @@ def _next_steps(winner, models, shared) -> list[str]:
     top = seen.sort_values("headroom", ascending=False).head(2)
 
     for r in top.itertuples():
-        if r.bottleneck == "recall":
-            steps.append(
-                f"{r.label} is missed more than it is over-called "
-                f"(recall {r.recall:.2f} vs precision {r.precision:.2f}) on "
-                f"{int(r.support):,} held-out points - the largest single "
-                f"pool of errors. Raise its cap or floor in stage 2, or "
-                f"annotate more of it.")
-        elif r.bottleneck == "precision":
-            steps.append(
-                f"{r.label} is over-applied rather than missed "
-                f"(precision {r.precision:.2f} vs recall {r.recall:.2f}). More "
-                f"examples of it will not help; it needs more examples of "
-                f"whatever it is absorbing.")
-        else:
-            steps.append(
-                f"{r.label} is missed and over-called about equally "
-                f"(precision {r.precision:.2f}, recall {r.recall:.2f}) on "
-                f"{int(r.support):,} held-out points. Nothing is one-sided "
-                f"here, so this class needs the confusion pairs below "
-                f"disambiguated rather than simply more examples.")
+        # The same words the per-class sheet carries, so the tear sheet and
+        # the workbook cannot disagree about what to do.
+        steps.append(f"{r.label} ({int(r.support):,} held-out points, "
+                     f"{r.problem}): {r.diagnosis} {r.suggestion}")
 
     if winner.confusions is not None and len(winner.confusions):
         c = winner.confusions.iloc[0]
@@ -1363,8 +1458,8 @@ def _write_workbook(models, matrix, winner, rationale, shared, out: Path) -> dic
             pairwise_delta(scored[0], scored[1]).to_excel(
                 writer, sheet_name="per_class_delta", index=False)
         for m in scored:
-            m.per_class.to_excel(writer, sheet_name=_sheet("cls_" + m.name),
-                                 index=False)
+            _class_sheet(m.per_class).to_excel(
+                writer, sheet_name=_sheet("cls_" + m.name), index=False)
             if m.confusions is not None and len(m.confusions):
                 m.confusions.to_excel(writer, sheet_name=_sheet("conf_" + m.name),
                                       index=False)
@@ -1560,6 +1655,18 @@ def _same_run(a: str, b: str) -> bool:
         return Path(a).resolve() == Path(b).resolve()
     except OSError:
         return str(a).strip() == str(b).strip()
+
+
+def _class_sheet(per_class: pd.DataFrame) -> pd.DataFrame:
+    """The per-class table as a reader wants it: trust first, then the
+    numbers, then the words. The internal 'bottleneck' code is left out --
+    'problem' says the same thing in English."""
+    order = ["label", "support", "reliability", "problem", "f1", "precision",
+             "recall", "correct", "predicted_as", "cover_bias_pct",
+             "missed_as", "absorbs", "diagnosis", "suggestion",
+             "balanced_accuracy", "cover_bias"]
+    cols = [c for c in order if c in per_class.columns]
+    return per_class[cols]
 
 
 def _sheet(name: str) -> str:
