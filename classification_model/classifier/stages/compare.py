@@ -44,6 +44,7 @@ from . import StageResult, guard
 log = get_logger("compare")
 
 WORKBOOK_NAME = "model_comparison.xlsx"
+SUMMARY_MD = "model_comparison_summary.md"
 HISTORY_MD = "model_history.md"
 
 #: Marks the current choice wherever it appears in the history. Markdown
@@ -1335,6 +1336,10 @@ def _run(cfg, progress, cancel) -> StageResult:
                          for k in ("curves_png", "per_class_png")
                          if written.get(k)}
     digest["workbook"] = written["workbook"]
+
+    summary = write_summary(digest, out)
+    res.outputs["summary"] = str(summary)
+    digest["summary"] = str(summary)
     res.outputs["digest"] = digest
 
     # The record. History is regenerated from the run folders every time, so
@@ -1347,6 +1352,7 @@ def _run(cfg, progress, cancel) -> StageResult:
     res.outputs["decisions"] = str(decision)
     digest["history"] = str(history)
 
+    res.say(f"Summary: {summary}")
     res.say(f"Full detail: {written['workbook']}")
     res.say(f"History: {history}")
     res.say(f"Decision logged: {decision}")
@@ -1476,6 +1482,134 @@ def _write_workbook(models, matrix, winner, rationale, shared, out: Path) -> dic
         if png:
             written["per_class_png"] = str(png)
     return written
+
+
+def write_summary(digest: dict, out: Path) -> Path:
+    """The tear sheet, as a document.
+
+    The window it mirrors is live only -- closed, and the reasoning is gone.
+    Everything in it is recoverable from the workbook, but not in a form
+    anyone would paste into a report, which is what this comparison is
+    ultimately for. Written from the same digest the window and the log
+    summary render, so the three cannot disagree.
+    """
+    from datetime import datetime
+
+    d = digest
+    best = next((r for r in d["table"] if r["is_winner"]), None)
+    lines = [f"# Model comparison - {datetime.now():%Y-%m-%d}", ""]
+
+    if not best:
+        lines += ["No model could be recommended.", ""]
+        lines += [f"- {c}" for c in d.get("caveats", [])]
+        path = out / SUMMARY_MD
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return path
+
+    cover = "-" if best["cover_bias"] is None else f"{best['cover_bias']:.0f}%"
+    lines += [
+        f"> ## {STAR} Use {d['recommended']}",
+        ">",
+        f"> | macro F1 | top-1 | weaker classes | cover error |",
+        f"> |---|---|---|---|",
+        f"> | **{best['macro_f1']:.3f}** ({best['macro_f1_word']}) | "
+        f"{best['top1']:.1%} | {best['weak']} of {best['classes_total']} | {cover} |",
+        ">",
+        f"> Ranked by macro F1 on {d['images']:,} held-out images across "
+        f"{d['classes_total']} classes - images no model in this comparison "
+        f"was trained on. Macro F1 runs 0 to 1; guessing at random on "
+        f"{d['classes_total']} classes scores about {d['chance_f1']:.2f}. "
+        f"Cover error is the average gap between reported and true abundance; "
+        f"under {d['cover_ok_pct']}% is fine.",
+        "",
+    ]
+
+    if d["why"]:
+        lines += ["## Why", ""] + [f"- {w}" for w in d["why"]] + [""]
+
+    if d.get("weights_note"):
+        lines += ["## Is the model itself overfitted?", "",
+                  d["weights_note"], ""]
+
+    if len(d["table"]) > 1:
+        lines += ["## Every model, side by side", "",
+                  "| model | macro F1 | top-1 | weaker | cover err | saved weights |",
+                  "|---|---|---|---|---|---|"]
+        for r in d["table"]:
+            cov = "-" if r["cover_bias"] is None else f"{r['cover_bias']:.0f}%"
+            name = f"{STAR} **{r['model']}**" if r["is_winner"] else r["model"]
+            f1 = f"**{r['macro_f1']:.3f}**" if r["is_winner"] else f"{r['macro_f1']:.3f}"
+            lines.append(
+                f"| {name} | {f1} | {r['top1']:.1%} | "
+                f"{r['weak']}/{r['classes_total']} | {cov} | "
+                f"epoch {r['best_epoch']} of {r['epochs']} |")
+        lines += ["", f"{STAR} = the recommendation. 'Saved weights' is the "
+                      f"epoch the kept file came from, not where the run "
+                      f"stopped.", ""]
+
+    if d.get("caveats"):
+        lines += ["## Read this first", ""] + [f"- {c}" for c in d["caveats"]] + [""]
+
+    if d.get("next_steps"):
+        lines += ["## What to try next", "",
+                  "_Ordered by expected payoff._", ""]
+        lines += [f"{i}. {t}" for i, t in enumerate(d["next_steps"], 1)] + [""]
+
+    if d.get("movers"):
+        m0 = d["movers"][0]
+        lines += ["## Where the models disagree most", "",
+                  f"`chosen` = {m0['winner_name']}  ·  `other` = {m0['other_name']}",
+                  "",
+                  "A class the survey depends on can move the opposite way to "
+                  "the headline number, so this is the part worth checking by "
+                  "name. Scores are F1 for that class alone.",
+                  "",
+                  "| class | points | chosen | other | better |",
+                  "|---|---|---|---|---|"]
+        for m in d["movers"]:
+            lines.append(f"| {m['label']} | {m['support']:,} | "
+                         f"{m['winner_f1']:.2f} | {m['other_f1']:.2f} | "
+                         f"{'chosen' if m['delta'] > 0 else 'other'} |")
+        lines.append("")
+
+    if d.get("weakest"):
+        lines += ["## The work queue", "",
+                  "Weakest classes ordered by how many held-out points they "
+                  "get wrong, not by score - a big class at 0.7 costs the "
+                  "survey more than a tiny one at 0.1.", ""]
+        for c in d["weakest"]:
+            bias = ("" if c.get("cover_bias_pct") is None
+                    else f", reported cover {c['cover_bias_pct']:+.0f}%")
+            lines += [
+                f"**{c['label']}** - {c['support']:,} held-out points, "
+                f"F1 {c['f1']:.2f}, {c['problem']} "
+                f"(trust: {c.get('reliability', 'ok')}){bias}",
+                "",
+                f"  {c.get('diagnosis', '')}",
+                "",
+                f"  → {c.get('suggestion', '')}",
+                "",
+            ]
+
+    figures = d.get("figures") or {}
+    if figures:
+        lines += ["## Figures", ""]
+        for key, cap in (("per_class", "Per-class F1, weakest first"),
+                         ("curves", "Learning curves")):
+            if figures.get(key):
+                lines += [f"**{cap}**", "",
+                          f"![{cap}]({Path(figures[key]).name})", ""]
+
+    if d.get("workbook"):
+        lines += ["---", "",
+                  f"Full per-class detail, confusion tables and training "
+                  f"arguments: `{Path(d['workbook']).name}`. Every run to date: "
+                  f"`{HISTORY_MD}`. What was decided and when: `{DECISIONS_MD}`.",
+                  ""]
+
+    path = out / SUMMARY_MD
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
 
 
 def _run_date(m: ModelRun) -> str:

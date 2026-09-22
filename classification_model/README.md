@@ -225,6 +225,52 @@ Outputs, prefixed with the label you give:
   taxonomy, normalised per row
 * `*_predictions_detail.csv` — one row per image, for auditing individual
   misclassifications
+* `*_untrained_classes.csv` — held-out images whose class the model was never
+  trained on. Set aside from every accuracy figure, since the model cannot be
+  right about a class it has not seen and its guesses would otherwise land as
+  false positives against classes it does know. Reported on their own terms:
+  what did the model make of them?
+
+### 5. Compare models
+
+Reads finished runs and says which to keep. Point it at two or more run
+folders, or set a **models root** and every run beneath it is compared
+automatically (an `archive/` folder is skipped).
+
+Ranked on **macro F1** measured on the held-out set — see *Why internal
+accuracy is not the number*. Models are only ranked against each other when
+they were evaluated on the **same held-out images**; where the sets differ,
+the comparison falls back to the images they share and says so, and where the
+overlap is too small it withholds the ranking rather than compare numbers
+that do not mean the same thing.
+
+A window opens with the result, and the same page is written to disk:
+
+* **`model_comparison_summary.md`** — the tear sheet as a document: the
+  recommendation and why, every model side by side, what to try next, where
+  the models disagree by class, the work queue, and both figures. This is the
+  one to paste into a report.
+* `model_comparison.xlsx` — all the detail behind it. The per-class sheet
+  carries, for every class: `reliability` (how far to trust the row, given
+  how many held-out examples decide it), `problem` (good / missed /
+  over-called / weak both ways / never right / unmeasured), `diagnosis` and
+  `suggestion` in plain sentences, and `missed_as` / `absorbs` naming the
+  class it is confused with in each direction.
+* `model_comparison_per_class.png`, `model_comparison_curves.png`
+
+Two files live at the models root rather than with any one comparison:
+
+* **`model_history.md`** — regenerated from the run folders every time, so it
+  cannot drift from them. Every run oldest first, with what it was trying (from
+  `run_notes.md`), how it trained, and how it scored. The current choice is
+  called out at the top.
+* **`decisions.md`** — appended, never rewritten: one dated entry per
+  comparison with the recommendation and its reasons.
+
+Stage 3's **Notes** box is what makes the history worth reading. It asks what
+changed in this run and why, at the one moment the answer is known, and writes
+it to `run_notes.md` beside the weights along with the settings actually used.
+Runs from before it exists say so rather than guessing.
 
 ---
 
@@ -249,15 +295,20 @@ is the one to report.
 ```
 classification_model/
     classifier/
+        augment.py          centre-preserving transforms Ultralytics lacks
         brand.py            Seattle Aquarium palette and type
-        config.py           stage settings + the state that carries between them
+        config.py           stage settings, augmentation presets, and the
+                            state that carries between stages
         fsutil.py           paths, dataset listing, safe filenames
         hashing.py          byte-identical duplicate and leak detection
-        imaging.py          cropping and augmentation
-        logging_setup.py    one UTF-8 logging config
+        imaging.py          cropping and offline augmentation
+        logging_setup.py    one UTF-8 logging config; also the stand-in for a
+                            missing sys.stdout under pythonw
         progress.py         progress reporting and cancellation
-        stages/             the four stages, GUI-free
-        gui/                the app
+        provenance.py       which survey photo a patch was cut from
+        stages/             the five stages, GUI-free
+        gui/                the app, including tearsheet.py (the comparison
+                            summary window)
         cli.py              headless entry point
     assets/                 logo and fonts
     legacy/                 the seven scripts this replaced (see legacy/README.md)

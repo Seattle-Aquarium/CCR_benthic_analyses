@@ -341,17 +341,31 @@ class TearSheet(ctk.CTkToplevel):
         f.grid_columnconfigure(0, weight=1)
 
         workbook = self.digest.get("workbook")
-        hint(f, "The workbook holds every per-class number, the full confusion "
-                "tables and the training arguments." if workbook else ""
+        summary = self.digest.get("summary")
+
+        # This window is live only; everything in it is also on disk, and the
+        # operator should not have to know that from a log line.
+        hint(f, ("Saved beside the report: this page as "
+                 f"{Path(summary).name}, plus the workbook and figures."
+                 if summary else
+                 "The workbook holds every per-class number, the full "
+                 "confusion tables and the training arguments.")
              ).grid(row=0, column=0, sticky="w", padx=18, pady=14)
 
+        col = 1
+        if summary:
+            button(f, "Open this page", lambda: _open(summary), "ghost",
+                   width=140).grid(row=0, column=col, padx=(6, 6), pady=12)
+            col += 1
         if workbook:
             button(f, "Open workbook", lambda: _open(workbook), "ghost",
-                   width=150).grid(row=0, column=1, padx=(6, 6), pady=12)
+                   width=140).grid(row=0, column=col, padx=(0, 6), pady=12)
+            col += 1
             button(f, "Open folder", lambda: _open(Path(workbook).parent),
-                   "ghost", width=130).grid(row=0, column=2, padx=(0, 6), pady=12)
+                   "ghost", width=130).grid(row=0, column=col, padx=(0, 6), pady=12)
+            col += 1
         button(f, "Close", self.destroy, "primary", width=110
-               ).grid(row=0, column=3, padx=(0, 18), pady=12)
+               ).grid(row=0, column=col, padx=(0, 18), pady=12)
 
 
 def _open(path) -> None:
