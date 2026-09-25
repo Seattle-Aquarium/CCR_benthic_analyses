@@ -12,8 +12,9 @@
 ## This script answers that second question, with the same structure as the
 ## model scripts: all 8 percent-cover categories across all 24 transects,
 ## then the winter-only refit for CCA + the 5 substrate categories, then all
-## 10 abundance taxa across all 24 transects. It reads the same two combined
-## data files the model scripts read and contains no data assembly of its own.
+## 10 abundance taxa across all 24 transects, then sugar and sieve kelp (diver
+## density vs. ROV percent-cover). It reads the same two combined data files
+## the model scripts read, plus the two kelp source files for section 3c.
 ##
 ## THE Z-SCORE IDENTITY -- important, and the reason there is one set of
 ## correlation tables here and not two. Pearson's r is invariant to any linear
@@ -413,6 +414,47 @@ write.csv(cor_rock_crab_sensitivity,
           file.path(results_combined, "correlation_abundance_rock_crab_sensitivity.csv"),
           row.names = FALSE)
 ## END rock crab sensitivity ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+## 3c. sugar and sieve kelp: diver density vs. ROV percent-cover ~~~~~~~~~~~~~~~
+## the two kelps are not in either combined file -- divers count them as
+## individuals (diver_algae_density.csv) while the ROV records them as percent
+## cover, so they have no shared unit and no GLMM. They are paired here from the
+## same two files data_visualization.R's z-score overlay figure uses, and run
+## through the same correlate.platforms() as everything above. Pearson's r is
+## scale-invariant, so the mismatch in units does not affect it; the r column
+## reproduces the Saccharina (0.96) and Agarum (0.88) values in the report,
+## and r_within_site is the same between-site-removed test applied to the
+## percent-cover categories and abundance taxa.
+kelp_taxa_cor <- c("kelp_sugar", "kelp_sieve")
+
+kelp_display_names <- c(
+  kelp_sugar = "Sugar kelp (Saccharina latissima)",
+  kelp_sieve = "Sieve kelp (Agarum clathratum)"
+)
+
+dat_kelp_cor <- bind_rows(
+  read.csv(file.path(results_diver, "diver_algae_density.csv")) %>%
+    select(site, transect, season, depth, all_of(kelp_taxa_cor)) %>%
+    mutate(type = "diver"),
+  read.csv(file.path(results_ROV_percent_cover, "HSIL_percent-cover_transect-averaged.csv")) %>%
+    select(site, transect, season, depth, all_of(kelp_taxa_cor)) %>%
+    mutate(type = "ROV")
+) %>%
+  mutate(key = paste(site, transect, season, sep = "_"))
+
+cor_kelp <- bind_rows(lapply(
+  kelp_taxa_cor, correlate.platforms,
+  data = dat_kelp_cor, display_names = kelp_display_names
+))
+print(cor_kelp, width = Inf)
+
+write.csv(cor_kelp,
+          file.path(results_combined, "correlation_kelp.csv"),
+          row.names = FALSE)
+## END kelp correlations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
