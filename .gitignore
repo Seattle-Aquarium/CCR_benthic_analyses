@@ -12,6 +12,7 @@
 # one place, but deliberately not published: these are private between the
 # authors, the reviewers, and the HSIL program.
 /ROV_diver_comparison/report/reviews/
+/ROV_diver_comparison/report/main/
 
 # -----------------------------------------------------------------------------
 # LaTeX build files to ignore
