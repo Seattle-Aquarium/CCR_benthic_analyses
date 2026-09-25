@@ -1,0 +1,22 @@
+# Local, per-machine GUI config state (last-used field values; not shared code)
+.*_config.json
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# Generated run logs
+*_log.txt
+
+# Generated audit/report output (regenerate via the audit command)
+duplicate_report.csv
+duplicate_patches_report.csv
+holdout_leak_report.csv
+
+# Downloaded base weights and training runs -- large, and reproducible
+*.pt
+runs/
+
+# Packaging output
+build/
+dist/

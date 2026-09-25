@@ -1,0 +1,13 @@
+# CCR Benthic Classifier
+# Install with:  python -m pip install -r requirements.txt
+#
+# In this project these already live in the `rov_env` conda environment, with
+# the exception of customtkinter.
+ultralytics>=8.4        # YOLO classification training and inference
+torch>=2.0              # pulled in by ultralytics; install the CUDA build first
+opencv-python>=4.8      # patch cropping and augmentation
+pandas>=2.0             # annotation CSVs and the accuracy reports
+numpy>=1.24
+matplotlib>=3.7         # confusion matrix
+customtkinter>=5.2      # GUI
+Pillow>=10              # logo rendering in the GUI
