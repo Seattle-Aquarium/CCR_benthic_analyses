@@ -1,0 +1,19 @@
+Domain,Unique Identifier,Name,Description,Last Change Date
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),5,AMSMA,American Samoa Datum,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),6,ASTRO,Midway Astro 1961,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),7,GUAM,Guam 1963,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),17,HARN,High Accuracy Reference Network NAD83 (FEET),10/23/2024 9:03:09 PM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),8,JHNSN,Johnson Island 1961,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),1,NAD27,North American Datum 1927,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),2,NAD83,North American Datum 1983,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),9,OLDHI,Old Hawaiian Datum,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),3,OTHER,Other,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),10,PR,Puerto Rico Datum,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),11,SGEOR,St. George Island Datum,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),12,SLAWR,St. Lawrence Island Datum,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),13,SPAUL,St. Paul Island Datum,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),4,UNKWN,Unknown,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),14,WAKE,Wake-Eniwetok 1960,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),15,WGS72,World Geodetic System 1972,7/26/2006 10:57:47 AM
+Horizontal Reference Datum(HorizontalCoordinateReferenceSystemDatumName),16,WGS84,World Geodetic System 1984,7/26/2006 10:57:47 AM
+

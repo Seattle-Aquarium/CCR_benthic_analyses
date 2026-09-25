@@ -1,0 +1,109 @@
+dataset,source_label,repo_column,include,wqx_taxon,morphotype_label,notes,user_supplied_taxon,assemblage
+ROV_percent_cover,BR_encrust,brown_algae_encrusting,TRUE,Phaeophyta,encrusting brown algae,,,Aquatic Vegetation
+ROV_percent_cover,BR_filam,brown_algae_filamentous,TRUE,Phaeophyta,filamentous brown algae,,,Aquatic Vegetation
+ROV_percent_cover,BR_fucus,brown_algae_fucus,TRUE,Phaeophyta,Fucus sp. (rockweed),Fucus not in WQX taxon list; submitted under Phaeophyta (user 2026-09-25),Fucus,Aquatic Vegetation
+ROV_percent_cover,BR_sarg,brown_algae_sargassum,TRUE,Sargassum,Sargassum muticum (wireweed),S. muticum not in WQX taxon list; submitted under genus Sargassum (user 2026-09-25),Sargassum muticum,Aquatic Vegetation
+ROV_percent_cover,GR_filam,green_algae_filamentous,TRUE,Chlorophyta (Chlorophyta),filamentous green algae,,,Aquatic Vegetation
+ROV_percent_cover,GR_ulva,green_algae_ulva,TRUE,Ulvophyceae,Ulva sp. (sea lettuce),Ulva not in WQX taxon list; submitted under Ulvophyceae (user 2026-09-25),Ulva,Aquatic Vegetation
+ROV_percent_cover,KE_5rib,kelp_five_rib,TRUE,Costaria costata,,,,Aquatic Vegetation
+ROV_percent_cover,KE_bull,kelp_bull_blade,TRUE,Nereocystis luetkeana,,,,Aquatic Vegetation
+ROV_percent_cover,KE_holdfas,kelp_holdfast,FALSE,,,dropped: not an organism (user 2026-09-25),,
+ROV_percent_cover,KE_sieve,kelp_sieve,TRUE,Phaeophyta,Agarum sp. (sieve kelp),Agarum not in WQX taxon list; submitted under Phaeophyta (user 2026-09-25). Genus level: A. clathratum vs A. fimbriatum not separable from imagery,Agarum,Aquatic Vegetation
+ROV_percent_cover,KE_stipe,kelp_stipe,FALSE,,,dropped: not an organism (user 2026-09-25),,
+ROV_percent_cover,KE_sugar,kelp_sugar,TRUE,Laminariaceae,Saccharina latissima (sugar kelp),S. latissima not in WQX taxon list; submitted under Laminariaceae (user 2026-09-25),Saccharina latissima,Aquatic Vegetation
+ROV_percent_cover,MS,mobile_species,FALSE,,,dropped (user 2026-09-25),,
+ROV_percent_cover,RE_CCA,red_algae_cca,TRUE,Corallinales,crustose coralline algae,,,Aquatic Vegetation
+ROV_percent_cover,RE_branch,red_algae_branching,TRUE,Rhodophyta,branching red algae,,,Aquatic Vegetation
+ROV_percent_cover,RE_bush,red_algae_bushy,TRUE,Rhodophyta,bushy red algae,,,Aquatic Vegetation
+ROV_percent_cover,RE_encrust,red_algae_encrusting,TRUE,Rhodophyta,encrusting red algae (non-coralline),,,Aquatic Vegetation
+ROV_percent_cover,RE_fil,red_algae_filamentous,TRUE,Rhodophyta,filamentous red algae,,,Aquatic Vegetation
+ROV_percent_cover,RE_leaf,red_algae_flat_leaf,TRUE,Rhodophyta,flat-leaf red algae,,,Aquatic Vegetation
+ROV_percent_cover,SI,sessile_invertebrates,TRUE,Animalia,sessile invertebrates,,,Aquatic Vegetation
+ROV_percent_cover,SI_kelpBry,kelp_bryozoan,TRUE,Membranipora membranacea,,,,Aquatic Vegetation
+ROV_percent_cover,SU_anth,anthropogenic,FALSE,,,dropped: substrate/not an organism,,
+ROV_percent_cover,SU_bould,boulder,FALSE,,,dropped: substrate/not an organism,,
+ROV_percent_cover,SU_cob,cobble,FALSE,,,dropped: substrate/not an organism,,
+ROV_percent_cover,SU_peb,pebble,FALSE,,,dropped: substrate/not an organism,,
+ROV_percent_cover,SU_sand,sand_fine_shell,FALSE,,,dropped: substrate/not an organism,,
+ROV_percent_cover,SU_shell,shell_hash,FALSE,,,dropped: substrate/not an organism,,
+ROV_percent_cover,SU_silt,silt,FALSE,,,dropped: substrate/not an organism,,
+ROV_percent_cover,SU_wood,wood_debris,FALSE,,,dropped: substrate/not an organism,,
+ROV_percent_cover,unknown,unknown_area,FALSE,,,dropped (user 2026-09-25),,
+ROV_abundance,,blood_star,TRUE,Henricia,,,,Invertebrates
+ROV_abundance,,brown_rockfish,TRUE,Sebastes auriculatus,,,,Fish/Nekton
+ROV_abundance,,burrowing_sea_cucumber,TRUE,Cucumaria miniata,,confirmed = Reef Check 'Orange Cucumber' (user 2026-09-25),,Invertebrates
+ROV_abundance,,california_sea_cucumber,TRUE,Apostichopus californicus,,,,Invertebrates
+ROV_abundance,,cancer_crab,TRUE,Cancer productus,,confirmed red rock crab (user 2026-09-25),,Invertebrates
+ROV_abundance,,clam_siphon,TRUE,Bivalvia,clam siphon,,,Invertebrates
+ROV_abundance,,creeping_pedal_sea_cucumber,TRUE,Psolidae,Psolus chitonoides (creeping pedal sea cucumber),P. chitonoides not in WQX taxon list; submitted under Psolidae (user 2026-09-25),Psolus chitonoides,Invertebrates
+ROV_abundance,,flat_fish,TRUE,Pleuronectiformes,,,,Fish/Nekton
+ROV_abundance,,green_white_urchin,TRUE,Strongylocentrotus,,S. droebachiensis + S. pallidus,,Invertebrates
+ROV_abundance,,gunnel_fish,TRUE,Pholidae,,,,Fish/Nekton
+ROV_abundance,,helmet_crab,TRUE,Telmessus cheiragonus,,,,Invertebrates
+ROV_abundance,,kelp_crab,TRUE,Pugettia producta,,,,Invertebrates
+ROV_abundance,,kelp_perch,TRUE,Brachyistius frenatus,,,,Fish/Nekton
+ROV_abundance,,large_anemone,TRUE,Actiniaria,large anemone,,,Invertebrates
+ROV_abundance,,leather_star,TRUE,Dermasterias imbricata,,,,Invertebrates
+ROV_abundance,,lingcod,TRUE,Ophiodon elongatus,,,,Fish/Nekton
+ROV_abundance,,ochre_mottled_star,TRUE,Asteriidae,ochre + mottled star,combined ochre + mottled class reported at family level (user 2026-09-25) -- divers on the same transects recorded 573 mottled vs 26 ochre stars,,Invertebrates
+ROV_abundance,,other_large_sculpin,TRUE,Cottidae,large sculpin,,,Fish/Nekton
+ROV_abundance,,painted_greenling,TRUE,Oxylebius pictus,,,,Fish/Nekton
+ROV_abundance,,pile_perch,TRUE,Rhacochilus vacca,,name as listed in WQX,,Fish/Nekton
+ROV_abundance,,plumose_anemone,TRUE,Metridium,,,,Invertebrates
+ROV_abundance,,sharpnose_crab,TRUE,Scyra acutifrons,,,,Invertebrates
+ROV_abundance,,shiner_perch,TRUE,Cymatogaster aggregata,,,,Fish/Nekton
+ROV_abundance,,striped_seaperch,TRUE,Embiotoca lateralis,,,,Fish/Nekton
+diver_invert,Bat Star,bat_star,TRUE,Patiria miniata,,,,Invertebrates
+diver_invert,Blood Star,blood_star,TRUE,Henricia,,,,Invertebrates
+diver_invert,Blue Striped Sun Star,blue_striped_sun_star,TRUE,Solaster stimpsoni,,confirmed (user 2026-09-25),,Invertebrates
+diver_invert,California Sea Cucumber,california_sea_cucumber,TRUE,Apostichopus californicus,,,,Invertebrates
+diver_invert,Dawson's Sun Star,dawson_sun_star,TRUE,Solaster dawsoni,,,,Invertebrates
+diver_invert,Dungeness Crab,dungeness_crab,TRUE,Metacarcinus magister,,,,Invertebrates
+diver_invert,Giant Pacific Octopus,giant_pacific_octopus,TRUE,Enteroctopus dofleini,,,,Invertebrates
+diver_invert,Giant Spined Star,giant_spined_star,TRUE,Pisaster giganteus,,,,Invertebrates
+diver_invert,Green Crab,green_crab,TRUE,Carcinus maenas,,,,Invertebrates
+diver_invert,Green/Pallid Urchin,green_white_urchin,TRUE,Strongylocentrotus,,,,Invertebrates
+diver_invert,Gumboot Chiton,gumboot_chiton,TRUE,Cryptochiton stelleri,,,,Invertebrates
+diver_invert,Hairy Triton,hairy_triton,TRUE,Fusitriton oregonensis,,,,Invertebrates
+diver_invert,Kelp Crab,kelp_crab,TRUE,Pugettia producta,,,,Invertebrates
+diver_invert,Kelp Crab (Juvenile),kelp_crab_juv,FALSE,,,dropped: juvenile size class (user 2026-09-25),,
+diver_invert,Large Anemone,large_anemone,TRUE,Actiniaria,large anemone,,,Invertebrates
+diver_invert,Leather Star,leather_star,TRUE,Dermasterias imbricata,,,,Invertebrates
+diver_invert,Mottled Star,,TRUE,Evasterias troscheli,,divers recorded separately from Ochre Star; WQX spelling is 'troscheli',,Invertebrates
+diver_invert,Ochre Star,,TRUE,Pisaster ochraceus,,,,Invertebrates
+diver_invert,Orange Cucumber,burrowing_sea_cucumber,TRUE,Cucumaria miniata,,,,Invertebrates
+diver_invert,Piddock Clam,clam_siphon,TRUE,Pholadidae,,,,Invertebrates
+diver_invert,Pinto Abalone,pinto_abalone,TRUE,Haliotis kamtschatkana,,,,Invertebrates
+diver_invert,Plumose Anemone,plumose_anemone,TRUE,Metridium,,,,Invertebrates
+diver_invert,Purple Urchin,purple_urchin,TRUE,Strongylocentrotus purpuratus,,,,Invertebrates
+diver_invert,Rainbow Star,rainbow_star,TRUE,Orthasterias koehleri,,,,Invertebrates
+diver_invert,Red Urchin,red_urchin,TRUE,Mesocentrotus franciscanus,,,,Invertebrates
+diver_invert,Rock Crab,cancer_crab,TRUE,Cancer productus,,confirmed red rock crab (user 2026-09-25),,Invertebrates
+diver_invert,Rock Scallop,scallop,FALSE,,,dropped: Crassadoma gigantea not in WQX taxon list and zero at all 24 transects,,
+diver_invert,Short Spined Star,short_spined_star,TRUE,Pisaster brevispinus,,,,Invertebrates
+diver_invert,Slender Crab,slender_crab,TRUE,Metacarcinus gracilis,,,,Invertebrates
+diver_invert,Sunflower Star,sunflower_star,TRUE,Pycnopodia helianthoides,,,,Invertebrates
+diver_algae,Acid Weed,acid_weed,TRUE,Desmarestia,,,,Aquatic Vegetation
+diver_algae,Broad-Ribbed Kelp,broad-ribbed_kelp,TRUE,Pleurophycus gardneri,,,,Aquatic Vegetation
+diver_algae,Bull Kelp,bull_kelp,TRUE,Nereocystis luetkeana,,,,Aquatic Vegetation
+diver_algae,Feather Boa Kelp,feather_boa_kelp,FALSE,,,dropped: Egregia menziesii not in WQX taxon list and zero at all 24 transects,,
+diver_algae,Five-Ribbed Kelp,kelp_five_rib,TRUE,Costaria costata,,,,Aquatic Vegetation
+diver_algae,Giant Kelp,giant_kelp,FALSE,,,dropped: Macrocystis pyrifera not in WQX taxon list and zero at all 24 transects,,
+diver_algae,Sieve Kelp,kelp_sieve,TRUE,Phaeophyta,Agarum sp. (sieve kelp),Agarum not in WQX taxon list; submitted under Phaeophyta (user 2026-09-25),Agarum,Aquatic Vegetation
+diver_algae,Sugar Kelp,kelp_sugar,TRUE,Laminariaceae,Saccharina latissima (sugar kelp),S. latissima not in WQX taxon list; submitted under Laminariaceae (user 2026-09-25),Saccharina latissima,Aquatic Vegetation
+diver_algae,Three-Ribbed Kelp,kelp_three_rib,TRUE,Cymathere triplicata,,,,Aquatic Vegetation
+diver_algae,Torn Kelp,torn_kelp,FALSE,,,dropped (user 2026-09-25),,
+diver_algae,Winged Kelp,winged_kelp,TRUE,Alaria marginata,,,,Aquatic Vegetation
+diver_algae,Wire Weed,brown_algae_sargassum,TRUE,Sargassum,Sargassum muticum (wireweed),S. muticum not in WQX taxon list; submitted under genus Sargassum (user 2026-09-25),Sargassum muticum,Aquatic Vegetation
+diver_algae,Woody Kelp,woody_kelp,TRUE,Pterygophora californica,,,,Aquatic Vegetation
+diver_UPC_cover,Acid Weed,cover_acid_weed,TRUE,Desmarestia,,,,Aquatic Vegetation
+diver_UPC_cover,Articulated Coralline,cover_articulated_coralline,TRUE,Corallinales,articulated coralline algae,,,Aquatic Vegetation
+diver_UPC_cover,Crustose Coralline,cover_crustose_coralline,TRUE,Corallinales,crustose coralline algae,,,Aquatic Vegetation
+diver_UPC_cover,Encrusting Red Algae,cover_encrusting_red_algae,TRUE,Rhodophyta,encrusting red algae (non-coralline),,,Aquatic Vegetation
+diver_UPC_cover,Green Algae,cover_green_algae,TRUE,Chlorophyta (Chlorophyta),,,,Aquatic Vegetation
+diver_UPC_cover,Kelp Holdfast,cover_kelp_holdfast,FALSE,,,dropped: not an organism (user 2026-09-25),,
+diver_UPC_cover,None,cover_none,FALSE,,,dropped (user 2026-09-25),,
+diver_UPC_cover,Other Brown Algae,cover_other_brown_algae,TRUE,Phaeophyta,other brown algae,,,Aquatic Vegetation
+diver_UPC_cover,Red Algae,cover_red_algae,TRUE,Rhodophyta,red algae (Reef Check 'Red Algae' category),,,Aquatic Vegetation
+diver_UPC_cover,Seagrasses,cover_seagrasses,FALSE,,,dropped: seagrass family not in WQX taxon list and zero at all 24 transects,,
+diver_UPC_cover,Sessile Invertebrates,cover_sessile_invertebrates,TRUE,Animalia,sessile invertebrates,,,Aquatic Vegetation

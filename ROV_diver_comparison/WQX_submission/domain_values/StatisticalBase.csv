@@ -1,0 +1,69 @@
+Domain,Unique Identifier,Code,Description,Last Change Date
+Result Statistical Base(StatisticalBaseCode),45,1 Pctl,A 1st percentile says that 1% of the time data points are below that value and 99% of the time they are above that value.,3/9/2023 9:15:27 AM
+Result Statistical Base(StatisticalBaseCode),9,10 Pctl,the 10th percentile is the value (or score) below which 10% of the observations may be found.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),10,15 Pctl,the 15th percentile is the value (or score) below which 15% of the observations may be found.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),196,16 Pctl,the 16th percentile is the value (or score) below which 16% of the observations may be found.,11/15/2024 5:50:40 PM
+Result Statistical Base(StatisticalBaseCode),49,2-Sigma CSU,2-Sigma CSU,1/5/2015 12:00:00 AM
+Result Statistical Base(StatisticalBaseCode),11,20 Pctl,the 20th percentile is the value (or score) below which 20% of the observations may be found.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),12,25 Pctl,"also known as the first quartile (Q1), is the 25th percentile is the value (or score) below which 25% of the observations may be found.",7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),23,30-day Geometric Mean,Calculating a geometric mean (over 30 days period) provides a number that is more representative of the median and helps reduce the effect of a few extreme values.,5/31/2011 10:05:55 AM
+Result Statistical Base(StatisticalBaseCode),159,30DADMean,Thirty day average daily mean,7/11/2018 8:01:39 AM
+Result Statistical Base(StatisticalBaseCode),8,5 Pctl,A 5th percentile says that 5% of the time data points are below that value and 95% of the time they are above that value.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),139,50 Pctl,"also known as the median or second quartile (Q2), is the 50th percentile is the value (or score) below which 50% of the observations may be found.",3/31/2017 8:58:01 AM
+Result Statistical Base(StatisticalBaseCode),13,75 Pctl,"also known as the third quartile (Q3), is the 75th percentile is the value (or score) below which 75% of the observations may be found.",7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),19,7DADM,Seven Day Average Daily Maximum,12/15/2009 4:47:41 PM
+Result Statistical Base(StatisticalBaseCode),157,7DADMean,Seven day average daily mean,7/11/2018 7:57:57 AM
+Result Statistical Base(StatisticalBaseCode),158,7DADMin,Seven day average daily minimum,7/11/2018 7:58:58 AM
+Result Statistical Base(StatisticalBaseCode),14,80 Pctl,the 80th percentile is the value (or score) below which 80% of the observations may be found.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),197,84 Pctl,the 84th percentile is the value (or score) below which 84% of the observations may be found.,7/21/2020 9:44:40 AM
+Result Statistical Base(StatisticalBaseCode),15,85 Pctl,the 85th percentile is the value (or score) below which 85% of the observations may be found.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),16,90 Pctl,the 90th percentile is the value (or score) below which 90% of the observations may be found.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),17,95 Pctl,A 95th percentile says that 95% of the time data points are below that value and 5% of the time they are above that value.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),36,99 Pctl,A 99th percentile says that 95% of the time data points are below that value and 1% of the time they are above that value.,11/19/2014 10:32:19 AM
+Result Statistical Base(StatisticalBaseCode),20,AMS,A method to calculate expanded uncertainty where sample size =7( 7 measures of one sample),2/9/2011 6:10:20 PM
+Result Statistical Base(StatisticalBaseCode),21,AMS+,A method to calculate expanded uncertainty where sample size =7 ( based on 7 measures of different samples),2/9/2011 6:10:20 PM
+Result Statistical Base(StatisticalBaseCode),52,Area-Weighted Mean,"The mean value of a set, weighted by the area over which individual values in the set were measured",9/28/2023 1:04:19 PM
+Result Statistical Base(StatisticalBaseCode),28,BAV,"Beach Action Values - level of concentration, 75th percentile of the geometric mean of the water samples (the value at which beach advisories should be issued.)",1/24/2013 2:21:20 PM
+Result Statistical Base(StatisticalBaseCode),48,BNT,Beach notification threshold – A water quality value selected by a state or tribe that is used to “trigger” a beach notification.,8/13/2014 12:00:00 AM
+Result Statistical Base(StatisticalBaseCode),177,Coefficient of error,the standard error of the mean of repeated estimates divided by the mean,6/3/2020 2:51:08 PM
+Result Statistical Base(StatisticalBaseCode),37,Coefficient of variation,a statistical measure of the dispersion of data points in a data series around the mean. The coefficient of variation represents the ratio of the standard deviation to the mean,12/21/2015 2:35:23 PM
+Result Statistical Base(StatisticalBaseCode),31,Count,"count data is a statistical data type, a type of data in which the observations can take only the non-negative integer values, and where these integers arise from counting rather than ranking",7/1/2014 12:00:00 AM
+Result Statistical Base(StatisticalBaseCode),22,Daily Geometric Mean,Calculating a geometric mean (a daily period) provides a number that is more representative of the median and helps reduce the effect of a few extreme values.,5/31/2011 10:05:55 AM
+Result Statistical Base(StatisticalBaseCode),26,Daily Maximum,"The largest value of a set, each period of a day cycle",1/18/2012 2:21:20 PM
+Result Statistical Base(StatisticalBaseCode),46,Daily Mean,"The mean value of a set, each period of a day cycle",9/28/2023 1:04:19 PM
+Result Statistical Base(StatisticalBaseCode),47,Daily Median,"The  median value of a set (also known as the 50 Pctl), each period of a day cycle",9/28/2023 1:04:19 PM
+Result Statistical Base(StatisticalBaseCode),25,Daily Minimum,"The smallest value of a set, each period of a day cycle",1/18/2012 2:20:38 PM
+Result Statistical Base(StatisticalBaseCode),54,Daily Standard Deviation,"Daily standard deviation measures volatility over a single day, while general standard deviation calculates dispersion over any specified period (e.g., annual, monthly).",3/18/2026 1:08:50 PM
+Result Statistical Base(StatisticalBaseCode),30,Delta,The measurable difference between two points or results themselves,8/22/2013 2:21:20 PM
+Result Statistical Base(StatisticalBaseCode),18,Geometric Mean,"the geometric mean is a mean or average, which indicates the central tendency or typical value of a set of numbers by using the product of their values.",4/15/2008 9:32:55 AM
+Result Statistical Base(StatisticalBaseCode),35,Hourly Maximum,"The largest value of a set, each period of a hour cycle",7/18/2014 12:00:00 AM
+Result Statistical Base(StatisticalBaseCode),34,Hourly Minimum,"The smallest value of a set, each period of a hour cycle",7/18/2014 12:00:00 AM
+Result Statistical Base(StatisticalBaseCode),137,Instantaneous,The rate of change at a particular moment. Same as the value of the derivative at a particular point.,3/31/2017 7:29:37 AM
+Result Statistical Base(StatisticalBaseCode),44,Kurtosis,a measure of whether the data are peaked or flat relative to a normal distribution. The sharpness of the peak of a frequency-distribution curve.,1/14/2016 7:58:04 AM
+Result Statistical Base(StatisticalBaseCode),53,Log Standard Error,"This is the standard deviation of the sample mean, xBar, and describes its accuracy as an estimate of the population mean, mu, for values in logarithmic units.",9/28/2023 3:25:46 PM
+Result Statistical Base(StatisticalBaseCode),6,MPN,Most Probable Number (MPN) is a method used to estimate the concentration of viable microorganisms in a sample by means of replicate liquid broth growth in ten-fold dilutions.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),1,Maximum,"The maximum is a unique number for a given set of data. This number can be repeated, but there is only one maximum for a data set",7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),2,Mean,mean is the sum of all the numbers in the set divided by the amount of numbers in the set,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),3,Median,"median is the middle point of a number set, in which half the numbers are above the median and half are below.",7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),4,Minimum,the smallest or the least value in a given set of data.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),5,Mode,The mode of a set of data values is the value that appears most often.,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),50,N,N represents the total number of individuals or cases in the population,4/10/2023 11:08:57 PM
+Result Statistical Base(StatisticalBaseCode),217,Percent Similarity,Percent Similarity,7/14/2021 3:15:38 PM
+Result Statistical Base(StatisticalBaseCode),38,Percent diff from true,a percentage deviation or a measure of difference between the observed value of a variable and some reference value,12/21/2015 2:35:23 PM
+Result Statistical Base(StatisticalBaseCode),39,Percent of total,function returns the percentage of each value in the input series out of the total sum of the values in the input series.,12/21/2015 2:35:23 PM
+Result Statistical Base(StatisticalBaseCode),40,Percent recovery,The percent recovery is the amount of pure compound with respect to the impure compound obtained from the chemical synthesis,12/21/2015 2:35:23 PM
+Result Statistical Base(StatisticalBaseCode),179,Precision,"In statistics, precision is the reciprocal of the variance, and the precision matrix is the matrix inverse of the covariance matrix",6/3/2020 6:56:14 PM
+Result Statistical Base(StatisticalBaseCode),140,Quartile Deviation,The quartile deviation is a slightly better measure of absolute dispersion than the range. But it ignores the observation on the tails.,3/31/2017 9:06:39 AM
+Result Statistical Base(StatisticalBaseCode),29,RAD Error,Inherent Error in Radiological Instruments,7/10/2013 11:19:06 AM
+Result Statistical Base(StatisticalBaseCode),51,Range,the range is the spread of your data from the lowest to the highest value in the distribution. It is the simplest measure of variability,4/10/2023 11:08:57 PM
+Result Statistical Base(StatisticalBaseCode),42,Ratio,the quantitative relation between two amounts showing the number of times one value contains or is contained within the other.,12/21/2015 2:35:23 PM
+Result Statistical Base(StatisticalBaseCode),41,Relative percent diff,"the Relative Percent Difference (RDP) determines the difference between analytical results reported in primary, and duplicate samples. RDP statistics are used to calculate precision or random error.",12/21/2015 2:35:23 PM
+Result Statistical Base(StatisticalBaseCode),27,STV,"statistical threshold value  - level of concentration, the 90th percentile of the geometric mean of the samples for a particular water body",1/24/2013 2:21:20 PM
+Result Statistical Base(StatisticalBaseCode),24,Single Sample Maximum,a single sample or measurement taken at a specific time and determining the maximum number of defects discovered in a sample,5/31/2011 10:05:55 AM
+Result Statistical Base(StatisticalBaseCode),43,Skewness,a measure of the asymmetry of the probability distribution of a real-valued random variable about its mean.,1/14/2016 7:58:04 AM
+Result Statistical Base(StatisticalBaseCode),117,Slope,the slope or gradient of a line is a number that describes both the direction and the steepness of the line.  The significance of a linear relationship between x and y,3/30/2017 1:10:56 PM
+Result Statistical Base(StatisticalBaseCode),7,Standard Deviation,This describes the spread of values in the sample,7/26/2006 10:57:47 AM
+Result Statistical Base(StatisticalBaseCode),32,Standard Error,"This is the standard deviation of the sample mean, xBar, and describes its accuracy as an estimate of the population mean, mu. ",7/1/2014 12:00:00 AM
+Result Statistical Base(StatisticalBaseCode),33,Sum,Use summation notation to express the sum of all numbers.,7/1/2014 12:00:00 AM
+Result Statistical Base(StatisticalBaseCode),178,Variance,the most commonly used measures of spread. We know that variance is a measure of how spread out a data set is. It is calculated as the average squared deviation of each number from the mean of a data,6/3/2020 2:51:08 PM
+

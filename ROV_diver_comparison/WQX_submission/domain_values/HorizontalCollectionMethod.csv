@@ -1,0 +1,42 @@
+Domain,Unique Identifier,Name,Description,Last Change Date
+Horizontal Collection Method(HorizontalCollectionMethodName),2,Address Matching-Block Face,The geographic coordinate determination method based on address matching-block face,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),6,Address Matching-Digitized,The geographic coordinate determination method based on address matching-digitized,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),1,Address Matching-House Number,The geographic coordinate determination method based on address matching-house number,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),4,Address Matching-Nearest Intersection,The geographic coordinate determination method based on address matching-nearest intersection,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),7,Address Matching-Other,The geographic coordinate determination method based on address matching-other,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),5,Address Matching-Primary Name,The geographic coordinate determination method based on address matching-primary name,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),3,Address Matching-Street Centerline,The geographic coordinate determination method based on address matching-street centerline,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),8,Census Block-1990-Centroid,The geographic coordinate determination method based on census block-1990-centroid,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),9,Census Block/Group-1990-Centroid,The geographic coordinate determination method based on census/group-1990-centroid,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),10,Census Block/Tract-1990-Centroid,The geographic coordinate determination method based on census/tract-1990-centroid,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),11,Census-Other,The geographic coordinate determination method based on census-other,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),25,Classical Surveying Techniques,The geographic coordinate determination method based on classical surveying techniques,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),13,GPS Carrier Phase Kinematic Relative Position,The geographic coordinate determination method based on GPS carrier phase kinematic relative positioning technique,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),12,GPS Carrier Phase Static Relative Position,The geographic coordinate determination method based on GPS carrier phase static relative positioning technique,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),14,GPS Code (Pseudo Range) Differential,The geographic coordinate determination method based on GPS code measurements (pseudo range) differential (DGPS),8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),15,GPS Code (Pseudo Range) Precise Position,The geographic coordinate determination method based on GPS code measurements (pseudo range) precise positioning service,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),16,GPS Code (Pseudo Range) Standard Position (SA Off),The geographic coordinate determination method based on GPS code measurements (pseudo range) standard positioning service (SA Off),8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),17,GPS Code (Pseudo Range) Standard Position (SA On),The geographic coordinate determination method based on GPS code measurements (pseudo range) standard positioning service (SA On),8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),104,GPS with Wide Area Augmentation System,"An air navigation aid developed by the Federal Aviation Administration to augment the Global Positioning System (GPS),",1/10/2018 2:24:30 PM
+Horizontal Collection Method(HorizontalCollectionMethodName),29,"GPS, With Canadian Active Control System",GPS Code Measurements (pseudo  range) Standard Positioning Service Corrected using Canadian Active Control System,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),28,GPS-Unspecified,"Global Positioning Method, with unspecified parameters",8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),39,Interpolation-Digital Map Source,The geographic coordinate determination method based on interpolation-Digital Map Source,8/27/2015 12:00:00 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),30,Interpolation-Digital Map Source (Tiger),The geographic coordinate determination method is based on the Topologically Integrated Geographic Encoding and Referencing system (TIGER),1/31/2025 8:43:57 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),32,Interpolation-MSS,The geographic coordinate determination method is based on the use of a Multi-Spectral Scanner (MSS),8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),18,Interpolation-Map,The geographic coordinate determination method based on interpolation-map,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),21,Interpolation-Other,The geographic coordinate determination method based on interpolation-other,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),19,Interpolation-Photo,The geographic coordinate determination method based on interpolation-photo,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),20,Interpolation-Satellite,The geographic coordinate determination method based on interpolation-satellite,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),31,Interpolation-Spot,"The geographic coordinate determination method uses SPOT (Systeme Probatoire d'Observation de la Terre), a French-owned satellite launched in 1984",8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),33,Interpolation-TM,The geographic coordinate determination method is based on the use of a Thematic Mapper (TM),8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),22,Loran C,The geographic coordinate determination method based on Loran C,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),34,Public Land Survey-Eighth Section,"The geographic coordinate determination method is based on a public land survey, an eighth of a section",8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),36,Public Land Survey-Footing,The geographic coordinate determination method is based on a public land survey footing,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),23,Public Land Survey-Quarter Section,The geographic coordinate determination method based on public land survey quarter of a section,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),24,Public Land Survey-Section,The geographic coordinate determination method based on public land survey section,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),35,Public Land Survey-Sixteenth Section,"The geographic coordinate determination method is based on a public land survey, a sixteenth of a section",8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),27,Unknown,The information is not known,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),26,Zip Code-Centroid,The geographic coordinate determination method based on zipcode-centroid,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),38,Zip+2 Centroid,The center of an area defined by the 5-digit ZIP code and its 2-digit geographic segment extension,8/12/2006 12:29:23 AM
+Horizontal Collection Method(HorizontalCollectionMethodName),37,Zip+4 Centroid,The center of an area defined by the 5-digit  ZIP code and its 4-digit geographic segment extension,8/12/2006 12:29:23 AM
+

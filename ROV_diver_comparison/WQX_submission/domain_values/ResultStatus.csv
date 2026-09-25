@@ -1,0 +1,12 @@
+Domain,Unique Identifier,Name,Description,Last Change Date
+Result Status(ResultStatusIdentifier),1,Accepted,Reported result has been accepted; Water Quality Portal visible.,7/26/2006 10:57:47 AM
+Result Status(ResultStatusIdentifier),5,Final,"Publishable, released to public; Water Quality Portal visible.",7/26/2006 10:57:47 AM
+Result Status(ResultStatusIdentifier),91,Historical,"Originally entered in the database prior to the existence of a discoverable review process. Review, verification, and validation procedures not recorded in the database.",4/10/2025 9:29:26 AM
+Result Status(ResultStatusIdentifier),4,Preliminary,"Internal use only, not released to public.",7/26/2006 10:57:47 AM
+Result Status(ResultStatusIdentifier),7,Provisional,Data are provisional and subject to revision until they have been thoroughly reviewed and received final approval. Users are cautioned to consider carefully the provisional nature of the information,10/31/2023 2:20:25 PM
+Result Status(ResultStatusIdentifier),8,Raw,"State of original collection, not undergone any QC procedures; Water Quality Portal visible.",6/22/2016 12:11:27 PM
+Result Status(ResultStatusIdentifier),3,Rejected,Reported result has not been accepted; Water Quality Portal visible.,7/26/2006 10:57:47 AM
+Result Status(ResultStatusIdentifier),71,Supervised,Observe and direct the execution of tasks as project management staff; Water Quality Portal visible.,10/29/2018 9:40:45 AM
+Result Status(ResultStatusIdentifier),6,Unreviewed,Reported result has not been reviewed; Water Quality Portal visible.,5/18/2016 7:54:43 AM
+Result Status(ResultStatusIdentifier),2,Validated,Reported result has been verified and reviewed; Water Quality Portal visible.,7/26/2006 10:57:47 AM
+
