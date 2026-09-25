@@ -102,7 +102,7 @@ colframe=reportblue,
 colbacktitle=reportblue,
 coltitle=white,
 fonttitle=\bfseries,
-title={Box~\thesettingsboxcounter: #2},
+title={#2},
 boxrule=0.9pt,
 arc=2mm,
 left=3mm,
@@ -165,8 +165,7 @@ urlcolor=black
 	\endgroup
 }
 
-\newcommand{\figref}[1]{\boxedref{Fig.}{#1}}
-\newcommand{\tabref}[1]{\boxedref{Table}{#1}}
+\newcommand{\figref}[1]{\boxedref{Fig.}{#1}}\newcommand{\tabref}[1]{\boxedref{Table}{#1}}
 
 
 %% commenting commands 
@@ -297,11 +296,11 @@ endorsement or recommendation for use.
 %% VOLUNTEER ACKNOWLEDGEMENT
 %% --------------------------------------------------------------------
 \newcommand{\volunteeracknowledgement}{%
-	We want to thank our Seattle Aquarium AI Volunteers for their tireless
+	We want to thank our Seattle Aquarium AI Teachers for their tireless
 	efforts to help us label data and edit imagery: Abigail Chang, Cindy
 	Gossett, Aina Hori, David Muerdter, Barb Williams, and Adrien
 	Yee---thank you very much---we could not do this work without you!
-	Likewise, we would like to thank the 4,932 volunteers that have
+	Likewise, we would like to thank the 4,111 volunteers that have
 	contributed over half a million data points in Kelp Quest on
 	Zooniverse---their efforts from all over the world directly
 	facilitated the results in this report. Finally, we want to thank Nick 
@@ -503,11 +502,29 @@ boulder/riprap site along the Elliott Bay Marina breakwater --- surveying
 replicate transects at two depths, across two seasons, using both a small,
 modular ROV and scientific divers following Reef Check's Kelp Forest
 Monitoring Program protocol.
-Using negative binomial and beta-binomial generalized linear mixed models, we
-found no statistically significant differences between ROV- and
-diver-derived abundance estimates for any of ten overlapping macroinvertebrate
-taxa, nor for the dominant macroalgal percent-cover categories (red and green
-algae).
+We evaluated agreement between platforms in two complementary ways: in level,
+using negative binomial and beta-binomial generalized linear mixed models to
+test whether one platform records more or less than the other, and in
+pattern, using transect-level correlations to test whether the two platforms
+rise and fall together across transects.
+Our central finding is that the ROV and divers characterize coastal vegetation
+similarly.
+Red and green algal percent-cover did not differ significantly in level
+between platforms, and both were strongly correlated across transects (red
+algae $r=0.79$, green algae $r=0.93$).
+Sugar kelp (\textit{Saccharina latissima}) and sieve kelp (\textit{Agarum
+clathratum}), which divers count as individuals and the ROV records as
+percent-cover, were likewise strongly correlated ($r=0.96$ and $r=0.88$,
+respectively).
+Critically, this agreement held after between-site variation was removed
+(within-site \textit{Saccharina} $r=0.95$, \textit{Agarum} $r=0.82$, green
+algae $r=0.92$, red algae $r=0.76$), demonstrating that the two platforms
+resolve the same transect-scale pattern in vegetation, and not merely the
+same broad contrast between sites.
+Among macroinvertebrates, none of the ten overlapping taxa differed
+significantly in level between platforms, while pattern agreement ranged from
+strong and persisting within site for some taxa (e.g., burrowing sea cucumber,
+ochre/mottled star) to absent for others (e.g., kelp crab, large anemone).
 Substrate percent-cover, by contrast, differed significantly between
 platforms for most categories --- a discrepancy we attribute to a structural
 difference between the two protocols, in which the ROV's single-label point
@@ -515,17 +532,15 @@ classification competes for space with overlying vegetation while divers
 record substrate independently of biological cover, rather than to any
 deficiency in the ROV's ability to resolve substrate.
 Restricting the comparison to winter, when vegetation is largely senesced,
-substantially narrowed this gap.
-Additionally, correlation analyses investigated the degree to which ROV and 
-diver pattern exhibited concordance showed high degrees of correlation 
-for vegetation categories and many discrete invertebrates, and low to no 
-correlation for other invertebrates and substrate categories, even for 
-instances where absolute levels were not significantly different. 
+substantially narrowed this gap, and most of the pattern agreement we observed
+for substrate operated between sites rather than among transects within a
+site.
 Finally, we further show that the ROV's high-resolution, photograph-level
 percent-cover data captures spatial and community-level pattern invisible 
 to a single transect-scale average.
 Together, these results support the ROV as a reliable complement to 
-diver-based kelp forest monitoring, and we distill practical lessons for future 
+diver-based kelp forest monitoring --- particularly for tracking coastal
+vegetation --- and we distill practical lessons for future
 ROV survey design and post-processing.
 
 %% --------------------------------------------------------------------
@@ -554,15 +569,19 @@ substantial declines over the past several decades, with an estimated 65\% loss
 of surface canopy since 1980 and losses of up to 96\% in some areas, 
 concentrated in south and central Puget Sound \citep{Berry:2019aa}. 
 In contrast, kelp in the northern Sound and along the Strait of Juan de Fuca 
-has been comparatively stable, and has not shown declines of this magnitude 
+has been comparatively stable, and has not shown declines of this magnitude
 over the last decade.
+Distinguishing such local declines from broader regional variability is itself
+an argument for repeatable, spatially extensive benthic survey coverage.
 The proximate causes of the observed declines are not fully resolved, but 
 likely reflect a combination of warming water temperatures and human-driven 
 changes to sedimentation and nutrient regimes associated with coastal 
 development and climate change \citep{Khangaonkar:2018aa}.
-Sea urchin overgrazing, a major driver of kelp loss elsewhere along the Pacific
-coast \citep{FilbeeDexter:2014aa}, does not appear to have initiated decline
-within Puget Sound.
+Sea urchin overgrazing does not appear to have initiated decline within Puget
+Sound; elsewhere along the Pacific coast, urchins are generally understood less
+as the trigger of kelp loss than as the mechanism that maintains a deforested
+state once canopy has been lost, by grazing on new recruits
+\citep{FilbeeDexter:2014aa}.
 
 In response, state, federal, Tribal, non-profit, and academic entities have organized around a shared conservation and recovery agenda.
 The Northwest Straits Commission and partners published the Puget Sound Kelp Conservation and Recovery Plan (the Kelp Plan) in 2020, establishing six goals and 65 actions spanning kelp stressors, ecosystem value, distribution and trends, protection, restoration, and public engagement \citep{Calloway:2020aa}.
@@ -585,7 +604,7 @@ while capturing standardized, georeferenced imagery that can be annotated for
 percent-cover and abundance metrics well after the survey itself.
 Since 2022, the Seattle Aquarium (Aquarium) has developed a comparatively
 low-cost, modular, and open-source framework for conducting benthic ROV surveys
-in Washington's kelp forests \cite{Randell:2026aa}.
+in Washington's kelp forests \citep{Randell:2026aa}.
 These surveys are centered around obtaining standardized downward-facing 
 photographs of the benthos that capture a snapshot of vegetation, substrate 
 type, and individual and colonial invertebrates.
@@ -609,7 +628,7 @@ Among the priority next steps identified under Goal 3 (Distribution and Trends) 
 We do not view ROVs as a replacement for scientific divers, nor is the intent 
 of this comparison to rank one platform over the other. 
 Divers remain the only practical means of surveying within thick,
-canopy-forming kelp, of detecting cryptic taxa such as Pinto Abalone, of
+canopy-forming kelp, of detecting cryptic taxa such as pinto abalone, of
 detecting any taxa underneath algae, and of accessing species sheltering within
 cracks, crevices, and other complex microhabitats that a downward-facing ROV
 camera cannot resolve.
@@ -623,13 +642,13 @@ Here we present a direct, paired comparison of ROV- and diver-derived data
 collected from the same locations, depths, and days at two structurally 
 distinct sites in Elliott Bay: a soft-sediment site at Centennial Park and a 
 boulder/riprap site along the Elliott Bay Marina breakwater.
-At each site, we surveyed replicate 30 $m^{2}$ transects at two depths using 
+At each site, we surveyed replicate $30~m$ transects at two depths using 
 both a small ROV, flown at a fixed altitude of $0.8~m$ above the seafloor, and 
 scientific divers following Reef Check's Kelp Forest Monitoring Program 
 protocol \citep{ReefCheckCalifornia:2021aa}.
 Our first objective is to characterize how abundance and percent-cover data for 
 algae, invertebrates, and substrate derived from each method differ.
-Our second objective is to distill lessons-learned from this comparison as to 
+Our second objective is to distill lessons learned from this comparison so as to 
 inform future deployments of ROV surveys to support ongoing and future kelp 
 forest monitoring, conservation, and habitat restoration throughout Puget 
 Sound. 
@@ -671,10 +690,10 @@ These paired ROV-diver surveys took place at four newly established Aquarium
 Reef Check sites in two geographically distinct regions of Puget Sound: 
 two sites in Elliott Bay and two sites in the San Juan Islands, with each site 
 sampled at a ``deep'' ($10~m$) and ``shallow'' ($5~m$) zone.
-All sites were sampled in the summer (August---September) and winter 
-(December---January) to enable a head-to-head comparison of substrate data when 
+All sites were sampled in the summer (August--September) and winter 
+(December--January) to enable a head-to-head comparison of substrate data when 
 annual vegetation is absent.
-There were a variety of challenges associated with the San Juan Island sites,
+There were a variety of challenges associated with the San Juan Islands sites,
 and this report focuses on the Elliott Bay sites in summer 2024 and the
 immediately following winter 2025 (\figref{fig:site_map}).
 These two sites are dramatically distinct and thus pose a variety of physical 
@@ -698,7 +717,7 @@ diverse red and green algae, crustose coralline algae (orders Corallinales and
 Hapalidiales; CCA), and the invasive fucoid brown alga \textit{Sargassum 
 muticum} (order Fucales) are prevalent in the shallow zone (\figref{fig:EBM}).
 The macroinvertebrate assemblage at the Elliott Bay Marina breakwater includes 
-the same taxa found at Centennial Park, as well as orange sea cucumbers 
+the same taxa found at Centennial Park, as well as burrowing sea cucumbers 
 (\textit{Cucumaria miniata}), California sea cucumbers 
 (\textit{Apostichopus californicus}), leather stars 
 (\textit{Dermasterias imbricata}), blood stars (\textit{Henricia} spp.), and 
@@ -706,12 +725,15 @@ plumose anemones (\textit{Metridium} spp.).
 
 Our paired ROV-diver dataset in parallel with our statistical modeling approach 
 allows us to disentangle the relative effects of these two distinct sites, 
-their depth structure, and season in order to focus in upon the focal questions 
+their depth structure, and season to focus on the focal questions 
 investigated and answered in this technical report: 
 (\textbf{1}) 
-Do the data differ significantly by ``type'' i.e. diver versus ROV?
-And 
+Do the data differ significantly by ``type,'' i.e., diver versus ROV?
 (\textbf{2})
+Do the two platforms agree in pattern, i.e., do they rise and fall
+together across transects?
+And 
+(\textbf{3})
 what additional lessons can be learned from this paired dataset to structure
 future ROV operations in Puget Sound in support of monitoring and habitat
 restoration?
@@ -802,7 +824,7 @@ The divers then splashed for a third and final dive to complete the shallow
 transects, retrieve the tape and SMB, and return to the vessel.
 
 All $30~m$ Reef Check transects were completed at
-0---$30~m$, 35---$65~m$, and 70---$100~m$ along the contiguous $100~m$ tape,
+$0$--$30~m$, $35$--$65~m$, and $70$--$100~m$ along the contiguous $100~m$ tape,
 providing the $5~m$ spacing between transects required for approximate
 statistical independence.
 And while the ROV surveyed the continuous $100~m$, we processed its telemetry 
@@ -882,8 +904,8 @@ and is deployed on a $150~m$ tether, though all flights conducted
 for this comparison took place at depths $\le 15~m$. 
 The ROV was operated from the Seattle Aquarium's 24' aluminum Almar vessel, 
 which was anchored on site for the duration of each survey.
-Across 2022---2026 we developed four successive ROV hardware iterations 
-($V1$---$V4$; a full description of these hardware iterations is provided in 
+Across 2022--2026 we developed four successive ROV hardware iterations 
+($V1$--$V4$; a full description of these hardware iterations is provided in 
 the companion field methods manuscript \citep{Randell:2026aa}). 
 These four ROV versions are distinguished primarily by power supply and benthic 
 lighting; 
@@ -893,61 +915,7 @@ HERO 12 downward-facing camera and four 18,000-lumen Kraken lights to capture
 $27.3~\mathrm{MP}$ RAW (.GPR) photographs of the benthos.
 Camera settings were configured via GoPro Labs flashed to the GoPro's SD card, a firmware extension enabling more extensive customization of GoPro cameras than is available through the standard interface.
 The settings used to obtain all \(27.3~\mathrm{MP}\) RAW (.GPR) ROV survey 
-photographs are summarized in Box~\ref{box:camera_settings}.
-
-\refstepcounter{settingsboxcounter}
-\label{box:camera_settings}
-\begin{settingsbox}{GoPro HERO~12 camera settings}
-
-\centering
-\small
-\setlength{\tabcolsep}{5pt}
-\renewcommand{\arraystretch}{1.15}
-
-% First row: five settings
-\begin{tabularx}{\linewidth}{
-@{}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-@{}
-}
-\camerasetting{Mode}{Photo} &
-\camerasetting{Lens}{Wide} &
-\camerasetting{Output}{\(27.3~\mathrm{MP}\) RAW} &
-\camerasetting{White balance}{Native} &
-\camerasetting{ISO}{100--200}
-\end{tabularx}
-
-\vspace{2.5mm}
-{\color{reportblue!20}\hrule}
-\vspace{2.5mm}
-
-% Second row: four settings
-\begin{tabularx}{\linewidth}{
-@{}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-@{}
-}
-\camerasetting{Color profile}{Flat} &
-\camerasetting{Sharpness}{Low} &
-\camerasetting{EV compensation}{0} &
-\camerasetting{Shutter speed}{\(1/300~\mathrm{s}\)}
-\end{tabularx}
-
-\end{settingsbox}
+photographs are summarized in \figref{fig:camera_settings}.
 
 %% --------------------------------------------------------------------
 \subsection{ROV telemetry, imagery, and data post-processing}
@@ -968,7 +936,7 @@ to a vessel-deployed antenna.
 Neither is sufficient alone --- the DVL provides only relative movement, and
 the USBL alone is comparatively noisy --- so we fused both streams with
 compass and inertial measurement unit (IMU) data from the ROV's Navigator
-Flight Controller, using the Extended Kalman Filter available in ArduSub, the
+Flight Controller, using the Extended Kalman Filter (EKF) available in ArduSub, the
 ROV's flight control firmware, and recorded the result in the ROV's telemetry
 logs (tlogs).
 
@@ -993,11 +961,11 @@ interpret the platform comparison that follows.
 The latest tools used by our team to process ROV telemetry are available on GitHub at \texttt{CCR\_ROV\_survey\_methods} \citep{SeattleAquarium:2026aa}.
 
 Raw ROV imagery (.GPR) required substantial manual editing before it was 
-usable for downstream classification i.e., data extraction: each photograph was 
-imported into Adobe Lightroom Pro, cropped to remove lens distortion at the 
+usable for downstream classification (i.e., data extraction): each photograph was 
+imported into Adobe Lightroom Classic, cropped to remove lens distortion at the 
 image margins, denoised, and adjusted for white balance, contrast, 
 sharpness, and color, before being exported as a JPEG (see 
-\cite{Randell:2026aa} and its supplementary material for the complete
+\citealt{Randell:2026aa} and its supplementary material for the complete
 hand-editing workflow).
 
 %% --------------------------------------------------------------------
@@ -1010,7 +978,7 @@ via making annotations in Video and Image Analytics for Multiple Environments
 (VIAME), specifically the online version \citep{dawkins2017viame,viame_web}.
 We uploaded all ROV survey imagery to VIAME, and Seattle Aquarium AI Teachers 
 trained to identify our specific taxa reviewed each image and generated 
-annotations around every observed instance of a visible macro-invertebrate. 
+annotations around every observed instance of a visible macroinvertebrate. 
 This data set was used to train a machine learning object detection model, but 
 due to the relative rarity of invertebrates in Elliott Bay, we found that more 
 observations were required. 
@@ -1054,7 +1022,7 @@ where the ROV camera's wide-angle lens introduces some distortion;
 both close to the ROV and farther from it, capturing the full range of imaging 
 distances during a survey; 
 and both where a patch was entirely composed of a single category and where up 
-to roughly 0.25\% of a patch's area belonged to a neighboring category, 
+to roughly 25\% of a patch's area belonged to a neighboring category, 
 reflecting the imperfect category boundaries the model would need to handle in 
 practice.
 Standard image augmentations (adjustments to brightness, hue, and saturation; 
@@ -1159,15 +1127,15 @@ We created Kelp Quest
 as our Zooniverse project for this purpose.
 In Kelp Quest, we ask volunteers to familiarize themselves with 28 distinct 
 categories of algae, invertebrates, and substrate 
-\figref{fig:kelpquest_categories}.
+(\figref{fig:kelpquest_categories}).
 Each subject is a cropped image centered on a single 
 percent-cover data point: the crop shows the green $224 \times 224$-pixel patch 
 reviewed by the Toolbox model, a red crosshair marking the exact point 
 volunteers are asked to evaluate, the model's predicted category printed as 
 text above the patch, and surrounding image context to aid identification.
 
-Kelp Quest is currently comprised of two volunteer-facing workflows (plus 
-internal ``Expert'' variants of each, used by CCR researchers for direct expert 
+Kelp Quest currently comprises two volunteer-facing workflows (plus 
+internal ``Expert'' variants of each, used by our team for direct expert 
 review within the same system):
 
 \begin{itemize}
@@ -1230,7 +1198,7 @@ improve Toolbox model performance, we consider public engagement with
 Washington's kelp forests to be an equally worthwhile, parallel benefit of the 
 project.
 As of this writing, Kelp Quest has drawn 4{,}111 volunteers who have together
-contributed 582{,}458 classifications \figref{fig:kelpquest_volume} since the 
+contributed 582{,}458 classifications (\figref{fig:kelpquest_volume}) since the 
 project's launch on March 24, 2026, and its Talk discussion board is active 
 with volunteers asking questions and sharing their own photos and species 
 encounters.
@@ -1260,7 +1228,7 @@ Brooks:2017aa},
 \end{equation}
 
 \noindent
-where ``type'' is the data generating platform i.e. ROV or divers,
+where ``type'' is the data-generating platform, i.e., ROV or divers,
 ``site'' delineates Centennial Park from Elliott Bay Marina breakwater,
 ``season'' distinguishes between summer 2024 and winter 2025 data,
 ``depth'' captures the difference between the shallow ($5~m$) and deep ($10~m$)
@@ -1299,8 +1267,8 @@ ask of a methods comparison.
 It is not, however, the only question that matters.
 A platform could record consistently fewer individuals than another and still
 serve perfectly well, provided the two rise and fall together across space and
-time: a stable multiplicative offset between platforms is a scaling factor 
-could account for this pattern.
+time: a stable multiplicative offset between platforms is simply a scaling factor,
+which can in principle be calibrated away.
 The converse is equally true, and rather more troubling --- two platforms
 could agree exactly on the average and still be poor substitutes for one
 another if neither can tell the reader which transect had more.
@@ -1313,7 +1281,7 @@ correlations across all categories and taxa}, below, after the two model
 specifications they accompany.
 
 %% --------------------------------------------------------------------
-\subsubsection{Abundance of discrete macro invertebrates}
+\subsubsection{Abundance of discrete macroinvertebrates}
 \label{subsubsec:abundance}
 %% --------------------------------------------------------------------
 
@@ -1399,10 +1367,10 @@ percentages) of 30 categories across approximately $n=60$ photos across a
 transect.  
 However, to compare these proportions to diver data, which are (in the case of 
 UPC data) a single percentage per transect, we needed to average across all 
-photos within a ROV transect to generate a single, transect-scale average. 
+photos within an ROV transect to generate a single, transect-scale average. 
 
 Once these transect-scale averages were generated, we next had to reconcile 
-with the differences in resolution across categories for both platforms that 
+the differences in resolution across categories for both platforms that 
 necessitated several categories to be combined or joined on the ROV and diver 
 side. 
 \tabref{tab:combined_categories} details these category combinations and a 
@@ -1411,7 +1379,7 @@ For example, the ROV is able to distinguish four different types of fleshy red
 algae, whereas the divers categorize all of these simply as 
 \texttt{cover\_red\_algae}, thus the ROV's four categories were combined into a 
 single category. 
-In the case of green algae, Diver \texttt{cover\_green\_algae} and 
+In the case of green algae, diver \texttt{cover\_green\_algae} and 
 \texttt{superlayer\_green\_algae} are two independently recorded UPC surveys 
 along the same 30 points within a transect --- not mutually exclusive 
 categories --- so summing them risks double-counting any point flagged in both. 
@@ -1483,6 +1451,7 @@ for that category --- is linked to Eqn.~\ref{eq:model}'s fixed and
 random effects through a logit link:
 
 \begin{equation}
+\begin{gathered}
 \mathrm{logit}(p_i)
 =
 \log\!\left( \frac{p_i}{1-p_i} \right)
@@ -1493,8 +1462,9 @@ random effects through a logit link:
 + \beta_3\, \mathrm{season}_i 
 + \beta_4\, \mathrm{depth}_i 
 + b_{j[i]},
-\qquad
+\\
 b_{j} \sim \mathcal{N}(0, \sigma^2_{\mathrm{transect}}),
+\end{gathered}
 \label{eq:betabinom-link}
 \end{equation}
 
@@ -1555,8 +1525,8 @@ here.
 \label{subsubsec:distinct_taxa}
 %% --------------------------------------------------------------------
 
-Unfortunately, the primary kelp species in Elliott Bay --- Sugar kelp 
-(\textit{Saccharina latissima}) and Sieve kelp (\textit{Agarum clathratum}) --- 
+Unfortunately, the primary kelp species in Elliott Bay --- sugar kelp 
+(\textit{Saccharina latissima}) and sieve kelp (\textit{Agarum clathratum}) --- 
 posed the greatest challenge for us to compare across ROV and diver methods. 
 This is because divers generate density metrics from the algae swath, where 
 individual abundances are counted. 
@@ -1629,8 +1599,8 @@ Abundance correlations are computed on raw transect totals, the same quantity
 plotted in \figref{fig:abundance_head-to-head}; percent-cover correlations are
 computed on the transect-averaged proportions.
 
-Two properties of this correlation are worth stating plainly, because both
-bear on how the resulting tables should be read.
+Three properties of this correlation are worth noting as they pertain to 
+results interpretation.
 First, and following directly from the identity noted above, we do not report
 a separate correlation of the two platforms' z-scored series: because
 standardization is a linear transformation and Pearson's $r$ is invariant to
@@ -1684,7 +1654,7 @@ the interpretation, and in full alongside the other correlation output in this
 project's public repository.
 
 %% --------------------------------------------------------------------
-\subsubsection{Preliminary exploration of ROV only data}
+\subsubsection{Preliminary exploration of ROV-only data}
 \label{subsubsec:ROV_only}
 %% --------------------------------------------------------------------
 
@@ -1706,18 +1676,8 @@ Bray-Curtis dissimilarity matrix, in $k=2$ dimensions, with up to 200 random
 starts (\texttt{trymax = 200}) to guard against convergence on a local
 optimum, and with \texttt{metaMDS()}'s automatic data transformation disabled,
 as our data are already-bounded proportions rather than counts.
-We should be explicit about one number that is easy to misread: the value of
-$0.134$ we report is the ordination's stress, not a dissimilarity
-threshold or a cutoff we selected.
-Stress is an outcome of the fit --- a measure of how faithfully the
-two-dimensional plot preserves the rank order of the underlying dissimilarities
---- and is conventionally read against Clarke's rules of thumb, under which
-values below $0.1$ correspond to a good ordination and values below $0.2$ to a
-usable one \citep{Clarke:1993aa}.
-Our $0.134$ therefore indicates a serviceable two-dimensional representation,
-and nothing about it was chosen by us.
 This initial NMDS ordination --- including the percent-cover category
-correlation coefficients and ellipses overlays for sites, season, and depth ---
+correlation coefficients and ellipse overlays for sites, season, and depth ---
 provides an example of how capturing proportion information across space can be
 used to examine kelp forest community structure variation.
 
@@ -1734,7 +1694,7 @@ used to examine kelp forest community structure variation.
 %% --------------------------------------------------------------------
 
 Across our $n=24$ transects, divers recorded 994 observations of the 10
-overlapping macro invertebrate taxa and the ROV recorded 1{,}206, for a
+overlapping macroinvertebrate taxa and the ROV recorded 1{,}206, for a
 combined 2{,}200 (\tabref{tab:abundances}).
 Three taxa --- ochre/mottled star, rock crab, and burrowing sea cucumber ---
 accounted for the large majority of these observations (1{,}334, 240, and 216
@@ -1808,7 +1768,7 @@ two distinct, density-dependent features of how the ROV samples the seafloor
 --- in the \textit{Discussion}.
 
 Finally, while these results are encouraging in that they suggest a broadly
-similar snapshot of macro-invertebrate abundance across methods, the models
+similar snapshot of macroinvertebrate abundance across methods, the models
 (and the underlying data) cannot speak to whether both platforms detected the
 \textit{same exact} individuals --- only that transect-level abundance totals 
 are not statistically distinguishable between platforms.
@@ -1860,8 +1820,8 @@ asymmetry runs in one direction only.
 
 We suspected that the winter-only percent-cover data might align better between
 the two methods, so we refit the same beta-binomial model for CCA and the
-five substrate categories using only the 12 winter transects (24 $\times$ 
-transect observations), when annual kelp and algae cover is largely senesced 
+five substrate categories using only the 12 winter transects (24 observations: 12 transects 
+$\times$ 2 platforms), when annual kelp and algae cover is largely senesced 
 (\tabref{tab:pc_winter_substrate}).
 Sand's significant all-season gap disappeared entirely in winter
 ($\mathrm{OR}=0.60$, $p=0.299$), and pebble's gap weakened from highly
@@ -1883,7 +1843,7 @@ for these two categories specifically.
 So of the five significant all-season differences, two (sand and pebble)
 resolved or substantially weakened in winter, while three (CCA, boulder, and
 shell hash) remained significant.
-We return for the hypothesized mechanism responsible for this seasonal 
+We return to the hypothesized mechanism responsible for this seasonal 
 discrepancy in percent-cover between methods in the \textit{Discussion}. 
 
 % --------------------------------------------------------------------
@@ -1901,6 +1861,12 @@ $p=6.3\times10^{-14}$).
 For \textit{Agarum}, concentrated at Elliott Bay Marina in both seasons, the
 correlation was similarly strong, if slightly weaker ($r=0.88$,
 $p=1.7\times10^{-8}$).
+Because each kelp is concentrated at a single site, we also applied the
+stricter within-site test described in the \textit{Methods}, which removes
+each site's own mean before correlating; both correlations held
+(\textit{Saccharina} $r=0.95$, $p=3.9\times10^{-12}$; \textit{Agarum}
+$r=0.82$, $p=1.5\times10^{-6}$), so the agreement reflects which transects
+within a site had more kelp, and not merely which site had kelp at all.
 In other words, whichever transects the divers recorded as relatively high or
 low in kelp density, the ROV tended to record as relatively high or low in
 kelp percent-cover as well, and vice versa (\figref{fig:z-scores}).
@@ -2009,9 +1975,11 @@ Because our two sites differ so profoundly in substrate, a correlation
 computed across all 24 transects partly rewards both platforms simply for
 recognizing that the breakwater is bouldery and Centennial Park is not.
 Removing each site's own mean before correlating, as described in the
-\textit{Methods}, leaves the algal categories essentially
+\textit{Methods}, leaves every vegetation category essentially
 untouched --- green algae $r=0.92$ ($p=5.6\times10^{-10}$) and red algae
-$r=0.76$ ($p=2.8\times10^{-5}$) within site --- but substantially deflates the
+$r=0.76$ ($p=2.8\times10^{-5}$) within site, alongside \textit{Saccharina}
+($r=0.95$) and \textit{Agarum} ($r=0.82$) reported above --- but substantially
+deflates the
 substrate categories: boulder falls from $0.85$ to $0.11$ ($p=0.628$), CCA
 from $0.74$ to $0.07$ ($p=0.739$), and pebble from $0.80$ to $0.42$
 ($p=0.048$).
@@ -2023,6 +1991,12 @@ urchin $r=0.66$, and California sea cucumber $r=0.54$ all remain significant
 within site --- indicating that for discrete invertebrates the two platforms
 genuinely do resolve the same transect-scale pattern, and not merely the same
 site-scale contrast.
+Coastal vegetation is therefore the one group in which every category we
+compared retained strong ($r \geq 0.76$), significant pattern agreement within
+site; among invertebrates, significant within-site agreement held for four of
+the ten taxa (excluding rock crab, whose within-site value inherits the
+single-transect artifact described above), and among substrate categories
+only pebble retained significant, though moderate, agreement.
 
 %% --------------------------------------------------------------------
 \subsection{ROV percent-cover data at its full resolution}
@@ -2070,13 +2044,19 @@ Finally, \figref{fig:NMDS} places all 1{,}436 photographs and their full
 30-category percent-cover profiles into a single, two-dimensional non-metric
 multidimensional scaling ordination (Bray-Curtis dissimilarity, stress
 $=0.134$).
+Stress is an outcome of the fit --- a measure of how faithfully the
+two-dimensional plot preserves the rank order of the underlying dissimilarities
+--- and is conventionally read against Clarke's rules of thumb, under which
+values below $0.1$ correspond to a good ordination and values below $0.2$ to a
+usable one \citep{Clarke:1993aa}.
+Our $0.134$ therefore indicates a serviceable two-dimensional representation.
 Community composition separates cleanly by site (\figref{fig:NMDS}a):
 Centennial Park's photographs are dominated by soft-substrate and sugar-kelp
 signal, while Elliott Bay Marina's are dominated by hard-substrate and
 sieve-kelp signal, mirroring the two sites' contrasting substrate types.
 Within each site, depth introduces further, visible structure
 (\figref{fig:NMDS}b): at Elliott Bay Marina in particular, the deep- and
-shallow-transect ellipses are nearly mutually exclusive, while season
+shallow-transect ellipses overlap only slightly, while season
 contributes comparatively little additional separation.
 These results indicate that the ROV's 30-category percent-cover
 profile, generated entirely from top-down imagery, is capturing real,
@@ -2099,11 +2079,15 @@ the data gathered by divers, with the exception of percent-cover metrics of
 substrate, especially in the summer.
 In terms of pattern --- whether the two platforms agree on which
 transects were relatively high or low --- the picture is more varied:
-strong and significant agreement for the macroalgal categories and for most
-discrete invertebrate taxa, weak-to-absent agreement for a specific minority
-(cobble, shell hash, sand, kelp crab, large anemone), and, for substrate in
-particular, agreement that operates largely at the between-site scale rather
-than the transect scale.
+crucially, from the perspective of coastal habitat monitoring, we see strong
+and significant agreement for every vegetation category we compared --- red
+and green algae, \textit{Saccharina}, and \textit{Agarum} --- and this
+agreement persists after between-site variation is removed.
+We likewise see strong and significant agreement for most discrete invertebrate 
+taxa, weak-to-absent agreement for a specific minority of categories and 
+abundances (cobble, shell hash, sand, kelp crab, large anemone), and, for 
+substrate in particular, agreement that operates largely at the between-site 
+scale rather than the transect scale.
 Neither result subsumes the other, and we examine these results in 
 \textit{Agreement in level versus agreement in pattern}, below.
 
@@ -2114,12 +2098,12 @@ As follows is a good-faith effort to scrutinize and criticize the ROV
 methodology as it pertains to taking photographs and generating inference
 relative to divers.
 This \textit{Discussion} section is oriented around the two focal derived data
-types from the ROV --- abundances of macro invertebrates, and percent-cover of
+types from the ROV --- abundances of macroinvertebrates, and percent-cover of
 macrophytes and substrate --- before closing with the level-versus-pattern
 distinction that cuts across both.
 Our intent is to pick apart any aspects that might contribute to error or bias
 in an effort to identify ways to improve the overarching methodology ---
-towards this end, we extract lessons and next-steps wherever possible, and
+towards this end, we extract lessons and next steps wherever possible, and
 reiterate these lessons in the final \textit{Conclusions} section.
 
 %% --------------------------------------------------------------------
@@ -2133,7 +2117,7 @@ exposed and visible to the downward-facing camera, and our results validate the
 basic premise of using the ROV to generate inference about these conspicuous 
 and ecologically important taxa. 
 However, it is a surprise that the ROV consistently generated more instances of
-macro-invertebrates (though not statistically significantly more) relative to
+macroinvertebrates (though not statistically significantly more) relative to
 divers (\tabref{tab:abundances}).
 This is because divers are able to comprehensively search across the benthos, 
 including underneath vegetation, within cracks and crevices, under ledges, 
@@ -2144,27 +2128,30 @@ to this unexpected finding, all of which we detail below.
 First, as established, the divers survey a $1~m$ wide swath on each side of 
 the tape, and our ROV likewise flew on either side of the tape to generate 
 imagery that is as comparable as possible to the benthos surveyed by the diver. 
-With the ROV at an altitude of $0.8~m$ above the seafloor, the 
-approximate width of the photograph captured by the GoPro (once it has been 
-cropped) is approximately $1.2~m$, though the exact image width will covary 
-with fluctuations in ROV altitude throughout a survey. 
+In practice however, both platforms may slightly vary in their width. 
+Divers for example will likely exhibit some degree of variation, though they 
+are trained to know what a $1m$ distance is on their body (e.g., from their 
+finger tips to their sternum).
+With the ROV at an altitude of $0.8~m$ above the seafloor, the approximate 
+width of the photograph captured by the GoPro (once it has been cropped) is 
+approximately $1.2~m$, though the exact image width will covary with 
+fluctuations in ROV altitude throughout a survey. 
 Our surftrak software \citep{McQueen2025} locks in ROV altitude as best as
 possible, but there will always still be some degree of variation in ROV
 altitude, and thereby ROV photograph width and area.
-Altitude is not the only vehicle attitude that affects the footprint. Roll
-about the vehicle's long axis would shift and skew the imaged swath laterally,
-independent of altitude, and pitch would do the same fore and aft. In practice
-the BlueROV2 is passively stable in roll --- its buoyancy is set well above its
-center of mass --- and we fly with attitude stabilization enabled, so roll
-excursions during a transect are small. We have not, however, quantified them,
-and we should be clear that we could: roll and pitch are recorded continuously
-in the vehicle's telemetry logs alongside the altitude and position data we
-already use, so the diagnostic is available in data we have already collected
-and simply has not yet been extracted. Doing so would let us bound the lateral
-component of image-footprint variation rather than assume it negligible, and
-we flag it as a straightforward addition to the telemetry-processing pipeline.
-\figref{fig:survey_geometry} illustrates the resulting geometry, including the
-$\sim 0.2~m$ of extra width discussed here relative to the diver's swath.
+Additionally, roll about the vehicle's long axis would shift and skew the 
+imaged swath laterally, independent of altitude, and pitch would do the same 
+fore and aft. 
+However we fly with a stabilized flight mode, so any roll and pitch will be 
+minimized.  
+We have not, however, quantified them, though future investigation could: 
+roll and pitch are recorded continuously in the vehicle's telemetry logs 
+alongside the altitude and position data we already use, so the diagnostic is 
+available in data we have already collected and simply has not yet been 
+extracted. 
+\figref{fig:survey_geometry} illustrates the resulting geometry for the diver 
+vs ROV snapshot, including the $\sim 0.2~m$ of extra width discussed here 
+relative to the diver's swath.
 We anticipate the effects in terms of photographed benthos of this $\sim 0.2~m$ 
 extra width will come in two flavors: linear, and non-linear. 
 Stretches of the benthos that are largely flat will net a linear $\sim 0.2~m$ 
@@ -2195,17 +2182,19 @@ highly simplified (for the latter).
 Future ROV survey development efforts could refine these calculations, likely 
 with more standardized calibrations and tests across the typical ROV survey 
 altitudes that account for varying terrain (e.g., 0.5--$1.2~m$).
+A pair of lasers mounted downwards on the ROV is the traditional approach to 
+generate scale, and a lower-cost version of these could be explored. 
 Additionally, advanced image processing techniques such as photogrammetry could 
 provide scale within each image --- thereby rendering the former calculations 
 largely unnecessary --- and scale comes with the highly beneficial ability to  
-generate size estimates for macro invertebrates, an inference of considerable 
+generate size estimates for macroinvertebrates, an inference of considerable 
 value for fishery and conservation management of species such as sea stars, sea 
 urchins, crabs, sea cucumbers, and demersal fish. 
 
 Second, there are occasional instances of slight image overlap across our 
 sequential ROV survey photographs, and we once more anticipate the effects in 
 terms of the potential to double-count to be density-dependent. 
-For most of the macro-invertebrate transects, density was only low/moderate: 
+For most of the macroinvertebrate transects, density was only low/moderate: 
 excluding the high rock crab density transect at Centennial Park, the ROV saw 
 on average 45.2 individuals per transect ($0.75~m^{-1}$), and divers saw on 
 average 39 ($0.65~m^{-1}$).
@@ -2214,7 +2203,7 @@ linear stretch of seafloor, in low/moderate invertebrate density surveys, we
 anticipate that a slight amount of image overlap is unlikely to be overly 
 erroneous in terms of double-counting invertebrates. 
 However, in the singular instance of Centennial Park, winter, T1, where the ROV 
-recorded 167 total macro-invertebrates ($2.78~m^{-1}$), whereas the divers 
+recorded 167 total macroinvertebrates ($2.78~m^{-1}$), whereas the divers 
 captured 96 ($1.6~m^{-1}$), it is clear that a slight amount of image overlap 
 when paired with density-dependent invertebrate clumping --- and combined with 
 the $20\%$ extra image width discussed above --- easily translated to the 
@@ -2224,27 +2213,27 @@ transect (\figref{fig:double_count}).
 Fortunately, regarding the occasional image overlap, this is one area of our 
 survey protocol that is relatively straightforward to adjust. 
 Our GoPro HERO 12 currently takes one photograph every three seconds, and given 
-our approximate survey speed of 0.01--0.013 $\frac{m}{s}$, this results in 
+our approximate survey speed of 0.1--0.13 $\frac{m}{s}$, this results in 
 numerous overlapping photos. 
 We currently use our EKF ROV position telemetry output to select one photograph 
 for every $1~m$ of vehicle movement via matching photo and telemetry time 
 stamps --- this appears to have largely worked well, but it is not perfect and 
 can be honed further. 
 Additionally, a future upgraded camera --- if integrated with the ROV --- can 
-use MAVlink messages from the ROV to trigger the camera to shoot at 
+use MAVLink messages from the ROV to trigger the camera to shoot at 
 predetermined intervals of ROV movement. 
 For example, we could restrict the ROV to only take a photograph after the ROV 
 moves a linear $1.5~m$ from the previous photograph, or even further, to 
 guarantee non-overlapping imagery. 
 Alternatively, if we pursued a photogrammetry approach, we could reconstruct at 
 minimum an orthomosaic of the entire transect, which would allow us to count 
-macro invertebrates in their totality across the benthos --- virtually 
+macroinvertebrates in their totality across the benthos --- virtually 
 guaranteeing that we would not have instances of double-counted individuals. 
 In contrast to non-overlapping imagery as described above, generating 
 photogrammetry products would benefit from, e.g., one photograph every $0.5~m$ 
 of movement. 
 
-Third, we annotated every ``object'' (every macro invertebrate) we could see in
+Third, we annotated every ``object'' (every macroinvertebrate) we could see in
 the imagery --- this includes invertebrates smaller than $2.5~cm$, which is the 
 minimum size diameter that Reef Check divers will count. 
 As we do not have a highly precise metric of scale in our photographs --- unlike
@@ -2252,29 +2241,18 @@ Reef Check divers, who have centimeters marked on their dive slate --- we
 choose to simply annotate all visible invertebrates, with the understanding 
 that some of them were likely smaller than the standard Reef Check size cutoff 
 (see, e.g., \figref{fig:too_small}). 
+We are uncertain what the smallest size the ROV can detect is --- detectability 
+in a top-down photograph is governed less by absolute size than by contrast 
+against the surrounding substrate, by morphological distinctiveness, and by 
+whether the individual is exposed or partly obscured by algae: a small, 
+high-contrast ochre star on sand is readily identified at a size well below 
+that of a cryptic, substrate-matched individual we would not confidently assign 
+to species at all.
 We anticipate these small inverts to comprise a relatively small proportion of
 our invertebrates, so we note it here but do not overly focus upon it, other
 than to say (once again) photogrammetry methods would alleviate this problem
 via generating scale by which we could size invertebrates from the down-facing
 imagery.
-
-We are sometimes asked what the smallest invertebrate is that we are
-comfortable identifying from ROV imagery, and the honest answer is that no
-single size threshold applies.
-Detectability in a top-down photograph is governed less by absolute size than
-by contrast against the surrounding substrate, by morphological
-distinctiveness, and by whether the individual is exposed or partly obscured
-by algae: a small, high-contrast ochre star on sand is readily identified at a
-size well below that of a cryptic, substrate-matched individual we would not
-confidently assign to species at all.
-Any usable answer is therefore per-taxon rather than general, and establishing
-it properly requires the scale reference discussed below --- which would let us
-plot identification confidence against measured size, per taxon, rather than
-reasoning about it qualitatively as we must at present.
-We regard this as a genuine gap and one worth closing, because the small
-individuals at issue are disproportionately recruits, and detecting
-recruitment pulses early is among the more valuable things a monitoring
-program can do.
 
 And fourth, there are a few relatively rare instances where, in the course of 
 the ROV-diver comparison, the ROV drifted above the tape such that the survey 
@@ -2297,9 +2275,11 @@ counting, identifying, and recording under finite bottom time, and can simply
 miss individuals in the process; and near the $2.5~cm$ Reef Check size cutoff
 they are likely to be conservative, excluding borderline individuals a
 photograph would retain.
-Each of these would push diver counts down relative to the ROV, in the same
-direction as the ROV-side effects above, so we cannot cleanly partition the
-consistent ROV-high tendency between the two platforms' respective biases.
+Swath-width error can bias diver counts in either direction, but missed
+individuals and size conservatism would both push diver counts down relative
+to the ROV, in the same direction as the ROV-side effects above, so we cannot
+cleanly partition the consistent ROV-high tendency between the two platforms'
+respective biases.
 Resolving that would require an independent reference --- a physically
 delimited quadrat surveyed exhaustively by both platforms, for instance ---
 which we did not have here.
@@ -2315,7 +2295,7 @@ to identify how this derived metric differs from the diver's.
 However, given that our 
 (\textbf{1}) 
 proportion metric is relatively new to kelp forest ecology, especially given 
-the total number proportion observations the ROV generates per transect, and as
+the total number of proportion observations the ROV generates per transect, and as
 (\textbf{2}) 
 it is the primary derived metric that speaks to macrophytes such as brown, red, 
 and green algae, 
@@ -2333,13 +2313,13 @@ significant differences for most substrate and CCA categories ($n=5$
 categories: CCA, boulder, pebble, sand, shell hash,
 \tabref{tab:pc_all_models}),
 whereas fitting to only the winter data reduced the number of significant 
-categories ($n=3$ categories: CCA, boulder, and shell hash 
+categories ($n=3$ categories: CCA, boulder, and shell hash;
 \tabref{tab:pc_winter_substrate}). 
 We do not believe this is evidence of how Toolbox classifies (or misclassifies) 
 substrate, or the ability to differentiate substrate categories from 
 ROV-derived imagery, especially as all data were QAQC'd by expert annotators. 
 Rather, this is an excellent example of how the ROV's top-down snapshot of the 
-benthos is fundamentally distinct from the diver's, tactile, detailed ability 
+benthos is fundamentally distinct from the diver's tactile, detailed ability 
 to search across the benthos, including underneath vegetation to survey the 
 ``real'' underlying physical seafloor.
 
@@ -2375,8 +2355,8 @@ non-independent.
 
 This is worth lingering upon, and it connects to how we derive information 
 about the constituent proportions within a photograph. 
-For the diver UPC data, the diver randomly samples the benthos via a 
-point-survey at 30 points (once per meter along each meter of the $30~m$ 
+For the diver UPC data, the diver samples the benthos via a 
+point survey at 30 fixed points (once per meter along the $30~m$ 
 transect), thereby establishing a single percentage (or proportion) for each 
 category across the entire $30~m$ transect. 
 In contrast, our ROV gathers a photograph each meter of the $30~m$ transect,
@@ -2433,16 +2413,14 @@ Binomial distribution and pursue a Beta distribution --- bounded on $[0,1]$
 --- such that we could continue to model our data.
 An important aside: in such a scenario --- and if scale is present in our 
 imagery --- it would now be tenable to explicitly generate area metrics for our 
-taxa, e.g., what area in units of square meters is comprised of various kelp 
+taxa, e.g., what area in units of square meters is covered by various kelp 
 species? 
 
 Returning now to our substrate results, and our modeling finding that five of
 the six substrate-related categories (including CCA) showed statistically
 significant differences when both seasons were combined.
-The essential explanation does not require the mathematics of the preceding
-section at all, and we state it plainly first: for substrate, the two
-platforms are not two measurements of the same quantity that happen to
-disagree.
+For substrate, the two platforms are not two measurements of the same quantity 
+that happen to disagree.
 They are measurements of two different quantities, and there is no particular
 reason to expect them to agree.
 A significant difference between them is therefore the expected result rather
@@ -2466,45 +2444,12 @@ underlying compositions of physical substrate.
 Therefore, we conclude that while the ROV indeed captures different substrate
 information compared to divers, the ROV is still able to capture meaningful
 differences between locations.
-It is worth being explicit about what each platform is actually measuring
-here, because ``different'' is not the same as ``worse.''
-A diver conducting a UPC survey lifts drift algae and understory canopy aside
-to record the substratum beneath the point, and so measures the physical
-seafloor, largely independent of what is growing on or over it.
-The ROV, sampling from directly above, measures what is visible from above ---
-which is to say the substratum where it is exposed, and the drift and
-understory algae where it is not.
-Neither is a corrupted version of the other; they are two different, and
-individually coherent, quantities.
-That difference in what is measured also implies a difference in what each is
-best suited to detect: the diver protocol is the better instrument for
-characterizing substrate composition per se, while the ROV's top-down record
-is better suited to quantifying the extent and distribution of drift and
-understory algal cover --- the very layer the diver protocol is designed to
-see past.
-
-We would also note that the Reef Check UPC protocol is not the only way a
-diver can generate percent-cover, and that our comparison is bounded by that
-choice.
-Divers can visually estimate cover directly, hovering a meter or two above the
-substrate and assessing the proportion of a defined area occupied by each
-category, and such estimates can be more accurate than point-contact methods
-for some purposes --- point-contact sampling trades a diver's integrative
-judgment for a smaller number of objectively scored observations, and with only
-30 points per transect the resulting sampling variance is considerable
-\citep{Dethier:1993aa}.
-A visual-estimate diver protocol would in some respects be the closer analogue
-to what the ROV produces, since both assess the areal proportion of a surface
-rather than sampling it at discrete points.
-Comparing ROV percent-cover against diver visual estimates, alongside the UPC
-comparison presented here, would be an informative extension, and one that
-falls outside Reef Check's protocol rather than within it.
 If one requires highly precise substrate information that is as 
 closely akin to diver data as possible, one can always survey the location in 
-the winter, as we did here as part of this study --- doing so reduces the 
-statistically significant differences between the ROV and substrate differences 
-extensively.
-Finally, we do not have an explanation for why boulder, CCA, and shell hash
+the winter, as we did here as part of this study --- doing so substantially reduces the 
+statistically significant differences between ROV- and diver-derived 
+substrate estimates.
+We do not, however, have an explanation for why boulder, CCA, and shell hash
 remained significantly different even when we restricted the model to
 winter-only data.
 In the case of boulder, the need to combine two Reef Check categories to have
@@ -2523,11 +2468,12 @@ Additionally, while we cannot directly compare \textit{Agarum} and
 \textit{Saccharina} head-to-head due to the fundamentally distinct units
 between divers and the ROV, we are likewise encouraged by the strength and
 statistical significance of the Pearson correlation coefficient of their
-overlaid z-scores (\figref{fig:z-scores}).
+overlaid z-scores (\figref{fig:z-scores}), and by the fact that both
+correlations held within site.
 While caveats exist regarding the mathematical properties of our proportion
 metric, it appears the ROV excels at capturing proportion data of
 macrophytes.
-This was additionally exampled by our ML algorithm's ability to effectively
+This was additionally exemplified by our machine learning model's ability to effectively
 distinguish among four visually distinct taxa of red algae, and
 likewise its ability to distinguish between \textit{Agarum} and
 \textit{Saccharina}.
@@ -2538,14 +2484,14 @@ them.
 However, there is also a point of caution here --- several species of kelp
 (especially some of the \textit{Laminaria} species) look similar enough that
 our models may not be able to distinguish them down to the species level ---
-and instead, we would have to suffice with a slightly broader or grouped level
+and instead, we would have to settle for a slightly broader or grouped level
 of classification.
 Additionally, while our data do not presently include scale and thus we cannot
 calculate area, our photographs do provide a permanent record of the condition
 of kelp and other taxa present, such that downstream investigations can
 reference back and infer, e.g., the condition and approximate size of kelp at
 the time of sampling.
-We would also note that the absence of scale is among the more tractable
+We also note that the absence of scale is among the more tractable
 limitations identified in this report.
 A pair of parallel lasers mounted at a fixed separation projects two dots of
 known spacing into every photograph, giving a direct scale reference in each
@@ -2555,8 +2501,6 @@ That single addition would let us size individual invertebrates, apply the
 $2.5~cm$ Reef Check cutoff to ROV imagery on the same basis divers apply it
 underwater, and convert percent-cover into absolute area --- addressing
 several of the limitations raised separately above with one modification.
-We regard it as the highest-value near-term change to our hardware
-configuration.
 
 Furthermore, despite the caveats noted above regarding the mathematical 
 properties of our proportion metric --- given the large number of photos we can 
@@ -2587,7 +2531,7 @@ auto-correlation, and patterns of association with depth, especially in cases
 where sampling takes place across a depth gradient, as with perpendicular 
 transects. 
 
-Finally, we find our NMDS ordination of all 1{,}436 photos from the ROV-diver
+We also find our NMDS ordination of all 1{,}436 photos from the ROV-diver
 methods comparison very encouraging.
 It clearly captured the dramatic distinctions between the soft-sediment and
 hard-substrate dominated Centennial Park and Elliott Bay Marina, respectively,
@@ -2609,24 +2553,6 @@ have exhibited kelp-forest collapse --- we could identify instances where new
 survey sites align with the patterns of variation that have previously been
 identified as associated with kelp-forest community collapse.
 
-We have described this reservoir as ROV-generated, but that framing is
-narrower than it needs to be, and we want to correct it here.
-An ordination of this kind is agnostic to how its input was produced: what it
-requires is a common set of categories scored consistently, not a common
-platform.
-Diver-derived percent-cover from the same or nearby sites could be positioned
-within the same ordination space, as could data from other programs and other
-platforms, provided the category definitions can be reconciled --- which is
-the same crosswalk exercise \tabref{tab:combined_categories} performs for the
-eight categories compared in this report.
-The ordination is thus better understood as the common currency into which
-otherwise heterogeneous survey data can be converted, rather than as an
-ROV-specific product.
-That reframing matters for how such a reference collection should be built:
-the goal is not an ROV archive that happens to admit diver data, but a shared
-one that any adequately standardized survey can contribute to and be read
-against.
-
 We would close this section by noting that every analysis in this report draws
 on a small fraction of what our photographs already contain.
 Because each detected invertebrate carries a position within a georeferenced
@@ -2640,15 +2566,6 @@ aggregate with conspecifics or segregate from one another, whether
 invertebrates associate with specific substrate or algal categories at the
 scale of an individual photograph, and how any of these change across depth,
 season, or site.
-None of this requires returning to the field or altering the survey protocol;
-it requires only asking different questions of the existing archive.
-We flag it here because it bears directly on how the two platforms should be
-valued relative to one another: the ROV's photographic record is not merely a
-slower route to the same transect-scale numbers a diver produces in fifteen
-minutes, but a persistent, re-interrogable record from which entirely
-different classes of question can be asked, including questions not yet posed
-at the time of sampling.
-
 
 %% --------------------------------------------------------------------
 \subsection{Agreement in level versus agreement in pattern}
@@ -2657,24 +2574,38 @@ at the time of sampling.
 
 The models in this report and the correlations that accompany them answer two
 different questions, and our results make clear that the answers do not track
-one another.
+one another across all categories and species.
 A model comparing levels asks whether the ROV records more or less of
 something than divers do.
-A correlation asks whether the two platforms agree about where and when there
-was more of it.
+A correlation asks whether the two platforms agree about pattern, i.e., where 
+and when there was more of it.
 A monitoring program needs both answers, but it does not need them equally: a
 stable difference in level between platforms is a scaling factor and can, in
 principle, be calibrated away, whereas a failure to agree on pattern cannot be
-corrected after the fact and is fatal to the purpose of detecting change.
+corrected after the fact.
 This framing is familiar from fisheries survey design, where a gear's
 catchability is understood as a multiplicative coefficient relating an index
 to true abundance --- useful to estimate, but far less consequential than
 whether the index tracks the resource at all.
 
-Our substrate results illustrate the point in both directions at once.
+Crucially, for the purposes of capturing information about coastal vegetation,
+we see agreement in both level and pattern for red and green algae, and strong
+agreement in pattern for \textit{Saccharina} and \textit{Agarum}, whose
+differing units between platforms preclude a direct comparison of level.
+The alignment of these categories is the single most important and
+encouraging finding when considering how ROV-derived metrics relate to diver
+data, and it survived the removal of between-site variation
+(\textit{Saccharina} $r=0.95$, \textit{Agarum} $r=0.82$, red algae $r=0.76$,
+green algae $r=0.92$ within site).
+In other words, the ROV does not merely distinguish a kelp-dominated site from
+a bare one; it tracks which transects within a site support more or less
+vegetation, which is the resolution at which a monitoring or restoration
+program working at a single site would operate.
+The alignment between level and pattern then begins to exhibit variation when 
+we consider substrate.
 Boulder shows a large, highly significant level difference
 ($\mathrm{OR}=0.18$) alongside strong pattern agreement ($r=0.85$), which is
-exactly what the mechanism proposed earlier in this section predicts: when
+exactly what the mechanism proposed earlier in this \textit{Discussion} predicts: when
 overlying vegetation competes with substrate for the ROV's finite
 classification space within each photograph, the effect is a roughly
 proportional suppression of the ROV's substrate estimate, and a proportional
@@ -2696,10 +2627,8 @@ Where pattern agreement fails in our data, it fails because at least one
 platform is near its detection or classification floor, not because the two
 platforms are seeing genuinely different seafloor.
 
-We want to be explicit about one asymmetry in how these disagreements should
-be read.
 Throughout this report we have scrutinized the ROV against the divers, which
-is the appropriate posture for a report whose purpose is to evaluate a new
+is the appropriate approach for a report whose purpose is to evaluate a new
 platform against an established protocol.
 But a correlation is symmetric, and it assigns no blame.
 Where the two platforms diverge, the diver estimate is not automatically the
@@ -2715,25 +2644,6 @@ We do not have an independent ground truth for either platform, and we
 therefore frame these results as agreement and disagreement between two
 imperfect instruments rather than as ROV error against a diver standard.
 
-The practical recommendation that follows is that platform comparisons of this
-kind should report both quantities as a matter of course.
-Reporting only level differences --- as our own initial framing did --- risks
-two symmetric errors: treating a large, calibrable offset as a failure of the
-platform (boulder), and treating an absence of offset as evidence of
-interchangeability (cobble, kelp crab).
-For the ROV specifically, the combination we most want to see going forward is
-the one the macroalgal categories already deliver: no significant level
-difference and strong pattern agreement that survives the removal of
-between-site variation (green algae $r=0.92$, red algae $r=0.76$ within site).
-That combination is what would license substituting or interleaving the two
-platforms within a long-term monitoring design.
-For the substrate categories, where our within-site correlations fall away
-sharply, the honest conclusion is narrower than our head-to-head models alone
-would suggest: the ROV reliably distinguishes substrate composition
-between structurally distinct sites, as the NMDS ordination
-independently confirms, but we have not yet demonstrated that it resolves
-substrate pattern among transects within a site to the standard a
-change-detection program would require.
 
 %% --------------------------------------------------------------------
 %% --------------------------------------------------------------------
@@ -2741,9 +2651,20 @@ change-detection program would require.
 %% --------------------------------------------------------------------
 %% --------------------------------------------------------------------
 
-Across both derived metrics investigated in this report --- abundance of
-macroinvertebrates and percent-cover of macroalgae and substrate --- the ROV
-performed statistically indistinguishably from Reef Check divers for the
+The central finding of this report is that the ROV and Reef Check divers
+characterize coastal vegetation similarly.
+Red and green algal percent-cover showed no significant difference in level
+between platforms, and all four vegetation categories we compared --- red
+algae, green algae, \textit{Saccharina}, and \textit{Agarum} --- showed strong
+agreement in pattern across transects that persisted after between-site
+variation was removed (within-site $r=0.76$--$0.95$).
+For kelp forest conservation and restoration, where vegetation is typically
+the primary target of monitoring, this is the most consequential result of
+this comparison.
+
+More broadly, across both derived metrics investigated in this report ---
+abundance of macroinvertebrates and percent-cover of macroalgae and
+substrate --- the ROV performed statistically indistinguishably from Reef Check divers for the
 large majority of categories compared, with the notable exception of
 substrate percent-cover.
 This latter discrepancy reflects a genuine structural difference in how the
@@ -2755,7 +2676,8 @@ That comparison of levels, however, is only half of what a monitoring program
 needs to know, and we would highlight the other half as one of this report's
 more durable lessons.
 Correlating the two platforms' transect-level values shows that agreement in
-level and agreement in pattern are largely independent: boulder differs
+level and agreement in pattern are largely independent for substrate 
+categories: boulder differs
 sharply in level between platforms yet tracks closely across transects
 ($r=0.85$), while cobble matches almost exactly in level yet tracks not at all
 ($r=0.08$), and the ten invertebrate taxa --- none of which differed
@@ -2765,12 +2687,12 @@ agree on pattern cannot be, and is the more consequential of the two for
 detecting change through time.
 Future platform comparisons, ours included, should report both as a matter of
 course.
-On this stricter reading, the macroalgal categories are where the ROV is most
-clearly ready to stand in for or alongside divers --- no level difference and
-strong pattern agreement that persists after between-site variation is removed
---- whereas for substrate we can presently claim that the ROV reliably
+On this stricter reading, coastal vegetation is where the ROV is most clearly
+ready to stand in for or alongside divers, for the reasons summarized above,
+whereas for substrate we can presently claim that the ROV reliably
 distinguishes composition between structurally distinct sites, but not yet
-that it resolves substrate pattern among transects within a site.
+that it resolves substrate pattern among transects within a site in the same 
+fashion as divers. 
 
 Despite this overall parity, our abundance comparison surfaced several
 sources of error worth addressing for future ROV surveys:
@@ -2848,16 +2770,10 @@ We are grateful to Dr. Shawn Larson, Nora Nickum, and Dr. Erin Meyer for
 supporting this work at the Seattle Aquarium. 
 We thank the Aquarium's Dive Program for facilitating successful field 
 operations, particularly Joel Hollander and Alex Tanz. 
-We are grateful to Dr. Rachael Aber with Port Gamble S'Klallam Tribe for 
-assisting us with establishing the statistical modeling framework utilized in 
-this report.
-We also grateful to Alyssa Lind, Kim Thomas, Madison Churchill, and Amy Olsen 
+We are also grateful to Alyssa Lind, Kim Thomas, Madison Churchill, and Amy Olsen 
 for helping us to collect the Reef Check diver data. 
 We are appreciative of Samish Indian Nation Department of Natural Resources for 
-providing us vessel support for ROV surveys summer of 2024. 
-We could not have completed this work without the time and energy provided by 
-our Seattle Aquarium AI Teacher volunteers, including Abigail Chang, Cindy 
-Gossett, Aina Hori, David Muerdter, Barb Williams, and Adrien Yee.
+providing vessel support for ROV surveys in the summer of 2024. 
 Finally, we want to extend our gratitude to Reef Check personnel, including 
 Jackie Selbitschka, Dan Abbott, Jan Freiwald, and Shawn Augustine for their 
 collaboration and the time spent training Aquarium divers to conduct Reef Check 
@@ -2871,6 +2787,77 @@ surveys.
 
 \clearpage
 
+\vbox to \textheight{%
+\vfil
+\begin{figure}[H]
+\centering
+\begin{settingsbox}{GoPro HERO~12 camera settings}
+
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+
+% First row: five settings
+\begin{tabularx}{\linewidth}{
+@{}
+>{\centering\arraybackslash}X
+!{\color{reportblue!30}\vrule}
+>{\centering\arraybackslash}X
+!{\color{reportblue!30}\vrule}
+>{\centering\arraybackslash}X
+!{\color{reportblue!30}\vrule}
+>{\centering\arraybackslash}X
+!{\color{reportblue!30}\vrule}
+>{\centering\arraybackslash}X
+@{}
+}
+\camerasetting{Mode}{Photo} &
+\camerasetting{Lens}{Wide} &
+\camerasetting{Output}{\(27.3~\mathrm{MP}\) RAW} &
+\camerasetting{White balance}{Native} &
+\camerasetting{ISO}{100--200}
+\end{tabularx}
+
+\vspace{2.5mm}
+{\color{reportblue!20}\hrule}
+\vspace{2.5mm}
+
+% Second row: four settings
+\begin{tabularx}{\linewidth}{
+@{}
+>{\centering\arraybackslash}X
+!{\color{reportblue!30}\vrule}
+>{\centering\arraybackslash}X
+!{\color{reportblue!30}\vrule}
+>{\centering\arraybackslash}X
+!{\color{reportblue!30}\vrule}
+>{\centering\arraybackslash}X
+@{}
+}
+\camerasetting{Color profile}{Flat} &
+\camerasetting{Sharpness}{Low} &
+\camerasetting{EV compensation}{0} &
+\camerasetting{Shutter speed}{\(1/300~\mathrm{s}\)}
+\end{tabularx}
+
+\end{settingsbox}
+\caption{
+The camera settings used by the GoPro HERO 12 camera with GoPro Labs firmware
+installed on the camera's SD card.
+These settings enabled 27.3 megapixel raw (GPR) and preview (JPG) photographs to
+be taken every three seconds.
+The GoPro cameras were also time synchronized before each flight via:
+\url{https://gopro.github.io/labs/control/precisiontime/} enabling alignment
+with our ROV telemetry files.
+}
+\label{fig:camera_settings}
+\end{figure}
+\vfil
+}
+
+\clearpage
+
 \vbox to \textheight{
 \vfil
 \begin{figure}[H]
@@ -2878,9 +2865,9 @@ surveys.
 \includegraphics[width=0.85\textwidth]{site_map.pdf}
 \caption{
 A map of our ROV-diver method comparison sites, including Jefferson Head, 
-Indianola, where the ROV monitoring bull kelp restoration with Puget Sound 
+Indianola, where the ROV is monitoring bull kelp restoration with the Puget Sound 
 Restoration Fund (not part of this technical report).
-The two focal sites detailed with this report include Sirens of Spring 
+The two focal sites detailed in this report are Sirens of Spring 
 (henceforth referred to as ``Centennial Park''), and the Elliott Bay Marina
 breakwater. 
 Purple lines denote actual ROV-diver transects as recorded in the ROV's 
@@ -2923,7 +2910,7 @@ of 2024;
 Row 3 depicts three images from the winter of 2025 (both depths).
 Centennial Park consists of soft-sediment with pebble/cobble rocks, and a 
 variety of brown, red, and green algae;
-Sugar kelp (\textit{Saccharina latissima}) is the predominant kelp found at 
+sugar kelp (\textit{Saccharina latissima}) is the predominant kelp found at 
 this site. 
 }
 \label{fig:CP}
@@ -2961,7 +2948,7 @@ summer of 2024;
 Row 2 depicts three images from the deep transects ($10~m$ depth) in the summer 
 of 2024;
 Row 3 depicts three images from the winter of 2025 (both depths).
-Elliott Bay Marina breakwater consists of hard substrate comprised of
+Elliott Bay Marina breakwater consists of hard substrate composed of
 breakwater riprap boulder/reef structure.
 Sieve kelp (\textit{Agarum clathratum}) is the predominant kelp found at 
 this site. 
@@ -2989,7 +2976,7 @@ this site.
 \includegraphics[angle=-90,origin=c,width=\linewidth]{field_methods_2.jpg}
 \end{subfigure}
 \caption{
-The Seattle Aquarium's 24' Aluminum Almar vessel off which we conducted paired 
+(a) The Seattle Aquarium's 24' aluminum Almar vessel off which we conducted paired 
 ROV-diver field surveys.
 The vessel's open back deck has been optimized for dive operations such that we 
 were able to conduct concurrent diver and ROV surveys. 	
@@ -3179,26 +3166,26 @@ as part of this methods comparison.
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}
-\clip (0,0) rectangle (0.63\textwidth,0.42\textwidth);
-\node[anchor=center,inner sep=0] at (0.315\textwidth,0.21\textwidth)
-{\includegraphics[width=0.63\textwidth]{Lutris_1.jpeg}};
+\clip (0,0) rectangle (0.56\textwidth,0.3733\textwidth);
+\node[anchor=center,inner sep=0] at (0.28\textwidth,0.18667\textwidth)
+{\includegraphics[width=0.56\textwidth]{Lutris_1.jpeg}};
 \end{tikzpicture}
 \vspace{0.005\textheight}
 \begin{tikzpicture}
-\clip (0,0) rectangle (0.63\textwidth,0.42\textwidth);
-\node[anchor=center,inner sep=0] at (0.315\textwidth,0.21\textwidth)
-{\includegraphics[width=0.63\textwidth]{Lutris_2.PNG}};
+\clip (0,0) rectangle (0.56\textwidth,0.3733\textwidth);
+\node[anchor=center,inner sep=0] at (0.28\textwidth,0.18667\textwidth)
+{\includegraphics[width=0.56\textwidth]{Lutris_2.PNG}};
 \end{tikzpicture}
 \vspace{0.005\textheight}
 \begin{tikzpicture}
-\clip (0,0) rectangle (0.63\textwidth,0.42\textwidth);
-\node[anchor=center,inner sep=0] at (0.315\textwidth,0.21\textwidth)
-{\includegraphics[height=0.42\textwidth]{Lutris_3.PNG}};
+\clip (0,0) rectangle (0.56\textwidth,0.3733\textwidth);
+\node[anchor=center,inner sep=0] at (0.28\textwidth,0.18667\textwidth)
+{\includegraphics[height=0.3733\textwidth]{Lutris_3.PNG}};
 \end{tikzpicture}
 \caption{
 Top: ROV \textit{Lutris} in its $V4$ configuration with integrated lighting 
-(see \cite{Randell:2026aa} for details about the various hardware 
-configurations comprising the $V1$---$V4$ ROV iterations).
+(see \citealt{Randell:2026aa} for details about the various hardware 
+configurations comprising the $V1$--$V4$ ROV iterations).
 ROV \textit{Lutris} in an earlier $V3$ configuration (integrated power and 
 battery-powered diver lights) at Centennial Park (middle) and Elliott Bay 
 Marina breakwater (bottom). 
@@ -3264,15 +3251,15 @@ reported there.
 \includegraphics[width=0.95\textwidth]{image_sampling.png}
 \caption{
 (a) A single ROV photograph with 50 randomly distributed percent-cover patches, 
-each of which is comprised of 224 x 224 pixels.
-(b) A single ``subject" --- the individual percent-cover data point we provide 
+each of which consists of $224 \times 224$ pixels.
+(b) A single ``subject'' --- the individual percent-cover data point we provide 
 to Kelp Quest volunteers to review. 
-Each subject is comprised of a red target that provides the point-sampling 
-visual guide, a green box delineating the 224 x 224 patch of pixels viewed by 
+Each subject consists of a red target that provides the point-sampling 
+visual guide, a green box delineating the $224 \times 224$ patch of pixels viewed by 
 the ML algorithm, and a surrounding image area that we use to provide context 
 to help visually identify the subject.  
 Note that this figure was created in PowerPoint to serve as a visual example,
-and therefore the image patches were ``haphazardly" placed, not truly randomly
+and therefore the image patches were ``haphazardly'' placed, not truly randomly
 generated, as they are for our real ROV survey imagery.
 }
 \label{fig:image_sampling}
@@ -3378,9 +3365,9 @@ ahead of interfacing with Kelp Quest.
 \includegraphics[width=0.98\textwidth]{KelpQuest_classifications.jpg}
 \caption{
 Weekly Kelp Quest classification volume, all workflows, from project 
-launch (March 24, 2026) through August $10^{th}$, 2026. 
-582,458 total annotations since March $24^{th}$ equates to --- on average --- 
-4160 annotations per day (between launch and August $10^{th}$).  
+launch (March 24, 2026) through August 10, 2026.
+The 582{,}458 total classifications over this period equate to an average of
+4{,}160 classifications per day.  
 }
 \label{fig:kelpquest_volume}
 \end{figure}
@@ -3451,7 +3438,7 @@ Each block is headed by the category's final name in the combined data,
 followed by the raw category (or categories) from each
 platform's own data that were summed, where applicable, to produce it.
 ``+'' denotes a simple sum of mutually exclusive raw categories;
-Diver \texttt{cover\_green\_algae} and 
+diver \texttt{cover\_green\_algae} and 
 \texttt{superlayer\_green\_algae} are two independent UPC survey axes 
 recorded at the same 30 points, not mutually exclusive outcomes, so a 
 simple sum risks double-counting any point where both are present. 
@@ -3496,18 +3483,18 @@ Large anemone & 6 & 6 \\
 \caption{
 Invertebrate taxa recorded by both diver and ROV survey methods, summed
 across all 24 transects (2 sites $\times$ 6 transects $\times$ 2
-seasons --- 24 distinct $30 \times 2$ m transects total).
+seasons --- 24 transect surveys of $30 \times 2~m$ in total).
 Taxa included ochre/mottled star (\textit{Pisaster ochraceus} and
 \textit{Evasterias troschelii});
-rock crab (\textit{Cancer productus});
+rock crab (\textit{Cancer} spp.);
 burrowing sea cucumber (\textit{Cucumaria miniata});
 kelp crab (\textit{Pugettia producta});
 leather star (\textit{Dermasterias imbricata});
-plumose anemone (\textit{Metridium farcimen});
+plumose anemone (\textit{Metridium} spp.);
 green/pallid urchin (\textit{Strongylocentrotus droebachiensis} and
 \textit{Strongylocentrotus pallidus});
 California sea cucumber (\textit{Apostichopus californicus});
-blood star (\textit{Henricia leviuscula});
+blood star (\textit{Henricia} spp.);
 and large anemone (\textit{Urticina} spp.).
 }
 \label{tab:abundances}
@@ -3736,7 +3723,7 @@ Shell hash substrate & 0.03 & $3.6 \times 10^{-16}$ & Yes \\
 \end{tabular}
 \caption{
 Beta-binomial GLMM results restricted to winter transects only, for CCA 
-and the 5 substrate categories with \texttt{season} dropped, as no season 
+and the 5 substrate categories (with \texttt{season} dropped, as no seasonal 
 variation remains once restricted to winter). 
 Odds ratios are ROV relative to a diver reference level. 
 All 6 models converged without warnings.
@@ -3767,8 +3754,8 @@ the line indicate transects where the ROV recorded lower percent-cover than
 divers for that category.
 Each panel is annotated with that category's Pearson correlation between the
 two platforms across the 24 transects.
-Panels (d) and (e) illustrate the report's central point about these two
-quantities being separable: boulder sits far below the 1:1 line yet is
+Panels (d) and (e) illustrate that agreement in level and agreement in
+pattern are separable: boulder sits far below the 1:1 line yet is
 tightly correlated ($r=0.85$), while cobble straddles the line yet is not
 correlated at all ($r=0.08$).
 See \tabref{tab:pc_all_models} for corresponding model results, and
@@ -3793,11 +3780,12 @@ Standardized (z-scored) diver density and ROV percent-cover for
 clathratum} (sieve kelp, bottom) across all 24 site $\times$ transect $\times$ 
 season combinations, grouped by site, season, and transect (1--6) along the 
 x-axis.
-Pearson's correlation coefficient for the two z-scores were very strongly 
-correlated for \textit{Saccharina} ($r=0.96$, $p=6.3\times10^{-14}$), and 
-\textit{Agarum} ($r=0.88$, $p=1.7\times10^{-8}$), indicating that both the ROV 
-and the diver methods --- despite capturing mathematically distinct 
-observations --- capture statistically indistinguishable kelp metrics.
+The two platforms' z-scores were very strongly correlated for
+\textit{Saccharina} ($r=0.96$, $p=6.3\times10^{-14}$) and \textit{Agarum}
+($r=0.88$, $p=1.7\times10^{-8}$), and remained so within site ($r=0.95$ and
+$r=0.82$, respectively), indicating that the ROV and the divers --- despite
+recording fundamentally different quantities in different units --- agree
+closely in the relative pattern of kelp across transects.
 Representative ROV photographs of each species are shown at right (top:
 sugar kelp; bottom: sieve kelp).
 }
@@ -4095,7 +4083,7 @@ concentrated near zero cover.
 \caption{
 ROV-recorded proportion of \textit{Agarum clathratum} (sieve kelp) at each
 photograph along the 30\,m transect tape, Elliott Bay Marina summer 2024, for
-transect 4 (shallow, top) and transect 3 (deep, bottom; the same two
+transect 4 (shallow, top) and transect 3 (deep, bottom; two of the six
 transects summarized in \figref{fig:violin}).
 Icons along the x-axis schematically represent individual ROV photographs (not 
 to scale).
@@ -4142,7 +4130,7 @@ substrate types.
 season (8 groups).
 Between-site separation dominates the ordination, but within each site, deep
 and shallow transects also separate along NMDS2, most clearly at Elliott Bay
-Marina, where the two depth strata's ellipses show only modest overlap;
+Marina, where the two depth strata's ellipses overlap only slightly;
 season contributes comparatively little additional separation within a site
 and depth.
 }
@@ -4232,7 +4220,7 @@ right of (c);
 likewise, the ochre star atop the crab shell debris in the upper right of (b) 
 is once more visible at the very bottom right of (d). 
 While these instances of image overlap are relatively rare, their influence 
-upon double counting invertebrates is clearly density-dependent, as exampled by 
+upon double counting invertebrates is clearly density-dependent, as exemplified by 
 the Centennial Park, winter, T1 transect --- exhibited here --- where clustered
 rock crab abundances paired with our sources of error increased the ROV rock
 crab abundance total to 130, relative to the diver count of 62.
@@ -4275,7 +4263,7 @@ crab abundance total to 130, relative to the diver count of 62.
 While relatively rare, there were several instances where the ROV --- as it 
 does not have a scale metric for its downward-facing photographs --- generated 
 annotations for invertebrates that likely exhibited a diameter $\le~2.5~cm$, 
-below the cut-off used by Reef Check divers to count an invertebrate. 
+below the cutoff used by Reef Check divers to count an invertebrate. 
 Each image above depicts at least one instance of these very small 
 invertebrates. 
 }
