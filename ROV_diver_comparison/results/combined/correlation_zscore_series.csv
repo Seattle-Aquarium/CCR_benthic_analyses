@@ -1,0 +1,505 @@
+"dataset","variable","display_name","key","site","season","depth","transect","diver_value","rov_value","z_diver","z_rov","dz"
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_1_summer","Centennial_Park","summer","deep",1,0.133,0.069,-0.201305188844297,-0.584955633456134,0.383650444611837
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_2_summer","Centennial_Park","summer","deep",2,0.1,0.027,-0.47954901007411,-1.03131087836437,0.551761868290263
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_3_summer","Centennial_Park","summer","deep",3,0.2,0.035,0.363614084561688,-0.946290831715184,1.30990491627687
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_4_summer","Centennial_Park","summer","shallow",4,0.067,0.083,-0.757792831303923,-0.436170551820054,-0.321622279483869
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_5_summer","Centennial_Park","summer","shallow",5,0.367,0.239,1.77169645260347,1.22172035783912,0.549976094764352
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_6_summer","Centennial_Park","summer","shallow",6,0.367,0.24,1.77169645260347,1.23234786367027,0.539348588933203
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_1_winter","Centennial_Park","winter","deep",1,0,0.042,-1.32271210470991,-0.871898290897144,-0.450813813812763
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_2_winter","Centennial_Park","winter","deep",2,0.033,0.007,-1.04446828348009,-1.24386099498734,0.199392711507249
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_3_winter","Centennial_Park","winter","deep",3,0,0.007,-1.32271210470991,-1.24386099498734,-0.0788511097225637
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_4_winter","Centennial_Park","winter","shallow",4,0,0.035,-1.32271210470991,-0.946290831715184,-0.376421272994723
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_5_winter","Centennial_Park","winter","shallow",5,0,0.077,-1.32271210470991,-0.499935586806946,-0.822776517902961
+"percent-cover, all seasons","cover_red_algae","Red algae cover","CP_6_winter","Centennial_Park","winter","shallow",6,0.133,0.12,-0.201305188844297,-0.0429528360675587,-0.158352352776738
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,0.133,0.063,-0.201305188844297,-0.648720668443025,0.447415479598729
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0.2,0.065,0.363614084561688,-0.627465656780728,0.991079741342416
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0.233,0.15,0.641857905791501,0.275872338866897,0.365985566924603
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0.3,0.219,1.20677717919748,1.00917024121615,0.197606937981338
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0.233,0.145,0.641857905791501,0.222734809711155,0.419123096080346
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0.267,0.233,0.928533357967672,1.15795532285223,-0.229421964884555
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.033,0.054,-1.04446828348009,-0.744368220923362,-0.300100062556732
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.1,0.057,-0.47954901007411,-0.712485703429917,0.232936693355807
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.1,0.193,-0.47954901007411,0.732855089606285,-1.21240409968039
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0.233,0.3,0.641857905791501,1.86999821353918,-1.22814030774768
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0.2,0.25,0.363614084561688,1.33862292198175,-0.975008837420064
+"percent-cover, all seasons","cover_red_algae","Red algae cover","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0.333,0.267,1.4850210004273,1.51929052111128,-0.0342695206839785
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_1_summer","Centennial_Park","summer","deep",1,0.1603,0.095,0.834647529513907,0.139974441999431,0.694673087514476
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_2_summer","Centennial_Park","summer","deep",2,0.1,0.044,0.288354772997762,-0.240756040239022,0.529110813236784
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_3_summer","Centennial_Park","summer","deep",3,0.033,0.105,-0.318637178686843,0.214627477732461,-0.533264656419304
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_4_summer","Centennial_Park","summer","shallow",4,0.44,0.418,3.36861243826292,2.5512674961763,0.817344942086624
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_5_summer","Centennial_Park","summer","shallow",5,0.28,0.454,1.91907941931461,2.82001842481521,-0.900939005500595
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_6_summer","Centennial_Park","summer","shallow",6,0.222811,0.334,1.40097102043564,1.92418199601885,-0.523210975583205
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_1_winter","Centennial_Park","winter","deep",1,0,0.008,-0.617603363844932,-0.50950696887793,-0.108096394967003
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_2_winter","Centennial_Park","winter","deep",2,0,0.005,-0.617603363844932,-0.531902879597839,-0.0857004842470936
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_3_winter","Centennial_Park","winter","deep",3,0,0.002,-0.617603363844932,-0.554298790317748,-0.0633045735271847
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_4_winter","Centennial_Park","winter","shallow",4,0,0.02,-0.617603363844932,-0.419923325998294,-0.197680037846639
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_5_winter","Centennial_Park","winter","shallow",5,0.033,0.021,-0.318637178686843,-0.412458022424991,0.0938208437381475
+"percent-cover, all seasons","combined_green_algae","Green algae cover","CP_6_winter","Centennial_Park","winter","shallow",6,0.0669999999999999,0.025,-0.0106114121603279,-0.382596808131779,0.371985395971451
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,0,0,-0.617603363844932,-0.569229397464354,-0.0483739663805787
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0,0,-0.617603363844932,-0.569229397464354,-0.0483739663805787
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0.033,0.003,-0.318637178686843,-0.546833486744445,0.228196308057601
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0.0669999999999999,0.081,-0.0106114121603279,0.0354601919731893,-0.0460716041335172
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0.0669999999999999,0.05,-0.0106114121603279,-0.195964218799204,0.185352806638876
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0.133,0.165,0.587320958155851,0.662545692130641,-0.0752247339747899
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0,0,-0.617603363844932,-0.569229397464354,-0.0483739663805787
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0,0,-0.617603363844932,-0.569229397464354,-0.0483739663805787
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0,0,-0.617603363844932,-0.569229397464354,-0.0483739663805787
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,0,-0.617603363844932,-0.569229397464354,-0.0483739663805787
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0,0,-0.617603363844932,-0.569229397464354,-0.0483739663805787
+"percent-cover, all seasons","combined_green_algae","Green algae cover","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0,0,-0.617603363844932,-0.569229397464354,-0.0483739663805787
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_1_summer","Centennial_Park","summer","deep",1,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_2_summer","Centennial_Park","summer","deep",2,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_3_summer","Centennial_Park","summer","deep",3,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_4_summer","Centennial_Park","summer","shallow",4,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_5_summer","Centennial_Park","summer","shallow",5,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_6_summer","Centennial_Park","summer","shallow",6,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_1_winter","Centennial_Park","winter","deep",1,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_2_winter","Centennial_Park","winter","deep",2,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_4_winter","Centennial_Park","winter","shallow",4,0.033,0.001,-0.665775535162283,-0.760905343388015,0.0951298082257312
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_5_winter","Centennial_Park","winter","shallow",5,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_6_winter","Centennial_Park","winter","shallow",6,0,0,-0.908321176306961,-0.777783095921575,-0.130538080385386
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,0.267,0.044,1.05409355659088,-0.0351619844449175,1.0892555410358
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0.2,0.027,0.561652406388053,-0.322083777515444,0.883736183903498
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0.233,0.036,0.80419804753273,-0.170184004713401,0.974382052246131
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0.133,0.074,0.0692112561852236,0.471170591561894,-0.401959335376671
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0.267,0.15,1.05409355659088,1.75387978411248,-0.699786227521602
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0.3,0.155,1.29663919773556,1.83826854678029,-0.541629349044727
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.2,0.071,0.561652406388053,0.420537333961213,0.14111507242684
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.233,0.06,0.80419804753273,0.234882056092049,0.569315991440682
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.2,0.105,0.561652406388053,0.994380920102267,-0.432728513714214
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0.233,0.103,0.80419804753273,0.960625415035146,-0.156427367502415
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0.467,0.084,2.5240671392859,0.639948116897499,1.8841190223884
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0.2,0.196,0.561652406388053,2.53025640065626,-1.96860399426821
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_1_summer","Centennial_Park","summer","deep",1,0,0.012,-0.924200661755956,-0.908112799394409,-0.0160878623615468
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_2_summer","Centennial_Park","summer","deep",2,0,0.01,-0.924200661755956,-0.919278120698439,-0.0049225410575171
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_3_summer","Centennial_Park","summer","deep",3,0,0.013,-0.924200661755956,-0.902530138742394,-0.0216705230135616
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_4_summer","Centennial_Park","summer","shallow",4,0,0.023,-0.924200661755956,-0.846703532222246,-0.0774971295337096
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_5_summer","Centennial_Park","summer","shallow",5,0,0.027,-0.924200661755956,-0.824372889614187,-0.0998277721417689
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_6_summer","Centennial_Park","summer","shallow",6,0,0.023,-0.924200661755956,-0.846703532222246,-0.0774971295337096
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_1_winter","Centennial_Park","winter","deep",1,0,0.014,-0.924200661755956,-0.89694747809038,-0.0272531836655764
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_2_winter","Centennial_Park","winter","deep",2,0,0.004,-0.924200661755956,-0.952774084610528,0.0285734228545718
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_3_winter","Centennial_Park","winter","deep",3,0,0.005,-0.924200661755956,-0.947191423958513,0.0229907622025569
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_4_winter","Centennial_Park","winter","shallow",4,0,0.03,-0.924200661755956,-0.807624907658143,-0.116575754097813
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_5_winter","Centennial_Park","winter","shallow",5,0,0.053,-0.924200661755956,-0.679223712661802,-0.244976949094154
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","CP_6_winter","Centennial_Park","winter","shallow",6,0,0.019,-0.924200661755956,-0.869034174830306,-0.0551664869256503
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,0.967,0.174,1.25689034475535,-0.00372177376800993,1.26061211852336
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0.9,0.182,1.10577028535902,0.0409395114481086,1.06483077391091
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0.767,0.156,0.805785689840916,-0.104209665504276,0.909995355345192
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,1,0.361,1.33132261281624,1.04023576815876,0.291086844657477
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0.866,0.411,1.02908249402356,1.3193688007595,-0.290286306735937
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,1,0.357,1.33132261281624,1.0179051255507,0.313417487265536
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.5,0.326,0.20356097553014,0.844842645338241,-0.641281669808101
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.634,0.421,0.505801094322814,1.37519540727965,-0.869394312956834
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.367,0.286,-0.0964236199879613,0.621536219257649,-0.71795983924561
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,1,0.48,1.33132261281624,1.70457238574852,-0.373249772932286
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0.9,0.524,1.10577028535902,1.95020945443717,-0.844439169078157
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0.933,0.281,1.1802025534199,0.593622915997575,0.586579637422325
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_1_summer","Centennial_Park","summer","deep",1,0.1,0.05,0.758530239045125,0.94720965021183,-0.188679411166705
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_2_summer","Centennial_Park","summer","deep",2,0,0.03,-0.512749491198101,0.102115538498673,-0.614865029696774
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_3_summer","Centennial_Park","summer","deep",3,0,0.045,-0.512749491198101,0.73593612228354,-1.24868561348164
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_4_summer","Centennial_Park","summer","shallow",4,0,0.052,-0.512749491198101,1.03171906138315,-1.54446855258125
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_5_summer","Centennial_Park","summer","shallow",5,0.2,0.04,2.02980996928835,0.524662594355251,1.5051473749331
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_6_summer","Centennial_Park","summer","shallow",6,0.3,0.026,3.30108969953157,-0.0669032838439583,3.36799298337553
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_1_winter","Centennial_Park","winter","deep",1,0,0.064,-0.512749491198101,1.53877552841104,-2.05152501960914
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_2_winter","Centennial_Park","winter","deep",2,0,0.033,-0.512749491198101,0.228879655255647,-0.741629146453747
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_3_winter","Centennial_Park","winter","deep",3,0,0.039,-0.512749491198101,0.482407888769594,-0.995157379967694
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_4_winter","Centennial_Park","winter","shallow",4,0,0.056,-0.512749491198101,1.20073788372578,-1.71348737492388
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_5_winter","Centennial_Park","winter","shallow",5,0,0.081,-0.512749491198101,2.25710552336722,-2.76985501456532
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_6_winter","Centennial_Park","winter","shallow",6,0.067,0.056,0.33900792806486,1.20073788372578,-0.861729955660917
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,0,0.015,-0.512749491198101,-0.531705045286194,0.0189555540880936
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0,0.001,-0.512749491198101,-1.1232709234854,0.610521432287303
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0,0.007,-0.512749491198101,-0.869742689971457,0.356993198773356
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0,0.006,-0.512749491198101,-0.911997395557115,0.399247904359014
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0,0,-0.512749491198101,-1.16552562907106,0.652776137872961
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0,0.004,-0.512749491198101,-0.996506806728431,0.48375731553033
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.067,0.013,0.33900792806486,-0.61621445645751,0.95522238452237
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.067,0.008,0.33900792806486,-0.827487984385799,1.16649591245066
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.167,0.024,1.61028765830809,-0.151412695015274,1.76170035332336
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,0.003,-0.512749491198101,-1.03876151231409,0.526012021115988
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0,0.002,-0.512749491198101,-1.08101621789975,0.568266726701645
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0,0.007,-0.512749491198101,-0.869742689971457,0.356993198773356
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_1_summer","Centennial_Park","summer","deep",1,0.767,0.383,1.51721872221779,0.785860991465877,0.731357730751912
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_2_summer","Centennial_Park","summer","deep",2,0.7,0.399,1.30083843793165,0.850081170381156,0.450757267550495
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_3_summer","Centennial_Park","summer","deep",3,0.8,0.643,1.62379408611992,1.82943889883916,-0.205644812719247
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_4_summer","Centennial_Park","summer","shallow",4,0.8,0.127,1.62379408611992,-0.24166187117859,1.86545595729851
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_5_summer","Centennial_Park","summer","shallow",5,0.5,0.046,0.65492714155512,-0.56677652693719,1.22170366849231
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_6_summer","Centennial_Park","summer","shallow",6,0.333,0.084,0.115591209080717,-0.414253602013402,0.529844811094119
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_1_winter","Centennial_Park","winter","deep",1,0.633,0.606,1.08445815364551,1.68092973509758,-0.596471581452067
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_2_winter","Centennial_Park","winter","deep",2,0.567,0.583,0.871307425841258,1.58861322790687,-0.717305802065608
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_3_winter","Centennial_Park","winter","deep",3,0.6,0.751,0.977882789743385,2.2629251065173,-1.28504231677391
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_4_winter","Centennial_Park","winter","shallow",4,0.467,0.394,0.548351777652992,0.830012364470131,-0.281660586817139
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_5_winter","Centennial_Park","winter","shallow",5,0.4,0.193,0.331971493366855,0.023246366846937,0.308725126519918
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","CP_6_winter","Centennial_Park","winter","shallow",6,0.367,0.245,0.225396129464727,0.231961948321594,-0.00656581885686736
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,0,0.003,-0.959851099386207,-0.739368257772003,-0.220482841614205
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0,0.001,-0.959851099386207,-0.747395780136413,-0.212455319249795
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0,0.001,-0.959851099386207,-0.747395780136413,-0.212455319249795
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0,0.001,-0.959851099386207,-0.747395780136413,-0.212455319249795
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0,0,-0.959851099386207,-0.751409541318618,-0.20844155806759
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0,0.001,-0.959851099386207,-0.747395780136413,-0.212455319249795
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.067,0.021,-0.74347081510007,-0.667120556492314,-0.0763502586077556
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.033,0.002,-0.85327573548408,-0.743382018954208,-0.109893716529872
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.066,0.007,-0.746700371581952,-0.723313213043183,-0.023387158538769
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,0.002,-0.959851099386207,-0.743382018954208,-0.216469080432
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0.033,0,-0.85327573548408,-0.751409541318618,-0.101866194165462
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0,0,-0.959851099386207,-0.751409541318618,-0.20844155806759
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_1_summer","Centennial_Park","summer","deep",1,0.067,0.011,-0.33067755105272,-0.451945362627538,0.121267811574818
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_2_summer","Centennial_Park","summer","deep",2,0.3,0.021,1.21802334131479,-0.297213712084586,1.51523705339938
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_3_summer","Centennial_Park","summer","deep",3,0.2,0.008,0.553344846736461,-0.498364857790423,1.05170970452688
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_4_summer","Centennial_Park","summer","shallow",4,0.2,0.028,0.553344846736461,-0.18890155670452,0.742246403440981
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_5_summer","Centennial_Park","summer","shallow",5,0.3,0.017,1.21802334131479,-0.359106372301767,1.57712971361656
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_6_summer","Centennial_Park","summer","shallow",6,0.2,0.107,0.553344846736461,1.0334784825848,-0.480133635848337
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_1_winter","Centennial_Park","winter","deep",1,0.367,0.007,1.66335793268227,-0.513838022844718,2.17719595552699
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_2_winter","Centennial_Park","winter","deep",2,0.167,0.032,0.334000943525611,-0.127008896487339,0.461009840012951
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_3_winter","Centennial_Park","winter","deep",3,0,0.013,-0.776012142420201,-0.420999032518947,-0.355013109901254
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_4_winter","Centennial_Park","winter","shallow",4,0.367,0.205,1.66335793268227,2.54984865790572,-0.886490725223449
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_5_winter","Centennial_Park","winter","shallow",5,0.467,0.04,2.3280364272606,-0.00322357605297812,2.33126000331358
+"percent-cover, all seasons","substrate_sand","Sand substrate","CP_6_winter","Centennial_Park","winter","shallow",6,0.167,0.266,0.334000943525611,3.49371172621773,-3.15971078269212
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,0,0,-0.776012142420201,-0.622150178224784,-0.153861964195417
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0,0.011,-0.776012142420201,-0.451945362627538,-0.324066779792664
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0,0.003,-0.776012142420201,-0.575730683061899,-0.200281459358303
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0,0.003,-0.776012142420201,-0.575730683061899,-0.200281459358303
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0,0.036,-0.776012142420201,-0.0651162362701588,-0.710895906150043
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0,0.001,-0.776012142420201,-0.606677013170489,-0.169335129249712
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0,0.045,-0.776012142420201,0.0741422492184976,-0.850154391638699
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0,0.023,-0.776012142420201,-0.266267381975996,-0.509744760444206
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0,0.013,-0.776012142420201,-0.420999032518947,-0.355013109901254
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,0.019,-0.776012142420201,-0.328160042193176,-0.447852100227025
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0,0.026,-0.776012142420201,-0.21984788681311,-0.556164255607091
+"percent-cover, all seasons","substrate_sand","Sand substrate","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0,0.03,-0.776012142420201,-0.15795522659593,-0.618056915824272
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_1_summer","Centennial_Park","summer","deep",1,0.067,0.004,-0.195442697242584,-0.0163726988632073,-0.179069998379377
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_2_summer","Centennial_Park","summer","deep",2,0,0.003,-0.756642442182005,-0.147354289768865,-0.609288152413139
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_3_summer","Centennial_Park","summer","deep",3,0,0.002,-0.756642442182005,-0.278335880674523,-0.478306561507481
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_4_summer","Centennial_Park","summer","shallow",4,0,0,-0.756642442182005,-0.540299062485839,-0.216343379696165
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_5_summer","Centennial_Park","summer","shallow",5,0,0.001,-0.756642442182005,-0.409317471580181,-0.347324970601823
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_6_summer","Centennial_Park","summer","shallow",6,0.067,0.001,-0.195442697242584,-0.409317471580181,0.213874774337597
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_1_winter","Centennial_Park","winter","deep",1,0,0.005,-0.756642442182005,0.114608892042451,-0.871251334224455
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_2_winter","Centennial_Park","winter","deep",2,0.267,0.004,1.47978042197957,-0.0163726988632073,1.49615312084277
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_3_winter","Centennial_Park","winter","deep",3,0.4,0.008,2.5938037962623,0.507553664759425,2.08625013150287
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_4_winter","Centennial_Park","winter","shallow",4,0.167,0.002,0.642168862368491,-0.278335880674523,0.920504743043014
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_5_winter","Centennial_Park","winter","shallow",5,0.133,0.005,0.357380932100725,0.114608892042451,0.242772040058275
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","CP_6_winter","Centennial_Park","winter","shallow",6,0.4,0.001,2.5938037962623,-0.409317471580181,3.00312126784248
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,0,0,-0.756642442182005,-0.540299062485839,-0.216343379696165
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0.033,0.002,-0.48023062751035,-0.278335880674523,-0.201894746835826
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0,0.003,-0.756642442182005,-0.147354289768865,-0.609288152413139
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0,0,-0.756642442182005,-0.540299062485839,-0.216343379696165
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0.067,0,-0.195442697242584,-0.540299062485839,0.344856365243255
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0,0,-0.756642442182005,-0.540299062485839,-0.216343379696165
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.133,0.001,0.357380932100725,-0.409317471580181,0.766698403680907
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.133,0.004,0.357380932100725,-0.0163726988632073,0.373753630963933
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.167,0.016,0.642168862368491,1.55540639200469,-0.913237529636198
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,0,-0.756642442182005,-0.540299062485839,-0.216343379696165
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0.067,0.001,-0.195442697242584,-0.409317471580181,0.213874774337597
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0.067,0.036,-0.195442697242584,4.17503821011785,-4.37048090736043
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_1_winter","Centennial_Park","winter","deep",1,0,0,-0.877309460038972,-0.819583488544572,-0.0577259714944007
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_2_winter","Centennial_Park","winter","deep",2,0,0,-0.877309460038972,-0.819583488544572,-0.0577259714944007
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.877309460038972,-0.819583488544572,-0.0577259714944007
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_4_winter","Centennial_Park","winter","shallow",4,0.033,0.001,-0.655461090833715,-0.803720582314677,0.148259491480962
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_5_winter","Centennial_Park","winter","shallow",5,0,0,-0.877309460038972,-0.819583488544572,-0.0577259714944007
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","CP_6_winter","Centennial_Park","winter","shallow",6,0,0,-0.877309460038972,-0.819583488544572,-0.0577259714944007
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.2,0.071,0.467226110901981,0.306682853777969,0.160543257124013
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.233,0.06,0.689074480107239,0.132190885249124,0.556883594858114
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.2,0.105,0.467226110901981,0.846021665594397,-0.378795554692415
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0.233,0.103,0.689074480107239,0.814295853134607,-0.125221373027368
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0.467,0.084,2.26218109810815,0.512900634766603,1.74928046334155
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0.2,0.196,0.467226110901981,2.28954613251484,-1.82232002161285
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","CP_1_winter","Centennial_Park","winter","deep",1,0,0.014,-0.868594912402531,-0.930930948985535,0.0623360365830037
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","CP_2_winter","Centennial_Park","winter","deep",2,0,0.004,-0.868594912402531,-0.980034999041915,0.111440086639384
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","CP_3_winter","Centennial_Park","winter","deep",3,0,0.005,-0.868594912402531,-0.975124594036277,0.106529681633746
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","CP_4_winter","Centennial_Park","winter","shallow",4,0,0.03,-0.868594912402531,-0.852364468895327,-0.016230443507204
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","CP_5_winter","Centennial_Park","winter","shallow",5,0,0.053,-0.868594912402531,-0.739425153765654,-0.129169758636878
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","CP_6_winter","Centennial_Park","winter","shallow",6,0,0.019,-0.868594912402531,-0.906378923957345,0.0377840115548139
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.5,0.326,0.33388996863466,0.601115412773517,-0.267225444138857
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.634,0.421,0.656155916752628,1.06760388830913,-0.411447971556498
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.367,0.286,0.0140289902787672,0.404699212547997,-0.39067022226923
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,1,0.48,1.53637484967185,1.35731778364177,0.179057066030085
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0.9,0.524,1.29587787346441,1.57337560388984,-0.277497730425425
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0.933,0.281,1.37524187561287,0.380147187519808,0.995094688093061
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_1_winter","Centennial_Park","winter","deep",1,0,0.064,-0.586531561912583,1.18087911639539,-1.76741067830797
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_2_winter","Centennial_Park","winter","deep",2,0,0.033,-0.586531561912583,0.0309130658742247,-0.617444627786808
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_3_winter","Centennial_Park","winter","deep",3,0,0.039,-0.586531561912583,0.253487140168643,-0.840018702081226
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_4_winter","Centennial_Park","winter","shallow",4,0,0.056,-0.586531561912583,0.884113684002828,-1.47064524591541
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_5_winter","Centennial_Park","winter","shallow",5,0,0.081,-0.586531561912583,1.81150566022957,-2.39803722214215
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","CP_6_winter","Centennial_Park","winter","shallow",6,0.067,0.056,0.694912394005126,0.884113684002828,-0.189201289997702
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.067,0.013,0.694912394005126,-0.711000515107169,1.4059129091123
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.067,0.008,0.694912394005126,-0.896478910352518,1.59139130435764
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.167,0.024,2.60751531328529,-0.302948045567403,2.91046335885269
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,0.003,-0.586531561912583,-1.08195730559787,0.495425743685283
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0,0.002,-0.586531561912583,-1.11905298464694,0.532521422734353
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0,0.007,-0.586531561912583,-0.933574589401587,0.347043027489004
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","CP_1_winter","Centennial_Park","winter","deep",1,0.633,0.606,1.40659788394123,1.3247538757415,0.0818440081997289
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","CP_2_winter","Centennial_Park","winter","deep",2,0.567,0.583,1.15126313168786,1.24292037759811,-0.0916572459102543
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","CP_3_winter","Centennial_Park","winter","deep",3,0.6,0.751,1.27893050781455,1.84066071186286,-0.561730204048311
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","CP_4_winter","Centennial_Park","winter","shallow",4,0.467,0.394,0.76439229494033,0.57046250155028,0.19392979339005
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","CP_5_winter","Centennial_Park","winter","shallow",5,0.4,0.193,0.505188834319484,-0.144691112659323,0.649879946978807
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","CP_6_winter","Centennial_Park","winter","shallow",6,0.367,0.245,0.377521458192799,0.0403237527083358,0.337197705484463
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.067,0.021,-0.783091052049794,-0.756663359644654,-0.0264276924051396
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.033,0.002,-0.914627136543954,-0.824264945067452,-0.0903621914765019
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.066,0.007,-0.786959760417269,-0.806475054166716,0.0195152937494468
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,0.002,-1.04229451267064,-0.824264945067452,-0.218029567603187
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0.033,0,-0.914627136543954,-0.831380901427747,-0.0832462351162074
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0,0,-1.04229451267064,-0.831380901427747,-0.210913611242893
+"percent-cover, winter only","substrate_sand","Sand substrate","CP_1_winter","Centennial_Park","winter","deep",1,0.367,0.007,1.34631885733774,-0.631643407650031,1.97796226498777
+"percent-cover, winter only","substrate_sand","Sand substrate","CP_2_winter","Centennial_Park","winter","deep",2,0.167,0.032,0.220084888146183,-0.333229199311434,0.553314087457617
+"percent-cover, winter only","substrate_sand","Sand substrate","CP_3_winter","Centennial_Park","winter","deep",3,0,0.013,-0.720320476128766,-0.560023997648768,-0.160296478479999
+"percent-cover, winter only","substrate_sand","Sand substrate","CP_4_winter","Centennial_Park","winter","shallow",4,0.367,0.205,1.34631885733774,1.73179712239166,-0.385478265053921
+"percent-cover, winter only","substrate_sand","Sand substrate","CP_5_winter","Centennial_Park","winter","shallow",5,0.467,0.04,1.90943584193352,-0.237736652643083,2.1471724945766
+"percent-cover, winter only","substrate_sand","Sand substrate","CP_6_winter","Centennial_Park","winter","shallow",6,0.167,0.266,0.220084888146183,2.45992779073784,-2.23984290259166
+"percent-cover, winter only","substrate_sand","Sand substrate","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0,0.045,-0.720320476128766,-0.178053810975363,-0.542266665153403
+"percent-cover, winter only","substrate_sand","Sand substrate","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0,0.023,-0.720320476128766,-0.440658314313329,-0.279662161815437
+"percent-cover, winter only","substrate_sand","Sand substrate","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0,0.013,-0.720320476128766,-0.560023997648768,-0.160296478479999
+"percent-cover, winter only","substrate_sand","Sand substrate","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,0.019,-0.720320476128766,-0.488404587647505,-0.231915888481262
+"percent-cover, winter only","substrate_sand","Sand substrate","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0,0.026,-0.720320476128766,-0.404848609312697,-0.315471866816069
+"percent-cover, winter only","substrate_sand","Sand substrate","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0,0.03,-0.720320476128766,-0.357102335978522,-0.363218140150245
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","CP_1_winter","Centennial_Park","winter","deep",1,0,0.005,-1.2030419152665,-0.189028648960862,-1.01401326630563
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","CP_2_winter","Centennial_Park","winter","deep",2,0.267,0.004,0.790001671348734,-0.287652291896965,1.0776539632457
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","CP_3_winter","Centennial_Park","winter","deep",3,0.4,0.008,1.78279117329565,0.106842279847444,1.6759488934482
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","CP_4_winter","Centennial_Park","winter","shallow",4,0.167,0.002,0.0435433992081979,-0.484899577769169,0.528442976977367
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","CP_5_winter","Centennial_Park","winter","shallow",5,0.133,0.005,-0.210252413319584,-0.189028648960862,-0.0212237643587219
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","CP_6_winter","Centennial_Park","winter","shallow",6,0.4,0.001,1.78279117329565,-0.583523220705271,2.36631439400092
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0.133,0.001,-0.210252413319584,-0.583523220705271,0.373270807385687
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0.133,0.004,-0.210252413319584,-0.287652291896965,0.0773998785773802
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0.167,0.016,0.0435433992081979,0.895831423336261,-0.852288024128063
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,0,-1.2030419152665,-0.682146863641373,-0.520895051625124
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0.067,0.001,-0.702914872932338,-0.583523220705271,-0.119391652227067
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0.067,0.036,-0.702914872932338,2.8683042820583,-3.57121915499064
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_1_summer","Centennial_Park","summer","deep",1,10,20,-1.10002248115058,-0.511978726035248,-0.588043755115334
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_2_summer","Centennial_Park","summer","deep",2,14,16,-0.805866051650705,-0.704723658189695,-0.10114239346101
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_3_summer","Centennial_Park","summer","deep",3,18,34,-0.511709622150828,0.162628536505314,-0.674338158656142
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_4_summer","Centennial_Park","summer","shallow",4,13,28,-0.879405159025674,-0.126488861726355,-0.752916297299319
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_5_summer","Centennial_Park","summer","shallow",5,19,19,-0.438170514775859,-0.56016495907386,0.121994444298001
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_6_summer","Centennial_Park","summer","shallow",6,23,10,-0.144014085275981,-0.993841056421365,0.849826971145383
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_1_winter","Centennial_Park","winter","deep",1,34,37,0.664916095848681,0.307187235621149,0.357728860227532
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_2_winter","Centennial_Park","winter","deep",2,40,41,1.1061507400985,0.499932167775595,0.606218572322901
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_3_winter","Centennial_Park","winter","deep",3,24,22,-0.0704749779010121,-0.415606259958025,0.345131282057013
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_4_winter","Centennial_Park","winter","shallow",4,27,31,0.150142344223896,0.0180698373894794,0.132072506834416
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_5_winter","Centennial_Park","winter","shallow",5,40,55,1.1061507400985,1.17453943031616,-0.0683886902176616
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","CP_6_winter","Centennial_Park","winter","shallow",6,21,35,-0.29109230002592,0.210814769543926,-0.501907069569846
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,10,11,-1.10002248115058,-0.945654823382753,-0.154367657767829
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,33,8,0.591376988473711,-1.09021352249859,1.6815905109723
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,27,20,0.150142344223896,-0.511978726035248,0.662121070259144
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,52,102,1.98862002859813,3.4392923831309,-1.45067235453278
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,41,26,1.17968984747347,-0.222861327803579,1.40255117527704
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,5,9,-1.46771801802543,-1.04202728945998,-0.425690728565453
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,16,17,-0.658787836900766,-0.656537425151083,-0.00225041174968321
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,12,34,-0.952944266400644,0.162628536505314,-1.11557280290596
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,17,21,-0.585248729525797,-0.463792492996637,-0.12145623652916
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,57,65,2.35631556547297,1.65640176070227,0.6999138047707
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,16,40,-0.658787836900766,0.451745934736984,-1.11053377163775
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,30,34,0.370759666348804,0.162628536505314,0.208131129843489
+"abundance, all seasons","cancer_crab","Rock crab","CP_1_summer","Centennial_Park","summer","deep",1,1,1,-0.193223591095164,-0.212194275245479,0.0189706841503153
+"abundance, all seasons","cancer_crab","Rock crab","CP_2_summer","Centennial_Park","summer","deep",2,2,3,-0.113269001676475,-0.136184385605307,0.0229153839288322
+"abundance, all seasons","cancer_crab","Rock crab","CP_3_summer","Centennial_Park","summer","deep",3,1,3,-0.193223591095164,-0.136184385605307,-0.0570392054898562
+"abundance, all seasons","cancer_crab","Rock crab","CP_4_summer","Centennial_Park","summer","shallow",4,3,2,-0.0333144122577868,-0.174189330425393,0.140874918167606
+"abundance, all seasons","cancer_crab","Rock crab","CP_5_summer","Centennial_Park","summer","shallow",5,2,2,-0.113269001676475,-0.174189330425393,0.0609203287489179
+"abundance, all seasons","cancer_crab","Rock crab","CP_6_summer","Centennial_Park","summer","shallow",6,1,2,-0.193223591095164,-0.174189330425393,-0.0190342606697705
+"abundance, all seasons","cancer_crab","Rock crab","CP_1_winter","Centennial_Park","winter","deep",1,62,130,4.68400636344483,4.69044360654559,-0.00643724310075822
+"abundance, all seasons","cancer_crab","Rock crab","CP_2_winter","Centennial_Park","winter","deep",2,0,2,-0.273178180513852,-0.174189330425393,-0.0989888500884589
+"abundance, all seasons","cancer_crab","Rock crab","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.273178180513852,-0.250199220065565,-0.0229789604482873
+"abundance, all seasons","cancer_crab","Rock crab","CP_4_winter","Centennial_Park","winter","shallow",4,1,1,-0.193223591095164,-0.212194275245479,0.0189706841503153
+"abundance, all seasons","cancer_crab","Rock crab","CP_5_winter","Centennial_Park","winter","shallow",5,1,2,-0.193223591095164,-0.174189330425393,-0.0190342606697705
+"abundance, all seasons","cancer_crab","Rock crab","CP_6_winter","Centennial_Park","winter","shallow",6,0,3,-0.273178180513852,-0.136184385605307,-0.136993794908545
+"abundance, all seasons","cancer_crab","Rock crab","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,2,0,-0.113269001676475,-0.250199220065565,0.13693021838909
+"abundance, all seasons","cancer_crab","Rock crab","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,2,0,-0.113269001676475,-0.250199220065565,0.13693021838909
+"abundance, all seasons","cancer_crab","Rock crab","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,1,0,-0.193223591095164,-0.250199220065565,0.0569756289704011
+"abundance, all seasons","cancer_crab","Rock crab","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0,0,-0.273178180513852,-0.250199220065565,-0.0229789604482873
+"abundance, all seasons","cancer_crab","Rock crab","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,1,3,-0.193223591095164,-0.136184385605307,-0.0570392054898562
+"abundance, all seasons","cancer_crab","Rock crab","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0,0,-0.273178180513852,-0.250199220065565,-0.0229789604482873
+"abundance, all seasons","cancer_crab","Rock crab","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,1,1,-0.193223591095164,-0.212194275245479,0.0189706841503153
+"abundance, all seasons","cancer_crab","Rock crab","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0,0,-0.273178180513852,-0.250199220065565,-0.0229789604482873
+"abundance, all seasons","cancer_crab","Rock crab","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0,0,-0.273178180513852,-0.250199220065565,-0.0229789604482873
+"abundance, all seasons","cancer_crab","Rock crab","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,2,-0.273178180513852,-0.174189330425393,-0.0989888500884589
+"abundance, all seasons","cancer_crab","Rock crab","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0,0,-0.273178180513852,-0.250199220065565,-0.0229789604482873
+"abundance, all seasons","cancer_crab","Rock crab","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,1,1,-0.193223591095164,-0.212194275245479,0.0189706841503153
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_1_summer","Centennial_Park","summer","deep",1,0,0,-0.435813856715371,-0.538389329613391,0.10257547289802
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_2_summer","Centennial_Park","summer","deep",2,0,0,-0.435813856715371,-0.538389329613391,0.10257547289802
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_3_summer","Centennial_Park","summer","deep",3,0,0,-0.435813856715371,-0.538389329613391,0.10257547289802
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_4_summer","Centennial_Park","summer","shallow",4,0,0,-0.435813856715371,-0.538389329613391,0.10257547289802
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_5_summer","Centennial_Park","summer","shallow",5,0,1,-0.435813856715371,-0.416489858757529,-0.019323997957842
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_6_summer","Centennial_Park","summer","shallow",6,0,0,-0.435813856715371,-0.538389329613391,0.10257547289802
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_1_winter","Centennial_Park","winter","deep",1,0,0,-0.435813856715371,-0.538389329613391,0.10257547289802
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_2_winter","Centennial_Park","winter","deep",2,0,0,-0.435813856715371,-0.538389329613391,0.10257547289802
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.435813856715371,-0.538389329613391,0.10257547289802
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_4_winter","Centennial_Park","winter","shallow",4,0,0,-0.435813856715371,-0.538389329613391,0.10257547289802
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_5_winter","Centennial_Park","winter","shallow",5,0,1,-0.435813856715371,-0.416489858757529,-0.019323997957842
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","CP_6_winter","Centennial_Park","winter","shallow",6,0,0,-0.435813856715371,-0.538389329613391,0.10257547289802
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,3,0,-0.150553877774401,-0.538389329613391,0.38783545183899
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,2,0,-0.245640537421391,-0.538389329613391,0.292748792192
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,1,0,-0.340727197068381,-0.538389329613391,0.19766213254501
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0,3,-0.435813856715371,-0.172690917045805,-0.263122939669566
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,1,3,-0.340727197068381,-0.172690917045805,-0.168036280022576
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,6,13,0.134706101166569,1.04630379151282,-0.911597690346247
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,9,7,0.419966080107539,0.314906966377644,0.105059113729896
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,17,16,1.18065935728346,1.4120022040804,-0.231342846796943
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,49,35,4.22343246598714,3.72809215034178,0.495340315645358
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,9,12,0.419966080107539,0.924404320656954,-0.504438240549415
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,1,3,-0.340727197068381,-0.172690917045805,-0.168036280022576
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,12,12,0.705226059048509,0.924404320656954,-0.219178261608445
+"abundance, all seasons","kelp_crab","Kelp crab","CP_1_summer","Centennial_Park","summer","deep",1,1,1,-0.285700202446959,-0.348734720447143,0.0630345180001837
+"abundance, all seasons","kelp_crab","Kelp crab","CP_2_summer","Centennial_Park","summer","deep",2,0,0,-0.666633805709571,-0.767216384983714,0.100582579274143
+"abundance, all seasons","kelp_crab","Kelp crab","CP_3_summer","Centennial_Park","summer","deep",3,1,0,-0.285700202446959,-0.767216384983714,0.481516182536755
+"abundance, all seasons","kelp_crab","Kelp crab","CP_4_summer","Centennial_Park","summer","shallow",4,1,3,-0.285700202446959,0.488228608626,-0.773928811072959
+"abundance, all seasons","kelp_crab","Kelp crab","CP_5_summer","Centennial_Park","summer","shallow",5,1,5,-0.285700202446959,1.32519193769914,-1.6108921401461
+"abundance, all seasons","kelp_crab","Kelp crab","CP_6_summer","Centennial_Park","summer","shallow",6,0,5,-0.666633805709571,1.32519193769914,-1.99182574340871
+"abundance, all seasons","kelp_crab","Kelp crab","CP_1_winter","Centennial_Park","winter","deep",1,0,0,-0.666633805709571,-0.767216384983714,0.100582579274143
+"abundance, all seasons","kelp_crab","Kelp crab","CP_2_winter","Centennial_Park","winter","deep",2,0,0,-0.666633805709571,-0.767216384983714,0.100582579274143
+"abundance, all seasons","kelp_crab","Kelp crab","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.666633805709571,-0.767216384983714,0.100582579274143
+"abundance, all seasons","kelp_crab","Kelp crab","CP_4_winter","Centennial_Park","winter","shallow",4,0,0,-0.666633805709571,-0.767216384983714,0.100582579274143
+"abundance, all seasons","kelp_crab","Kelp crab","CP_5_winter","Centennial_Park","winter","shallow",5,1,0,-0.285700202446959,-0.767216384983714,0.481516182536755
+"abundance, all seasons","kelp_crab","Kelp crab","CP_6_winter","Centennial_Park","winter","shallow",6,0,0,-0.666633805709571,-0.767216384983714,0.100582579274143
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,2,0,0.095233400815653,-0.767216384983714,0.862449785799367
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,1,1,-0.285700202446959,-0.348734720447143,0.0630345180001837
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,2,6,0.095233400815653,1.74367360223571,-1.64844020142006
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,2,4,0.095233400815653,0.906710273162571,-0.811476872346918
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,1,3,-0.285700202446959,0.488228608626,-0.773928811072959
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,2,0,0.095233400815653,-0.767216384983714,0.862449785799367
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0,0,-0.666633805709571,-0.767216384983714,0.100582579274143
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0,4,-0.666633805709571,0.906710273162571,-1.57334407887214
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,4,0,0.857100607340877,-0.767216384983714,1.62431699232459
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,6,3,1.6189678138661,0.488228608626,1.1307392052401
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,6,8,1.6189678138661,2.58063693130886,-0.961669117442755
+"abundance, all seasons","kelp_crab","Kelp crab","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,11,1,3.52363583017916,-0.348734720447143,3.87237055062631
+"abundance, all seasons","leather_star","Leather star","CP_1_summer","Centennial_Park","summer","deep",1,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","CP_2_summer","Centennial_Park","summer","deep",2,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","CP_3_summer","Centennial_Park","summer","deep",3,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","CP_4_summer","Centennial_Park","summer","shallow",4,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","CP_5_summer","Centennial_Park","summer","shallow",5,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","CP_6_summer","Centennial_Park","summer","shallow",6,0,1,-0.525525216447316,-0.270651553911019,-0.254873662536297
+"abundance, all seasons","leather_star","Leather star","CP_1_winter","Centennial_Park","winter","deep",1,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","CP_2_winter","Centennial_Park","winter","deep",2,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","CP_4_winter","Centennial_Park","winter","shallow",4,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","CP_5_winter","Centennial_Park","winter","shallow",5,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","CP_6_winter","Centennial_Park","winter","shallow",6,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,1,0,-0.210210086578926,-0.565907794541222,0.355697707962296
+"abundance, all seasons","leather_star","Leather star","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0,0,-0.525525216447316,-0.565907794541222,0.0403825780939063
+"abundance, all seasons","leather_star","Leather star","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,6,9,1.36636556276302,2.0913983711306,-0.725032808367582
+"abundance, all seasons","leather_star","Leather star","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,1,12,-0.210210086578926,2.97716709302121,-3.18737717960014
+"abundance, all seasons","leather_star","Leather star","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,4,8,0.735735303026242,1.7961421305004,-1.06040682747416
+"abundance, all seasons","leather_star","Leather star","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0,1,-0.525525216447316,-0.270651553911019,-0.254873662536297
+"abundance, all seasons","leather_star","Leather star","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,1,0,-0.210210086578926,-0.565907794541222,0.355697707962296
+"abundance, all seasons","leather_star","Leather star","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,1,2,-0.210210086578926,0.0246046867191835,-0.23481477329811
+"abundance, all seasons","leather_star","Leather star","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,12,4,3.25825634197336,0.615117167979589,2.64313917399377
+"abundance, all seasons","leather_star","Leather star","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,7,5,1.68168069263141,0.910373408609792,0.771307284021618
+"abundance, all seasons","leather_star","Leather star","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,7,4,1.68168069263141,0.615117167979589,1.06656352465182
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_1_summer","Centennial_Park","summer","deep",1,1,1,-0.223122275408687,-0.230977305084109,0.00785502967542234
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_2_summer","Centennial_Park","summer","deep",2,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_3_summer","Centennial_Park","summer","deep",3,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_4_summer","Centennial_Park","summer","shallow",4,0,1,-0.557805688521716,-0.230977305084109,-0.326828383437607
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_5_summer","Centennial_Park","summer","shallow",5,2,3,0.111561137704343,0.384962175140182,-0.273401037435838
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_6_summer","Centennial_Park","summer","shallow",6,0,1,-0.557805688521716,-0.230977305084109,-0.326828383437607
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_1_winter","Centennial_Park","winter","deep",1,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_2_winter","Centennial_Park","winter","deep",2,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_4_winter","Centennial_Park","winter","shallow",4,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_5_winter","Centennial_Park","winter","shallow",5,0,1,-0.557805688521716,-0.230977305084109,-0.326828383437607
+"abundance, all seasons","plumose_anemone","Plumose anemone","CP_6_winter","Centennial_Park","winter","shallow",6,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,3,2,0.446244550817373,0.0769924350280363,0.369252115789337
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,12,4,3.45839526883464,0.692931915252327,2.76546335358231
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,4,1,0.780927963930403,-0.230977305084109,1.01190526901451
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,3,15,0.446244550817373,4.08059905648592,-3.63435450566855
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,4,4,0.780927963930403,0.692931915252327,0.0879960486780761
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,8,6,2.11966161638252,1.30887139547662,0.810790220905905
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,0,-0.557805688521716,-0.538947045196254,-0.0188586433254623
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0,1,-0.557805688521716,-0.230977305084109,-0.326828383437607
+"abundance, all seasons","plumose_anemone","Plumose anemone","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,3,2,0.446244550817373,0.0769924350280363,0.369252115789337
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_1_summer","Centennial_Park","summer","deep",1,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_2_summer","Centennial_Park","summer","deep",2,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_3_summer","Centennial_Park","summer","deep",3,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_4_summer","Centennial_Park","summer","shallow",4,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_5_summer","Centennial_Park","summer","shallow",5,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_6_summer","Centennial_Park","summer","shallow",6,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_1_winter","Centennial_Park","winter","deep",1,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_2_winter","Centennial_Park","winter","deep",2,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_4_winter","Centennial_Park","winter","shallow",4,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_5_winter","Centennial_Park","winter","shallow",5,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","CP_6_winter","Centennial_Park","winter","shallow",6,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,33,13,4.51997001536825,3.2847712897584,1.23519872560986
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0,4,-0.272287350323389,0.723361186553293,-0.995648536876682
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,9,0,1.03469193122888,-0.415043303760086,1.44973523498896
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,0,0,-0.272287350323389,-0.415043303760086,0.142755953436697
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,1,11,-0.127067430150915,2.71556904460171,-2.84263647475262
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,2,5,0.0181524900215592,1.00796230913164,-0.989809819110078
+"abundance, all seasons","green_white_urchin","Green/pallid urchin","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,0,2,-0.272287350323389,0.154158941396603,-0.426446291719992
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_1_summer","Centennial_Park","summer","deep",1,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_2_summer","Centennial_Park","summer","deep",2,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_3_summer","Centennial_Park","summer","deep",3,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_4_summer","Centennial_Park","summer","shallow",4,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_5_summer","Centennial_Park","summer","shallow",5,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_6_summer","Centennial_Park","summer","shallow",6,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_1_winter","Centennial_Park","winter","deep",1,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_2_winter","Centennial_Park","winter","deep",2,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_4_winter","Centennial_Park","winter","shallow",4,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_5_winter","Centennial_Park","winter","shallow",5,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","CP_6_winter","Centennial_Park","winter","shallow",6,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,1,0,0.188398055086813,-0.601588196783786,0.789986251870599
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0,3,-0.565194165260439,1.13098580995352,-1.69617997521396
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,1,4,0.188398055086813,1.70851047886595,-1.52011242377914
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0,0,-0.565194165260439,-0.601588196783786,0.0363940315233469
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,4,6,2.44917471612857,2.86355981669082,-0.414385100562251
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,3,1,1.69558249578132,-0.0240635278713515,1.71964602365267
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,1,3,0.188398055086813,1.13098580995352,-0.942587754866704
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,3,4,1.69558249578132,1.70851047886595,-0.0129279830846345
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,1,2,0.188398055086813,0.553461141041083,-0.36506308595427
+"abundance, all seasons","california_sea_cucumber","California sea cucumber","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,4,2,2.44917471612857,0.553461141041083,1.89571357508749
+"abundance, all seasons","blood_star","Blood star","CP_1_summer","Centennial_Park","summer","deep",1,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_2_summer","Centennial_Park","summer","deep",2,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_3_summer","Centennial_Park","summer","deep",3,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_4_summer","Centennial_Park","summer","shallow",4,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_5_summer","Centennial_Park","summer","shallow",5,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_6_summer","Centennial_Park","summer","shallow",6,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_1_winter","Centennial_Park","winter","deep",1,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_2_winter","Centennial_Park","winter","deep",2,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_4_winter","Centennial_Park","winter","shallow",4,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_5_winter","Centennial_Park","winter","shallow",5,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","CP_6_winter","Centennial_Park","winter","shallow",6,1,1,0.640869944461656,0.812036741610114,-0.171166797148458
+"abundance, all seasons","blood_star","Blood star","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,3,1,3.20434972230828,0.812036741610114,2.39231298069816
+"abundance, all seasons","blood_star","Blood star","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,1,0,0.640869944461656,-0.487222044966068,1.12809198942772
+"abundance, all seasons","blood_star","Blood star","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,1,1,0.640869944461656,0.812036741610114,-0.171166797148458
+"abundance, all seasons","blood_star","Blood star","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,1,0,0.640869944461656,-0.487222044966068,1.12809198942772
+"abundance, all seasons","blood_star","Blood star","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0,0,-0.640869944461656,-0.487222044966068,-0.153647899495588
+"abundance, all seasons","blood_star","Blood star","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,2,2,1.92260983338497,2.1112955281863,-0.188685694801328
+"abundance, all seasons","blood_star","Blood star","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,1,1,0.640869944461656,0.812036741610114,-0.171166797148458
+"abundance, all seasons","blood_star","Blood star","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,0,3,-0.640869944461656,3.41055431476248,-4.05142425922413
+"abundance, all seasons","blood_star","Blood star","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,1,0,0.640869944461656,-0.487222044966068,1.12809198942772
+"abundance, all seasons","blood_star","Blood star","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,1,0,0.640869944461656,-0.487222044966068,1.12809198942772
+"abundance, all seasons","large_anemone","Large anemone","CP_1_summer","Centennial_Park","summer","deep",1,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","CP_2_summer","Centennial_Park","summer","deep",2,1,0,1.41080991468894,-0.339116499156263,1.7499264138452
+"abundance, all seasons","large_anemone","Large anemone","CP_3_summer","Centennial_Park","summer","deep",3,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","CP_4_summer","Centennial_Park","summer","shallow",4,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","CP_5_summer","Centennial_Park","summer","shallow",5,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","CP_6_summer","Centennial_Park","summer","shallow",6,0,2,-0.47026997156298,2.37381549409384,-2.84408546565682
+"abundance, all seasons","large_anemone","Large anemone","CP_1_winter","Centennial_Park","winter","deep",1,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","CP_2_winter","Centennial_Park","winter","deep",2,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","CP_3_winter","Centennial_Park","winter","deep",3,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","CP_4_winter","Centennial_Park","winter","shallow",4,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","CP_5_winter","Centennial_Park","winter","shallow",5,1,1,1.41080991468894,1.01734949746879,0.39346041722015
+"abundance, all seasons","large_anemone","Large anemone","CP_6_winter","Centennial_Park","winter","shallow",6,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","EBM_1_summer","Elliott_Bay_Marina","summer","deep",1,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","EBM_2_summer","Elliott_Bay_Marina","summer","deep",2,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","EBM_3_summer","Elliott_Bay_Marina","summer","deep",3,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","EBM_4_summer","Elliott_Bay_Marina","summer","shallow",4,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","EBM_5_summer","Elliott_Bay_Marina","summer","shallow",5,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","EBM_6_summer","Elliott_Bay_Marina","summer","shallow",6,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","EBM_1_winter","Elliott_Bay_Marina","winter","deep",1,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","EBM_2_winter","Elliott_Bay_Marina","winter","deep",2,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","EBM_3_winter","Elliott_Bay_Marina","winter","deep",3,1,3,1.41080991468894,3.7302814907189,-2.31947157602996
+"abundance, all seasons","large_anemone","Large anemone","EBM_4_winter","Elliott_Bay_Marina","winter","shallow",4,2,0,3.29188980094086,-0.339116499156263,3.63100630009712
+"abundance, all seasons","large_anemone","Large anemone","EBM_5_winter","Elliott_Bay_Marina","winter","shallow",5,0,0,-0.47026997156298,-0.339116499156263,-0.131153472406717
+"abundance, all seasons","large_anemone","Large anemone","EBM_6_winter","Elliott_Bay_Marina","winter","shallow",6,1,0,1.41080991468894,-0.339116499156263,1.7499264138452

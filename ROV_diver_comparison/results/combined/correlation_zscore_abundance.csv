@@ -1,0 +1,12 @@
+"dataset","variable","display_name","n","r","r_p","mean_abs_dz","max_abs_dz"
+"abundance, all seasons","ochre_mottled_star","Ochre/mottled star",24,0.704959096506866,0.000119777671369403,0.588940027333994,1.6815905109723
+"abundance, all seasons","cancer_crab","Rock crab",24,0.997498396747058,8.17609271775916e-27,0.0526191194329331,0.140874918167606
+"abundance, all seasons","burrowing_sea_cucumber","Burrowing sea cucumber",24,0.957602499077384,2.25267436801659e-13,0.208700044577621,0.911597690346247
+"abundance, all seasons","kelp_crab","Kelp crab",24,0.228724045054405,0.28236181749413,0.845458814648551,3.87237055062631
+"abundance, all seasons","leather_star","Leather star",24,0.543750727870757,0.00602466539491258,0.476448242817715,3.18737717960014
+"abundance, all seasons","plumose_anemone","Plumose anemone",24,0.49295478318214,0.0143840012625974,0.451876179452909,3.63435450566855
+"abundance, all seasons","green_white_urchin","Green/pallid urchin",24,0.690701023522325,0.000186771637331661,0.437878426871614,2.84263647475262
+"abundance, all seasons","california_sea_cucumber","California sea cucumber",24,0.704864092772869,0.000120142844499772,0.412604693621746,1.89571357508749
+"abundance, all seasons","blood_star","Blood star",24,0.398226737840798,0.0539371885163707,0.575390078200755,4.05142425922413
+"abundance, all seasons","large_anemone","Large anemone",24,0.277350098112615,0.189480837969683,0.62702662875064,3.63100630009712
+"abundance, all seasons","POOLED","All 10 series pooled (standardized)",240,0.599663150068722,7.94623514989882e-25,0.467694225570848,NA

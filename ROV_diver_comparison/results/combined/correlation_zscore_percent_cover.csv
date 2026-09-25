@@ -1,0 +1,17 @@
+"dataset","variable","display_name","n","r","r_p","mean_abs_dz","max_abs_dz"
+"percent-cover, all seasons","cover_red_algae","Red algae cover",24,0.790971095543952,4.20346653280313e-06,0.515681844972251,1.30990491627687
+"percent-cover, all seasons","combined_green_algae","Green algae cover",24,0.932117078962735,3.5429474454704e-11,0.243373683103663,0.900939005500595
+"percent-cover, all seasons","cover_crustose_coralline","Crustose coralline algae (CCA)",24,0.73828091989097,3.81088469064555e-05,0.469754472638923,1.96860399426821
+"percent-cover, all seasons","combined_substrate_boulder","Boulder substrate",24,0.852199665922684,1.25793066999394e-07,0.373173866848494,1.26061211852336
+"percent-cover, all seasons","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate",24,0.0762867071724657,0.723119300158121,1.06084020817559,3.36799298337553
+"percent-cover, all seasons","combined_substrate_pebble","Pebble substrate",24,0.801703258882306,2.48424041663644e-06,0.425653713475605,1.86545595729851
+"percent-cover, all seasons","substrate_sand","Sand substrate",24,0.332343846466016,0.112577597312671,0.831421373784345,3.15971078269212
+"percent-cover, all seasons","substrate_shell_hash","Shell hash substrate",24,0.140287866927301,0.513225188554732,0.805154937654392,4.37048090736043
+"percent-cover, all seasons","POOLED","All 8 series pooled (standardized)",192,0.583023804971054,7.14323566416569e-19,0.590631762581658,NA
+"percent-cover, winter only","cover_crustose_coralline","Crustose coralline algae (CCA)",12,0.685702970159716,0.0138305275140559,0.435827801134107,1.82232002161285
+"percent-cover, winter only","combined_substrate_boulder","Boulder substrate",12,0.930062223262426,1.17085232134327e-05,0.248706928422349,0.995094688093061
+"percent-cover, winter only","substrate_rock_.15.25cm.wa.","Rock, 15-25 cm (cobble) substrate",12,-0.172234810509063,0.592464530360047,1.21379296103854,2.91046335885269
+"percent-cover, winter only","combined_substrate_pebble","Pebble substrate",12,0.953977668542642,1.50482695023477e-06,0.213727791300416,0.649879946978807
+"percent-cover, winter only","substrate_sand","Sand substrate",12,0.331671839908599,0.292250608529442,0.779741474503665,2.23984290259166
+"percent-cover, winter only","substrate_shell_hash","Shell hash substrate",12,-0.126746404039219,0.694670235414477,1.01650515227254,3.57121915499064
+"percent-cover, winter only","POOLED","All 6 series pooled (standardized)",72,0.433738914554184,0.000141131493424438,0.651383684778604,NA
