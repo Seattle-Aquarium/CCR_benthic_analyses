@@ -7,40 +7,19 @@
 
 
 ## start up ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## clear working history
-rm(list=ls())
-
-
-## add libraries
-library(tidyverse)
-library(vegan)
-
-
-## set working directory one level up and verify
-setwd("../")
-getwd()
-
-
-## relative file paths
-code <- "code"
-percent_cover_dir <- "results/ROV/percent_cover"
-NMDS_output <- "results/ROV/NMDS"
-figs <- "figs"
-
+## NOTE: run via RunMe.R -- packages, working directory, function sourcing,
+## and the results_ROV_percent_cover / results_ROV_NMDS / figs path variables
+## used below are all set up there.
 
 ## ensure the figs/NMDS folder exists for the diagnostic plots below (and for
 ## NMDS_visualization.R's figures, run separately)
 dir.create(file.path(figs, "NMDS"), showWarnings = FALSE, recursive = TRUE)
 
 
-## source functions
-source(file.path(code, "NMDS_functions.R"))
-
-
 ## read photo-level percent-cover data
 ## NOTE: read_csv() (readr), not read.csv() (base) -- see the NOTE in
 ## data_visualization.R re: read.csv() mangling column names via make.names()
-dat <- read_csv(file.path(percent_cover_dir, "HSIL_percent-cover_photo-level.csv"))
+dat <- read_csv(file.path(results_ROV_percent_cover, "HSIL_percent-cover_photo-level.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -83,7 +62,7 @@ ord <- metaMDS(comm = community,
 
 ## save the ordination object so later scripts (e.g. NMDS_visualization.R)
 ## can reuse it without re-running metaMDS, which is slow at n = 1436 photos
-save(ord, file = file.path(NMDS_output, "NMDS_ord_photo-level.rda"))
+save(ord, file = file.path(results_ROV_NMDS, "NMDS_ord_photo-level.rda"))
 
 
 ## check stress / fit -- saved directly to file (base graphics; no device
@@ -108,8 +87,8 @@ dat_ord <- save.points(metadata, ord, community)
 spp_scores <- save.spp(ord)
 
 
-write.csv(dat_ord, file.path(NMDS_output, "NMDS_ord_pts_photo-level.csv"), row.names = FALSE)
-write.csv(spp_scores, file.path(NMDS_output, "NMDS_spp_scores_photo-level.csv"), row.names = FALSE)
+write.csv(dat_ord, file.path(results_ROV_NMDS, "NMDS_ord_pts_photo-level.csv"), row.names = FALSE)
+write.csv(spp_scores, file.path(results_ROV_NMDS, "NMDS_spp_scores_photo-level.csv"), row.names = FALSE)
 ## END extract + save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

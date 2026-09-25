@@ -27,27 +27,9 @@
 
 
 ## start up ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rm(list=ls())
-
-
-## add libraries
-library(tidyverse)
-
-
-## set working directory one level up and verify
-setwd("../")
-getwd()
-
-
-## relative file paths
-diver_input <- "results/diver"
-ROV_input <- "results/ROV/abundance"
-combined_output <- "results/combined"
-code <- "code"
-
-
-## source functions
-source(file.path(code, "wrangle_data_functions.R"))
+## NOTE: run via RunMe.R -- packages, working directory, function sourcing,
+## and the results_diver / results_ROV_abundance / results_combined path
+## variables used below are all set up there.
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -65,7 +47,7 @@ overlap_taxa <- c("ochre_mottled_star", "cancer_crab", "burrowing_sea_cucumber",
 
 
 ## read + tag diver abundance ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-diver <- read.csv(file.path(diver_input, "diver_invert_abundance.csv")) %>%
+diver <- read.csv(file.path(results_diver, "diver_invert_abundance.csv")) %>%
   mutate(type = "diver") %>%
   select(site, transect, season, depth, type, all_of(overlap_taxa))
 ## END diver ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -78,7 +60,7 @@ diver <- read.csv(file.path(diver_input, "diver_invert_abundance.csv")) %>%
 ## offset term) -- there's no diver equivalent (diver abundance is a single
 ## swath count per transect, not a photo-by-photo tally), so it's left NA on
 ## diver rows below rather than inventing a value
-rov <- read.csv(file.path(ROV_input, "HSIL_viame_abundance_corrected_summed.csv")) %>%
+rov <- read.csv(file.path(results_ROV_abundance, "HSIL_viame_abundance_corrected_summed.csv")) %>%
   mutate(type = "ROV") %>%
   select(site, transect, season, depth, type, n_photos, all_of(overlap_taxa))
 ## END ROV ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -101,8 +83,8 @@ stopifnot(length(unique(combined$key)) == 24)            ## 6 transects x 2 site
 
 
 ## save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-if (!dir.exists(combined_output)) dir.create(combined_output, recursive = TRUE)
-save.csv(combined, combined_output, "ROV_diver_abundance_combined.csv")
+if (!dir.exists(results_combined)) dir.create(results_combined, recursive = TRUE)
+save.csv(combined, results_combined, "ROV_diver_abundance_combined.csv")
 ## END save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

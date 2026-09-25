@@ -1,6 +1,17 @@
 /ROV_diver_comparison/report/main/main.pdf
 # too large for GitHub (144 MB, exceeds the 100 MB push limit); see README for the Dropbox link
 /ROV_diver_comparison/report/figs/categories.png
+# the pre-review snapshot of the report, ~500 MB of embedded survey photos --
+# same push-limit problem as main.pdf above
+/ROV_diver_comparison/report/main/original_report.pdf
+
+# -----------------------------------------------------------------------------
+# Peer review correspondence
+# -----------------------------------------------------------------------------
+# Kept inside the repo's folder structure so every project document lives in
+# one place, but deliberately not published: these are private between the
+# authors, the reviewers, and the HSIL program.
+/ROV_diver_comparison/report/reviews/
 
 # -----------------------------------------------------------------------------
 # LaTeX build files to ignore

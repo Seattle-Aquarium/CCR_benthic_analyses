@@ -7,34 +7,12 @@
 
 
 ## start up ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## clear working history
-rm(list=ls())
-
-
-## add libraries
-library(tidyverse)
-library(stringr)
-
-
-## set working directory one level up and verify 
-setwd("../")
-getwd()
-
-
-## relative file paths
-diver_input <- "data/diver"
-diver_output <- "results/diver"
-code <- "code"
-
-
-## source functions 
-source(file.path(code, "wrangle_data_functions.R"))
-
-
-## read DIVER data 
-original_diver_algae <- read.csv(file.path(diver_input, "Algae_Washington_raw_2025.csv"))
-original_diver_invert <- read.csv(file.path(diver_input, "Invert_Washington_raw_2025.csv"))
-original_diver_UPC <- read.csv(file.path(diver_input, "UPC_Washington_raw_2025.csv"))
+## read DIVER data
+## NOTE: run via RunMe.R -- packages, working directory, and the data_diver /
+## results_diver path variables used below are all set up there.
+original_diver_algae <- read.csv(file.path(data_diver, "Algae_Washington_raw_2025.csv"))
+original_diver_invert <- read.csv(file.path(data_diver, "Invert_Washington_raw_2025.csv"))
+original_diver_UPC <- read.csv(file.path(data_diver, "UPC_Washington_raw_2025.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -195,15 +173,15 @@ algae_density <- calculate.density(df = algae,
 
 ## save files ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## save csv of diver invert abundances
-save.csv(invert, diver_output, "diver_invert_abundance.csv")
+save.csv(invert, results_diver, "diver_invert_abundance.csv")
 
 
 ## save csv of diver algae density
-save.csv(algae_density, diver_output, "diver_algae_density.csv")
+save.csv(algae_density, results_diver, "diver_algae_density.csv")
 
 
 ## save csvs of UPC 
-save.csv(UPC, diver_output, "diver_UPC_percentage.csv")
+save.csv(UPC, results_diver, "diver_UPC_percentage.csv")
 ## END file save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

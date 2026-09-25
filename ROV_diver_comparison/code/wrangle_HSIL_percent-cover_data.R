@@ -18,33 +18,10 @@
 
 
 ## start up ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## clear working history
-rm(list=ls())
-
-
-## add libraries
-library(tidyverse)
-library(stringr)
-
-
-## set working directory one level up and verify
-setwd("../")
-getwd()
-
-
-## relative file paths
-ROV_input <- "data/ROV"
-ROV_output <- "results/ROV/percent_cover"
-code <- "code"
-figs <- "figs"
-
-
-## source functions
-source(file.path(code, "wrangle_data_functions.R"))
-
-
 ## read ROV data
-HSIL <- read.csv(file.path(ROV_input, "HSIL_percent_cover.csv"))
+## NOTE: run via RunMe.R -- packages, working directory, and the data_ROV /
+## results_ROV_percent_cover path variables used below are all set up there.
+HSIL <- read.csv(file.path(data_ROV, "HSIL_percent_cover.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -200,9 +177,9 @@ HSIL_points_photo <- HSIL %>%
 
 
 ## save the new dataframes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-save.csv(HSIL, ROV_output, "HSIL_percent-cover_photo-level.csv")
-save.csv(HSIL_avg, ROV_output, "HSIL_percent-cover_transect-averaged.csv")
-save.csv(HSIL_points_photo, ROV_output, "HSIL_points_photo-level.csv")
+save.csv(HSIL, results_ROV_percent_cover, "HSIL_percent-cover_photo-level.csv")
+save.csv(HSIL_avg, results_ROV_percent_cover, "HSIL_percent-cover_transect-averaged.csv")
+save.csv(HSIL_points_photo, results_ROV_percent_cover, "HSIL_points_photo-level.csv")
 ## END save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

@@ -47,27 +47,9 @@
 
 
 ## start up ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rm(list=ls())
-
-
-## add libraries
-library(tidyverse)
-
-
-## set working directory one level up and verify
-setwd("../")
-getwd()
-
-
-## relative file paths
-diver_input <- "results/diver"
-ROV_input <- "results/ROV/percent_cover"
-combined_output <- "results/combined"
-code <- "code"
-
-
-## source functions
-source(file.path(code, "wrangle_data_functions.R"))
+## NOTE: run via RunMe.R -- packages, working directory, function sourcing,
+## and the results_diver / results_ROV_percent_cover / results_combined path
+## variables used below are all set up there.
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -90,7 +72,7 @@ point_categories <- c(
 
 
 ## read + tag diver percent-cover ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-diver <- read.csv(file.path(diver_input, "diver_UPC_percentage.csv")) %>%
+diver <- read.csv(file.path(results_diver, "diver_UPC_percentage.csv")) %>%
   mutate(type = "diver", n = 30) %>%
   select(site, transect, season, depth, type, n,
          cover_red_algae, combined_green_algae, cover_crustose_coralline,
@@ -103,7 +85,7 @@ diver <- read.csv(file.path(diver_input, "diver_UPC_percentage.csv")) %>%
 
 
 ## ROV: total classified points per transect (n) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rov_n <- read.csv(file.path(ROV_input, "HSIL_points_photo-level.csv")) %>%
+rov_n <- read.csv(file.path(results_ROV_percent_cover, "HSIL_points_photo-level.csv")) %>%
   mutate(npoints = rowSums(across(all_of(point_categories)))) %>%
   group_by(site, transect, season) %>%
   summarise(n = sum(npoints), .groups = "drop")
@@ -113,7 +95,7 @@ rov_n <- read.csv(file.path(ROV_input, "HSIL_points_photo-level.csv")) %>%
 
 
 ## read + tag ROV percent-cover ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rov <- read.csv(file.path(ROV_input, "HSIL_percent-cover_transect-averaged.csv")) %>%
+rov <- read.csv(file.path(results_ROV_percent_cover, "HSIL_percent-cover_transect-averaged.csv")) %>%
   mutate(type = "ROV") %>%
   left_join(rov_n, by = c("site", "transect", "season")) %>%
   select(site, transect, season, depth, type, n,
@@ -146,8 +128,8 @@ stopifnot(!anyNA(combined$n))                            ## every transect got a
 
 
 ## save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-if (!dir.exists(combined_output)) dir.create(combined_output, recursive = TRUE)
-save.csv(combined, combined_output, "ROV_diver_percent_cover_combined.csv")
+if (!dir.exists(results_combined)) dir.create(results_combined, recursive = TRUE)
+save.csv(combined, results_combined, "ROV_diver_percent_cover_combined.csv")
 ## END save ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

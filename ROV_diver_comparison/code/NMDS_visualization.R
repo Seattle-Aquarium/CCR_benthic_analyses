@@ -7,35 +7,16 @@
 
 
 ## start up ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## clear working history
-rm(list=ls())
-
-
-## add libraries
-library(tidyverse)
-
-
-## set working directory one level up and verify
-setwd("../")
-getwd()
-
-
-## relative file paths
-code <- "code"
-NMDS_output <- "results/ROV/NMDS"
-figs <- "figs"
-
-
-## source functions
-source(file.path(code, "NMDS_visualization_functions.R"))
-
+## NOTE: run via RunMe.R -- packages, working directory, function sourcing,
+## and the results_ROV_NMDS / figs path variables used below are all set up
+## there.
 
 ## read the ordination coordinates (metadata + community matrix + MDS1/MDS2,
 ## one row per photo) and the percent-cover category correlation scores,
 ## both saved by NMDS.R
-dat <- read_csv(file.path(NMDS_output, "NMDS_ord_pts_photo-level.csv")) %>%
+dat <- read_csv(file.path(results_ROV_NMDS, "NMDS_ord_pts_photo-level.csv")) %>%
   prep.nmds.data()
-spp_scores <- read_csv(file.path(NMDS_output, "NMDS_spp_scores_photo-level.csv"))
+spp_scores <- read_csv(file.path(results_ROV_NMDS, "NMDS_spp_scores_photo-level.csv"))
 
 
 dir.create(file.path(figs, "NMDS"), showWarnings = FALSE, recursive = TRUE)

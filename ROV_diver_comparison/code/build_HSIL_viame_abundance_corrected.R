@@ -29,29 +29,12 @@
 
 
 ## start up ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rm(list=ls())
-
-library(tidyverse)
-library(magick)
-library(jsonlite)
-
-
-## set working directory one level up and verify
-setwd("../")
-getwd()
-
-
-ROV_input <- "data/ROV"
-results_abundance <- "results/ROV/abundance"
-code <- "code"
-
-source(file.path(code, "wrangle_data_functions.R"))
-source(file.path(code, "annotate_viame_detections_functions.R"))
-
-abundance_csv_path <- file.path(ROV_input, "HSIL_viame_abundance.csv")
-ground_truth_path <- file.path(ROV_input, "HSIL_viame_transect_ground_truth.csv")
-json_dir <- file.path(ROV_input, "VIAME_JSON_export_abundances")
-flights_root <- "C:/Users/randellz/Seattle Aquarium Dropbox/Coastal_Climate_Resilience/flights/HSIL"
+## NOTE: run via RunMe.R -- packages, working directory, function sourcing,
+## and the data_ROV / results_ROV_abundance / flights_root path variables
+## used below are all set up there.
+abundance_csv_path <- file.path(data_ROV, "HSIL_viame_abundance.csv")
+ground_truth_path <- file.path(data_ROV, "HSIL_viame_transect_ground_truth.csv")
+json_dir <- file.path(data_ROV, "VIAME_JSON_export_abundances")
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -162,7 +145,7 @@ corrected <- photo_meta %>%
 
 stopifnot(nrow(corrected) == nrow(photo_meta))
 
-save.csv(corrected, results_abundance, "HSIL_viame_abundance_corrected.csv")
+save.csv(corrected, results_ROV_abundance, "HSIL_viame_abundance_corrected.csv")
 ## END corrected per-photo CSV ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -176,7 +159,7 @@ corrected_sums <- sum.by.group(
 )
 stopifnot(nrow(corrected_sums) == 24)
 
-save.csv(corrected_sums, results_abundance, "HSIL_viame_abundance_corrected_summed.csv")
+save.csv(corrected_sums, results_ROV_abundance, "HSIL_viame_abundance_corrected_summed.csv")
 ## END transect-level sums ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

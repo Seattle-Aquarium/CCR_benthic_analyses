@@ -12,29 +12,15 @@
 
 
 ## start up ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rm(list=ls())
-
-
-## add libraries
-library(tidyverse)
-library(glmmTMB)
-
-
-## set working directory one level up and verify
-setwd("../")
-getwd()
-
-
-## relative file paths
-combined_input <- "results/combined"
-combined_output <- "results/combined"
+## NOTE: run via RunMe.R -- packages, working directory, and the
+## results_combined path variable used below are all set up there.
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 ## read combined data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dat_pc <- read.csv(file.path(combined_input, "ROV_diver_percent_cover_combined.csv"))
+dat_pc <- read.csv(file.path(results_combined, "ROV_diver_percent_cover_combined.csv"))
 
 ## explicit factor level order so every model below reads its "type"
 ## coefficient as ROV relative to a diver reference (R's default alphabetical
@@ -136,7 +122,7 @@ for (cat in pc_categories) {
 pc_results <- bind_rows(pc_results)
 print(pc_results, width = Inf)
 
-write.csv(pc_results, file.path(combined_output, "percent_cover_model_results.csv"), row.names = FALSE)
+write.csv(pc_results, file.path(results_combined, "percent_cover_model_results.csv"), row.names = FALSE)
 ## END all 8 categories ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -215,7 +201,7 @@ for (cat in winter_categories) {
 pc_results_winter <- bind_rows(pc_results_winter)
 print(pc_results_winter, width = Inf)
 
-write.csv(pc_results_winter, file.path(combined_output, "percent_cover_model_results_winter_substrate.csv"), row.names = FALSE)
+write.csv(pc_results_winter, file.path(results_combined, "percent_cover_model_results_winter_substrate.csv"), row.names = FALSE)
 ## END winter-only models ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

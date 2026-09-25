@@ -11,30 +11,15 @@
 
 
 ## start up ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rm(list=ls())
-
-
-## add libraries
-library(tidyverse)
-library(lme4)
-library(MASS)  ## for glm.nb() -- ships with base R, no separate install needed
-
-
-## set working directory one level up and verify
-setwd("../")
-getwd()
-
-
-## relative file paths
-combined_input <- "results/combined"
-combined_output <- "results/combined"
+## NOTE: run via RunMe.R -- packages, working directory, and the
+## results_combined path variable used below are all set up there.
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
 
 ## read combined data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dat_abundance <- read.csv(file.path(combined_input, "ROV_diver_abundance_combined.csv"))
+dat_abundance <- read.csv(file.path(results_combined, "ROV_diver_abundance_combined.csv"))
 
 ## explicit factor level order so every model below reads its "type"
 ## coefficient as ROV relative to a diver reference (R's default alphabetical
@@ -114,7 +99,7 @@ for (taxon in abundance_taxa) {
 abundance_results <- bind_rows(abundance_results)
 print(abundance_results, width = Inf)
 
-write.csv(abundance_results, file.path(combined_output, "abundance_model_results.csv"), row.names = FALSE)
+write.csv(abundance_results, file.path(results_combined, "abundance_model_results.csv"), row.names = FALSE)
 ## END all 10 taxa ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -278,7 +263,7 @@ abundance_results_final <- bind_rows(
 
 print(abundance_results_final, width = Inf)
 
-write.csv(abundance_results_final, file.path(combined_output, "abundance_model_results_final.csv"), row.names = FALSE)
+write.csv(abundance_results_final, file.path(results_combined, "abundance_model_results_final.csv"), row.names = FALSE)
 ## END rock crab check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

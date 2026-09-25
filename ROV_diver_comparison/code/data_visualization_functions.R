@@ -16,6 +16,73 @@ my.theme = theme(panel.grid.major = element_blank(),
                  legend.text=element_text(size=15))
 
 
+## per-panel Pearson correlation label for the two head-to-head figures.
+## Computed from the plotted x/y themselves rather than read back from
+## results/combined/correlation_*.csv, so a panel's annotation can never
+## disagree with the points drawn beneath it (and so the winter-only
+## percent-cover figure automatically annotates its own 12-transect
+## correlation rather than the all-season one). A category with no variance
+## under either platform has no defined correlation and is labelled "r = NA".
+##
+## `panel_maxes` is a tibble(category, panel_max) giving each panel's upper
+## axis bound -- a constant (the shared axis limit) for the percent-cover
+## figure, one value per taxon for the abundance figure's free scales.
+##
+## The value is wrapped in quotes inside the plotmath expression
+## (italic(r) == "0.70", not italic(r) == 0.70) because plotmath renders an
+## unquoted numeric literal as a number and drops the trailing zero, turning
+## 0.70 into 0.7 and 1.00 into 1 -- inconsistent decimal places across panels.
+##
+## Placement is chosen per panel rather than fixed. The upper-left corner is
+## empty in most panels, but not all: wherever the ROV counted well above the
+## diver, points push into exactly that corner (leather star, plumose anemone,
+## blood star), and a fixed upper-left label lands on top of them. Each of
+## three candidate corners is therefore tested for how many of that panel's
+## points fall inside the box a label anchored there would occupy, and the
+## first unoccupied candidate wins (which.min returns the first minimum, so
+## the tribble order below is a genuine preference order).
+build.panel.correlation.labels <- function(data, panel_maxes) {
+  corners <- tibble::tribble(
+    ~px,  ~py,  ~hjust, ~vjust, ~xmin, ~xmax, ~ymin, ~ymax,
+    0.03, 0.97,      0,      1,  0.00,  0.45,  0.85,  1.00,  ## upper-left
+    0.97, 0.03,      1,      0,  0.55,  1.00,  0.00,  0.15,  ## lower-right
+    0.97, 0.97,      1,      1,  0.55,  1.00,  0.85,  1.00   ## upper-right
+  )
+
+  stats <- data %>%
+    group_by(category) %>%
+    summarise(
+      r = if (sd(x) == 0 || sd(y) == 0) NA_real_ else cor(x, y),
+      .groups = "drop"
+    ) %>%
+    left_join(panel_maxes, by = "category") %>%
+    mutate(label = ifelse(
+      is.na(r), "italic(r) == NA",
+      paste0("italic(r) == \"", sprintf("%.2f", r), "\"")
+    ))
+
+  placement <- purrr::map_dfr(seq_len(nrow(stats)), function(i) {
+    pmax_i <- stats$panel_max[i]
+    pts <- data[data$category == stats$category[i], ]
+    xn <- pts$x / pmax_i
+    yn <- pts$y / pmax_i
+
+    occupancy <- vapply(seq_len(nrow(corners)), function(j) {
+      sum(xn >= corners$xmin[j] & xn <= corners$xmax[j] &
+          yn >= corners$ymin[j] & yn <= corners$ymax[j])
+    }, numeric(1))
+
+    j <- which.min(occupancy)
+    tibble(x = corners$px[j] * pmax_i,
+           y = corners$py[j] * pmax_i,
+           hjust = corners$hjust[j],
+           vjust = corners$vjust[j])
+  })
+
+  bind_cols(stats, placement)
+}
+
+
 ## build the long-form ROV-diver abundance head-to-head comparison data, from
 ## results/combined/ROV_diver_abundance_combined.csv (one row per transect x
 ## method, "key" uniquely identifying each of the 24 site/transect/season
@@ -69,6 +136,7 @@ build.abundance.pairs.data <- function(combined_df, taxa) {
 ## default, so the tag lands centered above the name with no extra
 ## positioning code
 visualize.abundance.pairs <- function(data, colors, ncol = 4, labels = NULL,
+                                      annotate_r = TRUE,
                                       x_label = "Diver count",
                                       y_label = "ROV count") {
   category_order <- data %>%
@@ -84,6 +152,13 @@ visualize.abundance.pairs <- function(data, colors, ncol = 4, labels = NULL,
     summarise(panel_max = max(c(x, y), na.rm = TRUE) * 1.05, .groups = "drop") %>%
     mutate(x = panel_max, y = panel_max)
 
+  ## each panel's Pearson r; positions are scaled off that panel's own free
+  ## upper bound (panel_max), and the corner is chosen per panel -- see
+  ## build.panel.correlation.labels()
+  r_labels <- build.panel.correlation.labels(
+    data, range_anchors %>% select(category, panel_max)
+  )
+
   ## `labels` is allowed to be a partial rename map (as used here, renaming
   ## only the taxa whose default names overflow their panel) -- missing
   ## categories are backfilled with their own name (identity) before the
@@ -94,7 +169,7 @@ visualize.abundance.pairs <- function(data, colors, ncol = 4, labels = NULL,
   full_labels <- setNames(paste0(panel_tags, "\n", display_names[category_order]), category_order)
   strip_labeller <- ggplot2::as_labeller(full_labels)
 
-  ggplot(data, aes(x = x, y = y, color = category)) +
+  p <- ggplot(data, aes(x = x, y = y, color = category)) +
     geom_abline(slope = 1, intercept = 0, color = "grey50", linetype = "dashed", linewidth = 0.6) +
     geom_point(size = 2.6) +
     geom_blank(data = range_anchors, aes(x = x, y = y)) +
@@ -110,6 +185,16 @@ visualize.abundance.pairs <- function(data, colors, ncol = 4, labels = NULL,
           axis.title.y = element_text(size = 25),
           axis.text = element_text(size = 16),
           aspect.ratio = 1)
+
+  if (annotate_r) {
+    p <- p + geom_text(data = r_labels,
+                       aes(x = x, y = y, label = label,
+                           hjust = hjust, vjust = vjust),
+                       parse = TRUE, inherit.aes = FALSE,
+                       size = 6, color = "grey20")
+  }
+
+  p
 }
 
 
@@ -152,6 +237,7 @@ build.percent.cover.pairs.data <- function(combined_df, categories) {
 ## line and axis/strip text sizing also match the abundance figure
 visualize.head.to.head <- function(data, colors, category_order = NULL, labels = NULL,
                                    axis_limit = 100,
+                                   annotate_r = TRUE,
                                    x_label = "Diver percent-cover (%)",
                                    y_label = "ROV percent-cover (%)") {
   if (is.null(category_order)) category_order <- unique(data$category)
@@ -167,6 +253,23 @@ visualize.head.to.head <- function(data, colors, category_order = NULL, labels =
     theme(axis.title.x = element_text(size = 25),
           axis.title.y = element_text(size = 25),
           axis.text = element_text(size = 16))
+
+  ## per-panel Pearson r. Unlike the abundance figure's free per-panel
+  ## scales, every panel here shares the same fixed 0-axis_limit range, so
+  ## every panel's panel_max is that one shared limit
+  if (annotate_r) {
+    r_labels <- build.panel.correlation.labels(
+      data,
+      tibble(category = factor(category_order, levels = category_order),
+             panel_max = axis_limit)
+    )
+
+    p <- p + geom_text(data = r_labels,
+                       aes(x = x, y = y, label = label,
+                           hjust = hjust, vjust = vjust),
+                       parse = TRUE, inherit.aes = FALSE,
+                       size = 6, color = "grey20")
+  }
 
   if (length(category_order) > 1) {
     display_names <- setNames(category_order, category_order)
@@ -291,13 +394,28 @@ prep.outward.pass.photos <- function(data, site_name, season_name, max_distance 
 ## is the human-readable name used in the header text (e.g. from
 ## format.category.label()) -- separate from `title`, since the title may add
 ## site/season context the header line doesn't need repeated.
+## `depth_labels` annotates each transect's tick with its depth zone, so a
+## reader does not have to already know that transects 1-3 are the deep
+## replicates and 4-6 the shallow ones in order to read the figure -- the
+## depth contrast is usually the most striking thing in these panels, and
+## leaving it implicit in the transect numbering obscured it. Supply a vector
+## parallel to `transect_order`, or NULL to label with the transect number
+## alone.
 visualize.category.violin.with.prevalence <- function(data, category, colors,
                                                        transect_order = 1:6,
+                                                       depth_labels = c("deep", "deep", "deep",
+                                                                        "shallow", "shallow", "shallow"),
                                                        category_label = category,
                                                        title = category,
                                                        y_label = "proportion cover (given present)",
                                                        label_y = 1.12,
                                                        header_y = 1.24) {
+  ## a mismatched vector would silently mislabel depths, which is worse than
+  ## not labelling them at all
+  if (!is.null(depth_labels) && length(depth_labels) != length(transect_order)) {
+    warning("depth_labels length does not match transect_order; omitting depth annotation")
+    depth_labels <- NULL
+  }
   plot_data <- data %>%
     mutate(transect = factor(transect, levels = transect_order))
 
@@ -320,6 +438,14 @@ visualize.category.violin.with.prevalence <- function(data, category, colors,
     label = paste0("% of photos with ", category_label, " present")
   )
 
+  ## tick labels: transect number on the first line, depth zone beneath it
+  x_tick_labels <- if (is.null(depth_labels)) {
+    ggplot2::waiver()
+  } else {
+    setNames(paste0(transect_order, "\n", depth_labels),
+             as.character(transect_order))
+  }
+
   ggplot(nonzero_data, aes(x = transect, y = .data[[category]])) +
     geom_violin(aes(fill = transect, color = transect), alpha = 0.25,
                bounds = c(0, 1), linewidth = 0.8) +
@@ -339,7 +465,7 @@ visualize.category.violin.with.prevalence <- function(data, category, colors,
     ## its correct position -- ggplot infers axis order from which layers
     ## first "discover" each level, and the geom_text/geom_richtext layers
     ## (built from the un-filtered `prevalence` data) discover it last
-    scale_x_discrete(drop = FALSE) +
+    scale_x_discrete(drop = FALSE, labels = x_tick_labels) +
     scale_y_continuous(breaks = seq(0, 1, 0.25)) +
     coord_cartesian(ylim = c(0, header_y + 0.06)) +
     labs(x = "transect", y = y_label, title = title, subtitle = subtitle) +
@@ -402,8 +528,17 @@ prep.kelp.standardized.data <- function(data, site_order, season_order) {
     ) %>%
     arrange(site_f, season_f, transect) %>%
     mutate(x_nested = interaction(transect_short, season_f, site_display,
-                                  sep = ".", lex.order = FALSE)) %>%
-    select(x_nested, diver, ROV) %>%
+                                  sep = ".", lex.order = FALSE),
+           ## site x season block. The x-axis is a sequence of four such
+           ## blocks (2 sites x 2 seasons), and consecutive transects are
+           ## only physically contiguous *within* a block -- T6 of Centennial
+           ## Park winter and T1 of Elliott Bay Marina summer sit side by side
+           ## on the axis but share nothing. Connecting a line across that
+           ## boundary implies a continuity that does not exist, so callers
+           ## group on method x block rather than method alone, which breaks
+           ## each series into four separate line segments.
+           block = interaction(site_f, season_f, drop = TRUE)) %>%
+    select(x_nested, block, diver, ROV) %>%
     pivot_longer(cols = c(diver, ROV), names_to = "method", values_to = "value")
 }
 
@@ -481,7 +616,7 @@ visualize.kelp.standardized.overlay.stack <- function(data_top, data_bottom,
                                                        colors,
                                                        site_order = c("Centennial_Park", "Elliott_Bay_Marina"),
                                                        season_order = c("summer", "winter"),
-                                                       y_label = "standardized z-score",
+                                                       y_label = "Standardized z-score",
                                                        axis_title_size = 25,
                                                        axis_text_size = 20,
                                                        subtitle_text_size = 20,
@@ -495,7 +630,8 @@ visualize.kelp.standardized.overlay.stack <- function(data_top, data_bottom,
                                                        photo_width_ratio = 1) {
   plot_top <- ggplot(
     prep.kelp.standardized.data(data_top, site_order, season_order),
-    aes(x = x_nested, y = value, color = method, group = method)
+    aes(x = x_nested, y = value, color = method,
+        group = interaction(method, block))
   ) +
     geom_line() +
     geom_point(size = 2) +
@@ -514,7 +650,8 @@ visualize.kelp.standardized.overlay.stack <- function(data_top, data_bottom,
 
   plot_bottom <- ggplot(
     prep.kelp.standardized.data(data_bottom, site_order, season_order),
-    aes(x = x_nested, y = value, color = method, group = method)
+    aes(x = x_nested, y = value, color = method,
+        group = interaction(method, block))
   ) +
     geom_line() +
     geom_point(size = 2) +

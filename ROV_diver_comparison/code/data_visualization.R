@@ -7,50 +7,23 @@
 
 
 ## start up ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## clear working history
-rm(list=ls())
-
-
-## add libraries
-library(tidyverse)
-library(stringr)
-library(jsonlite)
-library(legendry)   ## nested (transect > season > site) x-axis guide
-library(patchwork)  ## combining + collecting shared legend/axis title
-library(ggtext)     ## markdown/italic plot titles (scientific names)
-
-
-## set working directory one level up and verify
-setwd("../")
-getwd()
-
-
-## relative file paths
-diver_output <- "results/diver"
-ROV_output <- "results/ROV/percent_cover"
-ROV_input <- "data/ROV"
-code <- "code"
-figs <- "figs"
-
-
-## source functions
-source(file.path(code, "wrangle_data_functions.R"))
-source(file.path(code, "data_visualization_functions.R"))
-
+## NOTE: run via RunMe.R -- packages, working directory, function sourcing,
+## and the results_diver / results_ROV_percent_cover / figs path variables
+## used below are all set up there.
 
 ## read diver data
 ## NOTE: read_csv() (readr), not read.csv() (base) -- base read.csv() runs
 ## column names through make.names(), which mangles the parentheses/hyphens
 ## in names like "substrate_rock_(15-25cm-wa)" into "substrate_rock_.15.25cm.wa.".
 ## read_csv() preserves them as-is, matching the header actually written to disk.
-diver_invert_abundance <- read_csv(file.path(diver_output, "diver_invert_abundance.csv"))
-diver_UPC_percentage <- read_csv(file.path(diver_output, "diver_UPC_percentage.csv"))
-diver_algae_density <- read_csv(file.path(diver_output, "diver_algae_density.csv"))
+diver_invert_abundance <- read_csv(file.path(results_diver, "diver_invert_abundance.csv"))
+diver_UPC_percentage <- read_csv(file.path(results_diver, "diver_UPC_percentage.csv"))
+diver_algae_density <- read_csv(file.path(results_diver, "diver_algae_density.csv"))
 
 
 ## read ROV data
-ROV_percent_cover_averaged <- read_csv(file.path(ROV_output, "HSIL_percent-cover_transect-averaged.csv"))
-ROV_percent_cover_photo_level <- read_csv(file.path(ROV_output, "HSIL_percent-cover_photo-level.csv"))
+ROV_percent_cover_averaged <- read_csv(file.path(results_ROV_percent_cover, "HSIL_percent-cover_transect-averaged.csv"))
+ROV_percent_cover_photo_level <- read_csv(file.path(results_ROV_percent_cover, "HSIL_percent-cover_photo-level.csv"))
 ## END startup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
