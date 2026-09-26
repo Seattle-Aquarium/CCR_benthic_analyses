@@ -304,8 +304,8 @@ endorsement or recommendation for use.
 	contributed over half a million data points in Kelp Quest on
 	Zooniverse---their efforts from all over the world directly
 	facilitated the results in this report. Finally, we want to thank Nick 
-	Tolimieri, Ken Collins, and Jackie Selbitschka for their feedback which 
-	greatly improved this report.
+	Tolimieri, Ken Collins, Jackie Selbitschka, and Jan Friewald for their 
+	feedback which greatly improved this report.
 }
 %% ====================================================================
 %% DOCUMENT
@@ -579,8 +579,8 @@ changes to sedimentation and nutrient regimes associated with coastal
 development and climate change \citep{Khangaonkar:2018aa}.
 Sea urchin overgrazing does not appear to have initiated decline within Puget
 Sound; elsewhere along the Pacific coast, urchins are generally understood less
-as the trigger of kelp loss than as the mechanism that maintains a deforested
-state once canopy has been lost, by grazing on new recruits
+as the trigger of kelp loss and more as the mechanism that maintains a 
+deforested state once canopy has been lost, by grazing on new recruits
 \citep{FilbeeDexter:2014aa}.
 
 In response, state, federal, Tribal, non-profit, and academic entities have organized around a shared conservation and recovery agenda.
@@ -609,9 +609,9 @@ These surveys are centered around obtaining standardized downward-facing
 photographs of the benthos that capture a snapshot of vegetation, substrate 
 type, and individual and colonial invertebrates.
 Photographic and video surveys have historically traded field efficiency for
-post-processing burden: a dive team can enter its data within minutes of
-surfacing, whereas a comparable volume of imagery has traditionally taken
-many hours to annotate by hand.
+post-processing burden: a dive team can finalize its data easily after a dive, 
+whereas a comparable volume of imagery has traditionally taken many hours to 
+annotate by hand.
 The machine learning classification workflow we describe below is central to 
 the ROV's practical viability --- by automating the extraction of percent-cover 
 data from tens of thousands of image patches, it brings the total time cost of 
@@ -651,7 +651,7 @@ algae, invertebrates, and substrate derived from each method differ.
 Our second objective is to distill lessons learned from this comparison so as to 
 inform future deployments of ROV surveys to support ongoing and future kelp 
 forest monitoring, conservation, and habitat restoration throughout Puget 
-Sound. 
+Sound and beyond. 
 
 %% --------------------------------------------------------------------
 \subsection{Report structure}
@@ -660,8 +660,9 @@ Sound.
 
 This ROV-diver methods comparison is one component of a broader, multi-year 
 Seattle Aquarium project (WDFW $\#$ 23-23658) funded by the Washington 
-Department of Fish and Wildlife's Habitat Strategic Initiative Lead (HSIL) 
-program, integrating ROV benthic methods testing and post-processing workflow 
+Department of Fish and Wildlife-Department of Natural Resources Habitat 
+Strategic Initiative Lead using EPA Puget Sound Geographic Program funds, 
+integrating ROV benthic methods testing and post-processing workflow 
 development with ongoing Washington kelp forest monitoring, conservation, 
 restoration, and spatial modeling efforts.
 The overarching goal of the HSIL-funded project is to determine how ROV-derived data can best be integrated into this broader body of work in the future.
@@ -686,18 +687,15 @@ This train-the-trainer approach enabled us to deploy multiple dive teams across
 2024 and 2025 to gather Reef Check data off the Aquarium's 24' aluminum Almar 
 research vessel alongside our ROV. 
 
-These paired ROV-diver surveys took place at four newly established Aquarium 
-Reef Check sites in two geographically distinct regions of Puget Sound: 
-two sites in Elliott Bay and two sites in the San Juan Islands, with each site 
-sampled at a ``deep'' ($10~m$) and ``shallow'' ($5~m$) zone.
-All sites were sampled in the summer (August--September) and winter 
+These paired ROV-diver surveys took place at two newly established Aquarium 
+Reef Check sites in Elliott Bay, with each site sampled at a ``deep'' ($10~m$) 
+and ``shallow'' ($5~m$) zone.
+Both sites were sampled in the summer (August--September) and winter 
 (December--January) to enable a head-to-head comparison of substrate data when 
 annual vegetation is absent.
-There were a variety of challenges associated with the San Juan Islands sites,
-and this report focuses on the Elliott Bay sites in summer 2024 and the
-immediately following winter 2025 (\figref{fig:site_map}).
 These two sites are dramatically distinct and thus pose a variety of physical 
-and biological sampling scenarios for both platforms to contend with.
+and biological sampling scenarios for both platforms to contend with 
+(\figref{fig:site_map}).
 
 Centennial Park is composed primarily of soft sediment, with extensive 
 small-pebble and rock structure across the two depth zones. Sugar kelp 
@@ -773,8 +771,9 @@ Two Seattle Aquarium Reef Check divers were aboard the vessel, along with
 either two or three surface personnel (ROV operators and a Primary Boat 
 Operator, PBO, see \figref{fig:field_methods} for examples of our topside 
 setup).
-Our field sampling was slightly modified to maximize the ability of the ROV and 
-divers to survey the same benthos.
+Our field sampling was slightly modified relative to the standard Reef Check 
+approach to maximize the ability of the ROV and divers to survey the same 
+benthos.
 On the day of sampling, we anchored the Seattle Aquarium vessel and deployed the two Seattle Aquarium Reef Check divers.
 The divers descended to the ``deep'' depth zone ($10~m$) and deployed
 a surface marker buoy (SMB) before unspooling a $100~m$ tape.
@@ -838,8 +837,9 @@ below in the ROV processing section.
 
 Divers gathered data in accordance with Reef Check's Kelp Forest Monitoring 
 Program, a standardized protocol applied across California, Oregon, Washington, 
-and, most recently, British Columbia, with specific species and categories 
-varying by geography and latitude \citep{Freiwald2021, Freiwald:2023aa}.
+and, most recently, British Columbia and northern Baja, Mexico, with specific 
+species and categories varying by geography and latitude \citep{Freiwald2021, 
+Freiwald:2023aa}.
 Each Reef Check site consists of six $30~m$ $\times$ $2~m$ transects, three at 
 $5~m$ depth and three at $10~m$ depth; 
 the three transects within a depth are treated as independent replicates.
@@ -952,6 +952,8 @@ forward movement, and each meter mark matched to its closest photograph in
 time --- yielding approximately one benthic photograph per meter of ROV
 movement with minimal overlap along a transect, and thereby aligning the ROV
 imagery as closely as possible with the benthos the diver surveyed.
+This approach generated approximately 30 ROV photos per each side of the 30 $m$ 
+transect tape, totaling 60 ROV photos per 30 x 2 $m$ diver transect. 
 The same pipeline produced geospatial transect tracks and per-transect
 summaries of ROV altitude and total distance traveled.
 This pipeline is documented in full, with all associated code, in the
@@ -961,9 +963,9 @@ interpret the platform comparison that follows.
 The latest tools used by our team to process ROV telemetry are available on GitHub at \texttt{CCR\_ROV\_survey\_methods} \citep{SeattleAquarium:2026aa}.
 
 Raw ROV imagery (.GPR) required substantial manual editing before it was 
-usable for downstream classification (i.e., data extraction): each photograph was 
-imported into Adobe Lightroom Classic, cropped to remove lens distortion at the 
-image margins, denoised, and adjusted for white balance, contrast, 
+usable for downstream classification (i.e., data extraction): each photograph 
+was imported into Adobe Lightroom Classic, cropped to remove lens distortion at 
+the image margins, denoised, and adjusted for white balance, contrast, 
 sharpness, and color, before being exported as a JPEG (see 
 \citealt{Randell:2026aa} and its supplementary material for the complete
 hand-editing workflow).
@@ -2784,78 +2786,6 @@ surveys.
 %% FIGURES AND TABLES
 %% ====================================================================
 
-
-\clearpage
-
-\vbox to \textheight{%
-\vfil
-\begin{figure}[H]
-\centering
-\begin{settingsbox}{GoPro HERO~12 camera settings}
-
-\centering
-\small
-\setlength{\tabcolsep}{5pt}
-\renewcommand{\arraystretch}{1.15}
-
-% First row: five settings
-\begin{tabularx}{\linewidth}{
-@{}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-@{}
-}
-\camerasetting{Mode}{Photo} &
-\camerasetting{Lens}{Wide} &
-\camerasetting{Output}{\(27.3~\mathrm{MP}\) RAW} &
-\camerasetting{White balance}{Native} &
-\camerasetting{ISO}{100--200}
-\end{tabularx}
-
-\vspace{2.5mm}
-{\color{reportblue!20}\hrule}
-\vspace{2.5mm}
-
-% Second row: four settings
-\begin{tabularx}{\linewidth}{
-@{}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-!{\color{reportblue!30}\vrule}
->{\centering\arraybackslash}X
-@{}
-}
-\camerasetting{Color profile}{Flat} &
-\camerasetting{Sharpness}{Low} &
-\camerasetting{EV compensation}{0} &
-\camerasetting{Shutter speed}{\(1/300~\mathrm{s}\)}
-\end{tabularx}
-
-\end{settingsbox}
-\caption{
-The camera settings used by the GoPro HERO 12 camera with GoPro Labs firmware
-installed on the camera's SD card.
-These settings enabled 27.3 megapixel raw (GPR) and preview (JPG) photographs to
-be taken every three seconds.
-The GoPro cameras were also time synchronized before each flight via:
-\url{https://gopro.github.io/labs/control/precisiontime/} enabling alignment
-with our ROV telemetry files.
-}
-\label{fig:camera_settings}
-\end{figure}
-\vfil
-}
-
 \clearpage
 
 \vbox to \textheight{
@@ -3193,6 +3123,81 @@ Marina breakwater (bottom).
 \label{fig:ROV}
 \end{figure}
 \vfil
+}
+
+\clearpage
+
+\vbox to \textheight{%
+	\vfil
+	\begin{figure}[H]
+		\centering
+		\begin{settingsbox}{GoPro HERO~12 camera settings}
+			
+			\centering
+			\small
+			\setlength{\tabcolsep}{5pt}
+			\renewcommand{\arraystretch}{1.15}
+			
+			% First row: five settings
+			\begin{tabularx}{\linewidth}{
+					@{}
+					>{\centering\arraybackslash}X
+					!{\color{reportblue!30}\vrule}
+					>{\centering\arraybackslash}X
+					!{\color{reportblue!30}\vrule}
+					>{\centering\arraybackslash}X
+					!{\color{reportblue!30}\vrule}
+					>{\centering\arraybackslash}X
+					!{\color{reportblue!30}\vrule}
+					>{\centering\arraybackslash}X
+					@{}
+				}
+				\camerasetting{Mode}{Photo} &
+				\camerasetting{Lens}{Wide} &
+				\camerasetting{Output}{\(27.3~\mathrm{MP}\) RAW} &
+				\camerasetting{White balance}{Native} &
+				\camerasetting{ISO}{100--200}
+			\end{tabularx}
+			
+			\vspace{2.5mm}
+			{\color{reportblue!20}\hrule}
+			\vspace{2.5mm}
+			
+			% Second row: four settings
+			\begin{tabularx}{\linewidth}{
+					@{}
+					>{\centering\arraybackslash}X
+					!{\color{reportblue!30}\vrule}
+					>{\centering\arraybackslash}X
+					!{\color{reportblue!30}\vrule}
+					>{\centering\arraybackslash}X
+					!{\color{reportblue!30}\vrule}
+					>{\centering\arraybackslash}X
+					@{}
+				}
+				\camerasetting{Color profile}{Flat} &
+				\camerasetting{Sharpness}{Low} &
+				\camerasetting{EV compensation}{0} &
+				\camerasetting{Shutter speed}{\(1/300~\mathrm{s}\)}
+			\end{tabularx}
+			
+		\end{settingsbox}
+		\caption{
+			The camera settings used by the GoPro HERO 12 camera with GoPro 
+			Labs firmware
+			installed on the camera's SD card.
+			These settings enabled 27.3 megapixel raw (GPR) and preview (JPG) 
+			photographs to
+			be taken every three seconds.
+			The GoPro cameras were also time synchronized before each flight 
+			via:
+			\url{https://gopro.github.io/labs/control/precisiontime/} enabling 
+			alignment
+			with our ROV telemetry files.
+		}
+		\label{fig:camera_settings}
+	\end{figure}
+	\vfil
 }
 
 \clearpage
