@@ -54,7 +54,7 @@ UTC transect CSV ──┐
 transect folder ─► 1 · Transect folder    scan; identity read from the telemetry
                    │
                    ▼
-                   2 · Cut patches        50 points a still, 224 px patch, 784 px crop
+                   2 · Cut patches        50 points a still, 224 px patch, 1008 px crop
                    │                      (classifies in the same pass by default)
                    ▼
                    3 · Classify patches   our YOLO model, top 5 suggestions
@@ -292,12 +292,46 @@ that writes anything.
 |---|---|---|
 | Points per image | 50 | matches the finalized 2024–2025 transects |
 | Patch size | 224 px | what the classifier was trained on |
-| Edge margin | 224 px | one patch width, so the patch is always wholly inside the frame |
+| Edge margin | 224 px | no point lands within this of the frame edge — but see below: the crop usually needs more |
 | Seed | 42 | the same seed on the same transect gives the same points |
-| Crop scale | 3.5 | 784 px of context around a 224 px patch |
+| Crop scale | 4.5 | a 1,008 px crop around the 224 px patch |
 | Classify in the same pass | on | cutting and classifying both need the still decoded, so doing both encodes each patch once instead of twice |
 | Weights | — | `best.pt` from a run in `classification_model` |
 | Labelset | shared Dropbox copy | turns a short code into a long label |
+
+### The edge margin, and why points sit further in than 224 px
+
+Two things have to clear the frame edge, and the larger decides where the
+nearest point may sit:
+
+- **the margin** — no point within 224 px of the edge;
+- **the crop** the volunteer sees, 224 × 4.5 = **1,008 px**, which has to fit
+  inside the frame whole, so its centre is at least **504 px** in.
+
+At our settings the crop wins, so the real inset is 504, not 224. The Cut
+patches page says so next to the margin box, and stage 2 logs it.
+
+**The inset is applied before the points are drawn, not after.** It used to
+sample against the margin alone and then slide any crop that overhung back
+inside the frame. That kept every crop square, but it moved the point
+off the middle — so the green box the volunteer is judging sat in a corner
+with context on only two sides. On a 4606 × 4030 still that was **17% of
+patches, off centre by up to 167 px**. Now the safe area is worked out first
+and the sample is uniform over it, so no correction is ever needed and the box
+is always in the middle.
+
+The sliding code is still there for a still too small for the inset, but it
+records that it fired and stage 2 warns with a count, rather than handing over
+an off-centre box silently.
+
+A wider crop costs upload: at quality 100 a 1,008 px subject is about 537 KB
+against 328 KB at 3.5, so a 2,800-point transect goes from roughly 0.9 GB to
+1.4 GB.
+
+> **Re-cutting a transect moves its points.** The sampling area changed, so
+> the same seed now draws different coordinates. Already-uploaded subjects are
+> unaffected — they are keyed on their filenames in `upload_log.csv` — but a
+> transect re-cut from scratch will not match patches cut before this change.
 
 ### Things worth knowing
 
@@ -511,7 +545,7 @@ Each output image is a larger crop centred on the annotation point with three ov
 | `--annotations-csv` | ✅ | — | Path to `annotation.csv` from CoralNet-Toolbox |
 | `--output-dir` | ✅ | — | Folder where patch images will be saved |
 | `--metadata-csv` | ✅ | — | Output path for `metadata.csv` |
-| `--scale` | | `3.5` | Crop size multiplier relative to Toolbox patch size |
+| `--scale` | | `4.5` | Crop size multiplier relative to Toolbox patch size |
 | `--jpeg-quality` | | `100` | JPEG output quality (1–100) |
 | `--dry-run` | | off | Validate inputs and count rows without writing files |
 

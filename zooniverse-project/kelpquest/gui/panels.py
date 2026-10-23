@@ -25,10 +25,11 @@ from .. import (
     metadata,
     rejoin,
     report,
+    sampling,
     telemetry,
     zooniverse,
 )
-from ..config import default_output_dir
+from ..config import DEFAULT_SCALE, default_output_dir
 from . import theme as T
 from .widgets import (
     Card,
@@ -369,19 +370,24 @@ class PatchPanel(StagePanel):
             return False, f"below {patch // 2} the patch itself runs off the edge"
         # The crop field is built after this one, so on the first pass the
         # scale comes from the config rather than a widget that does not exist.
-        scale = (self.scale.float_value(3.5) if hasattr(self, "scale")
+        scale = (self.scale.float_value(DEFAULT_SCALE) if hasattr(self, "scale")
                  else self.cfg.patch.scale)
-        half = int(scale * patch / 2)
-        if n < half:
-            return True, (f"the patch clears the edge; crops within "
-                          f"{half - n} px of it are slid inward")
-        return True, "both the patch and the whole crop clear the edge"
+        inset = sampling.safe_inset(patch, n, scale)
+        if inset > n:
+            # The crop is wider than the margin, so the crop is what actually
+            # keeps points off the edge. Said plainly, because otherwise the
+            # number typed here and the band actually cleared differ with no
+            # explanation anywhere on screen.
+            return True, (f"no point within {inset} px of the edge — the "
+                          f"{int(round(patch * scale))} px crop needs more "
+                          f"room than {n}")
+        return True, f"no point within {inset} px of the edge"
 
     def _check_scale(self, text: str) -> tuple[bool, str]:
         try:
             v = float(text)
         except ValueError:
-            return False, "a number like 3.5"
+            return False, "a number like 4.5"
         if v < 1:
             return False, "at least 1"
         return True, f"{int(round(v * self.patch_size.int_value(224)))} px crop"
@@ -414,7 +420,7 @@ class PatchPanel(StagePanel):
             self.plan.configure(text="No transect scanned yet.")
             return
         n = len(t.images) * self.points.int_value(50)
-        crop = int(round(self.scale.float_value(3.5)
+        crop = int(round(self.scale.float_value(DEFAULT_SCALE)
                          * self.patch_size.int_value(224)))
         self.plan.configure(text=f"{n:,} patches at {crop}×{crop} px "
                                  f"into {self.cfg.output_dir or '(not set)'}")

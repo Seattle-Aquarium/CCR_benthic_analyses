@@ -86,15 +86,22 @@ class Geometry:
     rect_bottom: int
     cx: int            # the annotation point, in crop coordinates
     cy: int
+    #: False when the crop had to be slid back inside the frame, which leaves
+    #: the green box off centre. With `sampling.safe_inset` honoured this
+    #: cannot happen; it survives for images too small for the inset, and the
+    #: cut stage counts them so the case is reported rather than silent.
+    centered: bool = True
 
 
 def geometry(width: int, height: int, row: int, column: int,
              patch_size: int, scale: float) -> Geometry:
-    """Crop bounds for one point, shifted inward at the frame edges.
+    """Crop bounds for one point, centred on it.
 
-    The crop keeps its full requested size wherever possible by sliding back
-    into the frame rather than clipping, so patches are all one size and the
-    point is only off-centre for the handful that sit near an edge.
+    The point is in the middle of the crop, because `sampling.safe_inset`
+    keeps every point at least half a crop from the frame edge. The sliding
+    below is a guard for the one case that cannot satisfy that -- an image
+    smaller than the inset -- and sets `centered` False when it fires, rather
+    than quietly handing the volunteer an off-centre box.
     """
     half = patch_size // 2
     small_top = max(row - half, 0)
@@ -104,20 +111,19 @@ def geometry(width: int, height: int, row: int, column: int,
 
     crop = int(round(patch_size * scale))
     crop_half = crop // 2
-    left = max(0, column - crop_half)
-    top = max(0, row - crop_half)
-    right = left + crop
-    bottom = top + crop
-    if right > width:
-        left -= right - width
-        right = width
-    if bottom > height:
-        top -= bottom - height
-        bottom = height
-    left = max(0, left)
-    top = max(0, top)
+    # Where the crop goes if the point really is in the middle of it. Every
+    # departure from this is a slide, including the clamp at zero -- which is
+    # why the clamping is compared against this rather than done in place.
+    want_left = column - crop_half
+    want_top = row - crop_half
+    left = min(max(0, want_left), max(0, width - crop))
+    top = min(max(0, want_top), max(0, height - crop))
+    slid = (left != want_left) or (top != want_top)
+    right = min(left + crop, width)
+    bottom = min(top + crop, height)
 
     return Geometry(
+        centered=not slid,
         left=left, top=top, right=right, bottom=bottom,
         rect_left=small_left - left, rect_top=small_top - top,
         rect_right=small_right - left, rect_bottom=small_bottom - top,

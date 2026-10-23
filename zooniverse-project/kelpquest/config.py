@@ -14,6 +14,11 @@ import os
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
+#: Crop side as a multiple of the patch size, for the subject images sent to
+#: Zooniverse. Named because the GUI needs the same default when a field is
+#: empty, and three copies of a literal drift apart.
+DEFAULT_SCALE = 4.5
+
 #: Settings live beside the project, in the same dotfile style the classifier
 #: and the older scripts already use.
 CONFIG_PATH = Path(__file__).resolve().parent.parent / ".kelpquest_config.json"
@@ -29,10 +34,11 @@ class SampleSettings:
     """How annotation points are scattered over each source image.
 
     50 points an image on a 224 px patch, and a 224 px band around the edge of
-    the frame that no point lands in -- one whole patch width, so the patch
-    itself is always fully inside the image. The Zooniverse crop is wider than
-    that (3.5x the patch, so 392 px either side), and the handful of crops that
-    would overhang are slid back inside rather than clipped.
+    the frame that no point lands in -- one whole patch width. The Zooniverse
+    crop is wider than that band, and it has to fit inside the frame whole or
+    the point stops being in the middle of it, so the band is widened to half
+    a crop where that is larger. See `sampling.safe_inset`, which is where
+    that is worked out -- before any point is drawn, not after.
     """
 
     points_per_image: int = 50
@@ -49,9 +55,12 @@ class SampleSettings:
 class PatchSettings:
     """The crop that a volunteer actually sees."""
 
-    #: Crop side as a multiple of the patch size. 3.5 gives enough surrounding
-    #: context to judge what the point is sitting on.
-    scale: float = 3.5
+    #: Crop side as a multiple of the patch size. 4.5 gives enough surrounding
+    #: context to judge what the point is sitting on: a 1,008 px crop around
+    #: the 224 px patch. Widening it also widens the band kept clear at the
+    #: frame edge, since the crop has to fit whole -- at 4.5 no point lands
+    #: within 504 px of the edge.
+    scale: float = DEFAULT_SCALE
     jpeg_quality: int = 100
     #: Classify inside the cutting pass. Both halves need the same decoded
     #: still and the finished JPEG carries the label, so doing them together

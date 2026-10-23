@@ -35,7 +35,7 @@ Usage:
       2. The output folder where patch images will be saved
       3. The path for the output metadata.csv
             4. Site name, survey date, and transect number
-            5. The scale factor (default 3.5)
+            5. The scale factor (default 4.5)
             6. Whether to do a dry run only
 
 Requirements:
@@ -182,11 +182,11 @@ def get_args_via_gui():
 
     # ── Scale factor ──────────────────────────────────────────────────────
     ttk.Label(root, text="Scale factor:").grid(row=10, column=0, sticky="e", **pad)
-    scale_var = tk.StringVar(value="3.5")
+    scale_var = tk.StringVar(value="4.5")
     sf = ttk.Frame(root)
     sf.grid(row=10, column=1, sticky="w", **pad)
     ttk.Entry(sf, textvariable=scale_var, width=8).pack(side="left")
-    ttk.Label(sf, text="  ×  patch size   (e.g. 3.5 = crop 3.5× the Toolbox patch)",
+    ttk.Label(sf, text="  ×  patch size   (e.g. 4.5 = crop 4.5× the Toolbox patch)",
               foreground="grey").pack(side="left")
 
     # ── JPEG quality ──────────────────────────────────────────────────────
@@ -250,7 +250,7 @@ def get_args_via_gui():
                 scale = 1.0
         except ValueError:
             messagebox.showerror("Invalid scale",
-                                 "Scale factor must be a number (e.g. 3.5).")
+                                 "Scale factor must be a number (e.g. 4.5).")
             return
         try:
             quality = int(quality_var.get())

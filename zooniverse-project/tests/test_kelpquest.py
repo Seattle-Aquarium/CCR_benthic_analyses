@@ -127,12 +127,92 @@ def test_the_default_margin_is_one_patch_width():
     assert s.margin == s.patch_size == 224
 
 
+def test_the_defaults_put_the_box_in_the_middle_of_what_is_sent():
+    """Defaults, not a scale typed into the test -- the combination of the
+    shipped margin, patch size and crop scale is what every transect gets,
+    and it is the combination that has to hold together."""
+    from kelpquest.config import PatchSettings
+
+    sample, patch_cfg = SampleSettings(), PatchSettings()
+    assert patch_cfg.scale == 4.5
+    crop = int(round(sample.patch_size * patch_cfg.scale))
+    assert crop == 1008
+
+    inset = sampling.safe_inset(sample.patch_size, sample.margin,
+                                patch_cfg.scale)
+    assert inset == 504                                    # the crop, not 224
+    rng = random.Random(f"{sample.seed}:a_still.jpg")
+    points = sampling.sample_image(4606, 4030, sample.points_per_image,
+                                   sample.patch_size, sample.margin, rng,
+                                   patch_cfg.scale)
+    assert len(points) == sample.points_per_image
+    for row, column in points:
+        assert min(row, column) >= inset
+        geom = patches.geometry(4606, 4030, row, column, sample.patch_size,
+                                patch_cfg.scale)
+        assert geom.centered
+        assert (geom.cx, geom.cy) == (crop // 2, crop // 2)
+
+
 def test_points_respect_the_margin():
     rng = random.Random(1)
     points = sampling.sample_image(4606, 4030, 400, 224, 224, rng)
     assert len(points) == 400
     assert all(224 <= r <= 4030 - 224 for r, _c in points)
     assert all(224 <= c <= 4606 - 224 for _r, c in points)
+
+
+def test_the_inset_is_the_margin_or_half_a_crop_whichever_is_larger():
+    # At our settings the crop decides: 224 x 4.5 = 1008, so 504, not 224.
+    assert sampling.safe_inset(224, 224, 4.5) == 504
+    assert sampling.safe_inset(224, 224, 3.5) == 392
+    # A crop that fits inside the margin leaves the margin in charge.
+    assert sampling.safe_inset(224, 224, 1.0) == 224
+    assert sampling.safe_inset(224, 300, 2.0) == 300
+    # The point is what clears the margin, not the whole patch box.
+    assert sampling.safe_inset(224, 224, 0.5) == 224
+
+
+def test_the_green_box_is_centred_on_every_sampled_point():
+    """The defect this guards: sampling to the margin alone put 17% of the
+    points closer to the edge than half a crop. Their crops were slid back
+    inside, leaving the box off centre by up to 167 px -- a silent change to
+    what the volunteer is being asked about."""
+    width, height, patch, margin, scale = 4606, 4030, 224, 224, 3.5
+    crop = int(round(patch * scale))
+    rng = random.Random(4)
+    points = sampling.sample_image(width, height, 500, patch, margin, rng,
+                                   scale)
+    assert len(points) == 500
+    for row, column in points:
+        geom = patches.geometry(width, height, row, column, patch, scale)
+        assert geom.centered
+        assert (geom.cx, geom.cy) == (crop // 2, crop // 2)
+        assert geom.right - geom.left == crop
+        assert geom.bottom - geom.top == crop
+
+
+def test_no_point_lands_in_the_margin_band():
+    rng = random.Random(5)
+    points = sampling.sample_image(4606, 4030, 500, 224, 224, rng, 3.5)
+    assert min(min(r, c) for r, c in points) >= 224
+    assert max(c for _r, c in points) <= 4606 - 1 - 224
+    assert max(r for r, _c in points) <= 4030 - 1 - 224
+
+
+def test_the_margin_is_applied_before_sampling_not_corrected_after():
+    """Every point is drawn from the safe area, so the set of positions is
+    uniform over it. Nudging afterwards would pile points up on the inside
+    edge of the band -- which shows as a spike in the nearest-edge histogram."""
+    rng = random.Random(6)
+    points = sampling.sample_image(4606, 4030, 4000, 224, 224, rng, 3.5)
+    inset = sampling.safe_inset(224, 224, 3.5)
+    on_the_line = sum(1 for r, c in points
+                      if inset in (r, c)
+                      or r == 4030 - 1 - inset or c == 4606 - 1 - inset)
+    # Uniform over ~3,800 columns, so the four boundary lines should hold a
+    # handful of points, not the hundreds a slide-back-inside would deposit.
+    assert on_the_line < 20, f"{on_the_line} points stacked on the boundary"
 
 
 def test_points_are_distinct_so_filenames_are_unique():
@@ -154,12 +234,33 @@ def test_margin_too_big_for_the_still_is_trimmed_not_fatal():
 
 
 def test_crop_keeps_its_size_at_the_frame_edge():
-    """A point near the edge slides the crop inward rather than clipping it."""
+    """A point near the edge slides the crop inward rather than clipping it.
+
+    Unreachable from `sample_image` now, which keeps points half a crop in.
+    The guard stays for images too small for that inset -- but it says so,
+    because an off-centre box must never be silent.
+    """
     geom = patches.geometry(1600, 1200, row=20, column=20,
                             patch_size=224, scale=3.5)
     assert geom.right - geom.left == 784
     assert geom.bottom - geom.top == 784
     assert geom.left >= 0 and geom.top >= 0
+    assert not geom.centered
+
+
+def test_a_slide_at_the_far_edge_is_reported_too():
+    geom = patches.geometry(1600, 1200, row=1190, column=1590,
+                            patch_size=224, scale=3.5)
+    assert not geom.centered
+
+
+def test_a_point_half_a_crop_in_is_exactly_centred():
+    """The boundary the inset is built on."""
+    geom = patches.geometry(4606, 4030, row=392, column=392,
+                            patch_size=224, scale=3.5)
+    assert geom.centered
+    assert (geom.cx, geom.cy) == (392, 392)
+    assert (geom.left, geom.top) == (0, 0)
 
 
 def test_crosshair_lands_on_the_point():

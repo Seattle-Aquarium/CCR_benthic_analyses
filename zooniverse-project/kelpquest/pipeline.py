@@ -272,9 +272,15 @@ def _process(records: list[metadata.PatchRecord], output_dir: Path,
                 break
             if write_images:
                 label = labels.long_name(record.code) if record.code else ""
-                crop, _geom = patches.render(image, record.row, record.column,
-                                             record.patch_size, record.scale,
-                                             label)
+                crop, geom = patches.render(image, record.row, record.column,
+                                            record.patch_size, record.scale,
+                                            label)
+                # Should be unreachable: sampling keeps every point half a
+                # crop from the edge. Counted rather than assumed, because
+                # the symptom -- a green box not in the middle of the crop --
+                # is invisible unless somebody flips through the patches.
+                if not geom.centered:
+                    counts["off_centre"] = counts.get("off_centre", 0) + 1
                 if crop is None or not patches.imwrite(
                         output_dir / record.filename, crop, jpeg_quality):
                     log.warning(f"Could not write {record.filename}")
@@ -425,7 +431,7 @@ def run_patches(ctx: Context, progress: Progress | None = None,
                 "Set them on the Classify page, or run that stage next.")
 
         steps = Steps(progress, sample=5, cut=95)
-        points = sampling.sample(t.images, cfg.sample,
+        points = sampling.sample(t.images, cfg.sample, cfg.patch.scale,
                                  steps.step("sample"), cancel)
         records = _records_for(points, cfg.patch.scale)
         res.counts["planned"] = len(records)
@@ -450,6 +456,12 @@ def run_patches(ctx: Context, progress: Progress | None = None,
                               steps.step("cut"), cancel)
 
         res.counts.update({"images": len(t.images), **counts})
+        if counts.get("off_centre"):
+            res.warnings.append(
+                f"{counts['off_centre']:,} crop(s) had to be slid back inside "
+                "the frame, so the green box is not in the middle of them. "
+                "That means a still too small for the sampling inset — check "
+                "the margin and scale on this page against the image size.")
         res.cancelled = bool(cancel and cancel.is_set())
         kept = _finished(records, res)
         res.outputs = [metadata.write_manifest(ctx.manifest, kept)]
