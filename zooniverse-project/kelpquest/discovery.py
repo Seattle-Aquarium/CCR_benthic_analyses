@@ -45,6 +45,9 @@ _PLACEHOLDER_MASK = (
 
 _DATE_RE = re.compile(r"(20\d{2})[_-](\d{2})[_-](\d{2})")
 _TRANSECT_RE = re.compile(r"^T(\d+)", re.IGNORECASE)
+#: The tail `patches.patch_filename` gives every patch it writes. Used to tell
+#: this tool's own output from a still when the two share a folder.
+_PATCH_RE = re.compile(r"_r\d+_c\d+$")
 
 
 @dataclass
@@ -101,16 +104,22 @@ def is_placeholder(path: Path) -> bool:
 def find_images(folder: Path, exclude: Path | None = None) -> list[Path]:
     """Stills directly in the folder, in name order.
 
-    Deliberately not recursive: the patches this tool writes go in a subfolder,
-    and a recursive scan would find them on the second run and cut patches out
-    of patches.
+    Deliberately not recursive: the patches this tool writes normally go in a
+    subfolder, and a recursive scan would find them on the second run and cut
+    patches out of patches.
+
+    When the patches are set to land in this very folder, that protection has
+    to work by name instead -- ``<stem>_r<row>_c<col>.jpg``. Comparing the
+    folders cannot do it: every still in a non-recursive scan has this folder
+    as its parent, so excluding the folder excluded *every* still and the scan
+    reported "no images" for a folder full of them.
     """
-    exclude = exclude.resolve() if exclude else None
+    same_folder = exclude is not None and folder.resolve() == exclude.resolve()
     out = []
     for p in sorted(folder.iterdir()):
         if not p.is_file() or p.suffix.lower() not in IMAGE_SUFFIXES:
             continue
-        if exclude and p.parent.resolve() == exclude:
+        if same_folder and _PATCH_RE.search(p.stem):
             continue
         out.append(p)
     return out
@@ -171,7 +180,22 @@ def scan(folder: str | Path, output_dir: Path | None = None,
     if not t.images:
         t.notes.append("No .jpg/.png stills directly in this folder — is this "
                        "the 'edited' folder for one transect?")
+        # The stills are often one level down, in `edited`, while the folder
+        # named after the transect holds the raw frames. Say which subfolder
+        # has them rather than leaving it to be hunted for.
+        for child in sorted(p for p in folder.iterdir() if p.is_dir()):
+            found = len(find_images(child))
+            if found:
+                t.notes.append(f"{child.name}\\ has {found} — point the "
+                               "transect folder at that instead.")
         return t
+
+    if output_dir is not None and folder.resolve() == Path(output_dir).resolve():
+        # Allowed, but worth saying: the patches land among the stills, and
+        # from then on the two are told apart only by the patch filenames.
+        t.notes.append(
+            "The patches are set to land in this same folder, so they will sit "
+            "among the stills. A subfolder like 'patches' keeps them apart.")
 
     t.placeholders = [p for p in t.images if is_placeholder(p)]
     if t.placeholders:

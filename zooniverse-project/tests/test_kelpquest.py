@@ -473,10 +473,50 @@ def test_scan_of_an_empty_folder_reports_rather_than_raises(tmp_path: Path):
 
 
 def test_find_images_skips_the_output_folder(flight: Path):
+    """The scan is not recursive, so a subfolder of patches is already out of
+    reach -- this only pins that it stays that way."""
     out = flight / "zooniverse_patches"
     out.mkdir()
     patches.imwrite(out / "patch.jpg", np.zeros((20, 20, 3), np.uint8), 90)
     assert len(discovery.find_images(flight, exclude=out)) == STILL_COUNT
+
+
+def test_the_stills_survive_the_patches_sharing_their_folder(flight: Path):
+    """Excluding the output folder once excluded every still in it.
+
+    In a non-recursive scan every still has the scanned folder as its parent,
+    so comparing parent to output folder is all-or-nothing: with the patches
+    set to land among the stills it matched all of them, and a folder of 79
+    images reported "no images". Patches are told apart by name instead.
+    """
+    patches.imwrite(flight / "a_still_r3_c7.jpg",
+                    np.zeros((20, 20, 3), np.uint8), 90)
+    found = discovery.find_images(flight, exclude=flight)
+    assert len(found) == STILL_COUNT
+    assert not [p for p in found if p.name == "a_still_r3_c7.jpg"]
+
+
+def test_a_folder_of_stills_is_never_reported_as_empty(flight: Path):
+    t = discovery.scan(flight, output_dir=flight)
+    assert len(t.images) == STILL_COUNT
+    # Allowed, but said out loud: the patches will sit among the stills.
+    assert any("same folder" in n for n in t.notes)
+
+
+def test_an_empty_folder_says_which_subfolder_has_the_stills(tmp_path: Path):
+    """Our layout puts the stills in `edited` and the raw frames in the folder
+    named after the transect, so pointing at the transect folder finds
+    nothing. Hunting for them by hand is the avoidable part."""
+    transect = tmp_path / "T1"
+    edited = transect / "edited"
+    edited.mkdir(parents=True)
+    (transect / "2025_08_13_12-18-27.GPR").write_bytes(b"raw")
+    for i in range(3):
+        patches.imwrite(edited / f"2025_08_13_12-18-2{i}.jpg",
+                        np.zeros((20, 20, 3), np.uint8), 90)
+    t = discovery.scan(transect)
+    assert t.images == []
+    assert any("edited\\ has 3" in n for n in t.notes)
 
 
 # --------------------------------------------------------------------------
