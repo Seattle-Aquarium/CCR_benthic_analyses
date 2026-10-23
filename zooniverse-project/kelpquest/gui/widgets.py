@@ -167,7 +167,8 @@ class Field(ctk.CTkFrame):
                  width: int = 90, hint_text: str = "",
                  caption_width: int = 132,
                  validate: Callable[[str], tuple[bool, str]] | None = None,
-                 on_change: Callable[[], None] | None = None):
+                 on_change: Callable[[], None] | None = None,
+                 show: str = ""):
         super().__init__(master, fg_color="transparent")
         self.grid_columnconfigure(2, weight=1)
         self._validate = validate
@@ -179,7 +180,10 @@ class Field(ctk.CTkFrame):
         label(self, caption, muted=True, width=caption_width).grid(
             row=0, column=0, sticky="w", padx=(0, 8))
         self.var = ctk.StringVar(value="" if value is None else str(value))
-        self.entry = entry(self, hint_text, width=width, textvariable=self.var)
+        # `show` masks what is typed, for a password. The value is still
+        # readable with .get() -- masking is about shoulders, not storage.
+        self.entry = entry(self, hint_text, width=width, textvariable=self.var,
+                           **({"show": show} if show else {}))
         self.entry.grid(row=0, column=1, sticky="w")
         self.status = ctk.CTkLabel(self, text="", font=T.FONT_SMALL,
                                    text_color=T.TEXT_MUTED, anchor="w")

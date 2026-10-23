@@ -299,6 +299,10 @@ class App(ctk.CTk):
     def warn(self, message: str) -> None:
         messagebox.showinfo(APP_NAME, message)
 
+    def ask(self, question: str) -> bool:
+        """Yes/no for a panel's own button, outside the footer's Run flow."""
+        return bool(messagebox.askyesno(APP_NAME, question))
+
     def log_lines(self, text: str, warn: bool = False) -> None:
         """Put something in the log pane from a panel's own button.
 

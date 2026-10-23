@@ -362,3 +362,115 @@ def test_the_transect_filter_takes_several(app):
     assert "2 transect(s)" in panel.transect.status.cget("text")
     app.collect_all()
     assert app.cfg.report.transect_id == "EBM_W25_T6, PKB_S25_T1"
+
+
+# --------------------------------------------------------------------------
+#  the Zooniverse account card
+# --------------------------------------------------------------------------
+
+#: Distinctive, so a leak into a widget is unmistakable. Not a real password.
+_SECRET = "correct-horse-battery-staple-7731"
+
+
+@pytest.fixture
+def account_panels(app, monkeypatch):
+    """Both pages' account cards, with a fake credential store behind them."""
+    from kelpquest import zooniverse
+
+    saved: dict[str, str] = {}
+    monkeypatch.setattr(zooniverse, "keyring_available",
+                        lambda: (True, "FakeKeyring"))
+    monkeypatch.setattr(zooniverse, "stored_password",
+                        lambda user: saved.get(user, ""))
+    monkeypatch.setattr(zooniverse, "save_credentials",
+                        lambda user, pw: saved.setdefault(user, pw) and "Fake")
+    monkeypatch.setattr(zooniverse, "forget_credentials",
+                        lambda user: saved.pop(user, None) is not None)
+    return [app.panels["upload"].account, app.panels["export"].account], saved
+
+
+def test_the_password_box_is_masked(account_panels):
+    cards, _saved = account_panels
+    for card in cards:
+        assert card.password.entry.cget("show")
+
+
+def test_the_password_is_never_filled_in_from_the_store(account_panels, app):
+    """Write-only. A box that renders the saved password puts it on screen
+    for anyone walking past, and in any screen recording."""
+    cards, saved = account_panels
+    saved["m-williams"] = _SECRET
+    for card in cards:
+        card.username.set("m-williams")
+        card.load()
+        app.update()
+        assert card.password.get() == ""
+        assert _SECRET not in card.status.cget("text")
+        assert _SECRET not in card.note.cget("text")
+
+
+def test_a_rejected_sign_in_does_not_put_the_password_on_screen(
+        account_panels, app, monkeypatch):
+    """The failure message is rendered verbatim, so whatever it carries is
+    shown. Nothing about the password may be in it -- not even its length."""
+    from kelpquest import zooniverse
+
+    monkeypatch.setattr(zooniverse, "client_available", lambda: (True, ""))
+
+    def refuse(username, password):
+        raise RuntimeError("Zooniverse rejected that username or password.")
+
+    monkeypatch.setattr(zooniverse, "verify", refuse)
+    card = account_panels[0][0]
+    card.username.set("m-williams")
+    card.password.set(_SECRET)
+    card._sign_in()
+    app.update()
+    assert _SECRET not in card.status.cget("text")
+    assert "rejected" in card.status.cget("text")
+    # And a refused password is not saved.
+    assert "m-williams" not in account_panels[1]
+
+
+def test_a_good_sign_in_saves_and_clears_the_box(account_panels, app,
+                                                 monkeypatch):
+    from kelpquest import zooniverse
+
+    monkeypatch.setattr(zooniverse, "client_available", lambda: (True, ""))
+    monkeypatch.setattr(zooniverse, "verify", lambda u, p: u)
+    cards, saved = account_panels
+    card = cards[0]
+    card.username.set("m-williams")
+    card.project.set("24397")
+    card.password.set(_SECRET)
+    card._sign_in()
+    app.update()
+    assert saved["m-williams"] == _SECRET
+    # Cleared, so it is not left sitting in a widget for the session.
+    assert card.password.get() == ""
+    assert "A password is saved" in card.note.cget("text")
+
+
+def test_signing_in_on_one_page_signs_in_on_the_other(account_panels, app):
+    """One account, two views of it -- the card holds no state of its own."""
+    upload, export = account_panels[0]
+    upload.username.set("m-williams")
+    upload.project.set("24397")
+    upload.collect()
+    export.load()
+    app.update()
+    assert export.username.get() == "m-williams"
+    assert export.project.get() == "24397"
+
+
+def test_without_a_keyring_the_save_button_is_off(app, monkeypatch):
+    """Rather than appearing to work and forgetting between runs."""
+    from kelpquest import zooniverse
+
+    monkeypatch.setattr(zooniverse, "keyring_available",
+                        lambda: (False, "pip install keyring"))
+    card = app.panels["upload"].account
+    card.refresh()
+    app.update()
+    assert card.sign_in_btn.cget("state") == "disabled"
+    assert "pip install keyring" in card.note.cget("text")

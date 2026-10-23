@@ -675,6 +675,163 @@ class MetadataPanel(StagePanel):
 # --------------------------------------------------------------------------
 
 
+class AccountCard:
+    """Sign in to Zooniverse, and stay signed in.
+
+    Built by both stages that need credentials. There is one of these per
+    panel but no state of its own: the username and project id live in the
+    settings file and the password in the OS credential store, so whichever
+    page tells you that you are not signed in is a page where you can fix it,
+    and the other shows the same answer next time it is opened.
+
+    The password box is write-only. It is never filled in from the store, and
+    nothing here hands the password to the logger -- a saved password is
+    reported as the word "saved", never as its value.
+    """
+
+    def __init__(self, panel: StagePanel, card) -> None:
+        self.panel = panel
+        body = card.body
+        body.grid_columnconfigure(1, weight=1)
+
+        self.username = Field(body, "Username", width=230, caption_width=150,
+                              hint_text="your Zooniverse login")
+        self.password = Field(body, "Password", width=230, caption_width=150,
+                              hint_text="", show="●")
+        self.project = Field(body, "Project ID", width=120, caption_width=150,
+                             hint_text="24397",
+                             validate=_check_digits("the project's number"))
+        for i, w in enumerate((self.username, self.password, self.project)):
+            w.grid(row=i, column=0, columnspan=2, sticky="ew",
+                   pady=(0 if i == 0 else 8, 0))
+
+        row = ctk.CTkFrame(body, fg_color="transparent")
+        row.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(12, 0))
+        self.sign_in_btn = button(row, "Sign in and remember", self._sign_in,
+                                  width=180)
+        self.sign_in_btn.grid(row=0, column=0, sticky="w")
+        button(row, "Check", self._check, "ghost", width=90).grid(
+            row=0, column=1, sticky="w", padx=(8, 0))
+        self.forget_btn = button(row, "Forget password", self._forget, "ghost",
+                                 width=140)
+        self.forget_btn.grid(row=0, column=2, sticky="w", padx=(8, 0))
+
+        self.status = label(body, "", muted=True)
+        self.status.grid(row=4, column=0, columnspan=2, sticky="ew",
+                         pady=(10, 0))
+        self.note = hint(body, "")
+        self.note.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(6, 0))
+
+    # ---- state ------------------------------------------------------
+
+    def load(self) -> None:
+        a = self.panel.cfg.account
+        # Fall back to whatever a run would actually use. On a machine with an
+        # existing scripts/.env the app already knows the username and the
+        # project; leaving the boxes blank next to a status line naming both
+        # would ask somebody to retype what is on screen above it.
+        found = zooniverse.resolve(a.username, a.project_id)
+        self.username.set(a.username or found.username)
+        self.project.set(a.project_id or found.project_id)
+        # Never pre-filled, even when one is saved: a box that renders the
+        # password puts it on screen for anyone walking past, and into any
+        # screen recording. Empty means "unchanged", not "none".
+        self.password.set("")
+        self.refresh()
+
+    def collect(self) -> None:
+        a = self.panel.cfg.account
+        a.username = self.username.get().strip()
+        a.project_id = self.project.get().strip()
+        zooniverse.set_account(a.username, a.project_id)
+
+    def refresh(self) -> None:
+        """Say who is signed in, where the password is kept, and what is not."""
+        self.collect()
+        ready, message = zooniverse.credentials_status()
+        self.status.configure(text=message,
+                              text_color=T.OK if ready else T.TEXT_MUTED)
+        can_save, why = zooniverse.keyring_available()
+        self.sign_in_btn.configure(state="normal" if can_save else "disabled")
+        self.forget_btn.configure(state="normal" if can_save else "disabled")
+        if not can_save:
+            self.note.configure(text=why.replace("\n\n", "  "))
+            return
+        saved = bool(zooniverse.stored_password(self.username.get().strip()))
+        self.note.configure(
+            text=("The password is kept in the Windows Credential Manager, "
+                  "which encrypts it for your account on this machine — not "
+                  "in this project's folder, which OneDrive syncs. "
+                  + ("A password is saved for this username."
+                     if saved else "No password saved yet for this username."))
+        )
+
+    # ---- actions ----------------------------------------------------
+
+    def _sign_in(self) -> None:
+        """Check the password with Zooniverse, then save it.
+
+        Verified first on purpose: a typo found now costs a retype, and the
+        same typo found later costs the start of a two-hour upload.
+        """
+        self.collect()
+        user = self.username.get().strip()
+        password = self.password.get()
+        if not user or not password:
+            self.panel.app.warn("Type the username and password first.")
+            return
+        can_save, why = zooniverse.keyring_available()
+        if not can_save:
+            self.panel.app.warn(why)
+            return
+
+        usable, reason = zooniverse.client_available()
+        if usable:
+            self.status.configure(text="Checking with Zooniverse…",
+                                  text_color=T.TEXT_MUTED)
+            self.panel.update_idletasks()
+            try:
+                zooniverse.verify(user, password)
+            except Exception as exc:
+                # Deliberately not echoing anything about the password, not
+                # even its length: the message goes on screen and into the log.
+                self.status.configure(
+                    text=f"Zooniverse would not accept that sign-in: {exc}",
+                    text_color=T.WARN)
+                return
+        try:
+            zooniverse.save_credentials(user, password)
+        except RuntimeError as exc:
+            self.panel.app.warn(str(exc))
+            return
+        # Cleared on success so the password is not left sitting in a widget
+        # for the rest of the session.
+        self.password.set("")
+        self.panel.app.save_config()
+        self.refresh()
+        if not usable:
+            self.panel.app.warn(
+                "Saved, but it could not be checked against Zooniverse "
+                f"because the client will not load here.\n\n{reason}")
+
+    def _forget(self) -> None:
+        user = self.username.get().strip()
+        if not self.panel.app.ask(
+                f"Forget the saved Zooniverse password for {user}?\n\n"
+                "Uploading and exporting will ask for it again."):
+            return
+        removed = zooniverse.forget_credentials(user)
+        self.password.set("")
+        self.refresh()
+        if not removed:
+            self.status.configure(text="There was no saved password to remove.",
+                                  text_color=T.TEXT_MUTED)
+
+    def _check(self) -> None:
+        self.refresh()
+        self.panel.app.log_lines(zooniverse.credentials_status()[1])
+
+
 class UploadPanel(StagePanel):
     key = "upload"
     title = "5.  Upload to Zooniverse"
@@ -687,13 +844,9 @@ class UploadPanel(StagePanel):
 
     def build(self) -> None:
         c1 = self.card("Zooniverse account",
-                       "Read from scripts/.env — never from anything this app "
-                       "writes.")
-        c1.body.grid_columnconfigure(1, weight=1)
-        button(c1.body, "Check", self._check_credentials, "ghost", width=90
-               ).grid(row=0, column=0, sticky="w")
-        self.creds = label(c1.body, "", muted=True)
-        self.creds.grid(row=0, column=1, sticky="ew", padx=(12, 0))
+                       "Sign in once; the password is remembered by Windows, "
+                       "not by this app's settings file.")
+        self.account = AccountCard(self, c1)
 
         c2 = self.card("Subject set",
                        "Create a new set for a transect, or add into one that "
@@ -748,15 +901,6 @@ class UploadPanel(StagePanel):
             return False, "leave empty for all"
         return True, f"first {int(text):,} rows only"
 
-    def _check_credentials(self) -> None:
-        usable, why = zooniverse.client_available()
-        if not usable:
-            self.creds.configure(text=why.splitlines()[0], text_color=T.WARN)
-            return
-        ready, message = zooniverse.credentials_status()
-        self.creds.configure(text=message,
-                             text_color=T.OK if ready else T.WARN)
-
     def _metadata_csv(self) -> Path | None:
         out = self.cfg.output_dir
         return Path(out) / metadata.ZOONIVERSE_NAME if out else None
@@ -770,7 +914,7 @@ class UploadPanel(StagePanel):
         self.checkpoint.set(u.checkpoint_every)
         self.pause.set(u.sleep)
         self._mode_changed()
-        self._check_credentials()
+        self.account.load()
         self.refresh()
 
     def refresh(self) -> None:
@@ -808,6 +952,7 @@ class UploadPanel(StagePanel):
         u.limit = self.limit.int_value(0)
         u.checkpoint_every = self.checkpoint.int_value(u.checkpoint_every)
         u.sleep = self.pause.float_value(u.sleep)
+        self.account.collect()
 
     def validate(self) -> str | None:
         csv_path = self._metadata_csv()
@@ -874,6 +1019,11 @@ class ExportPanel(StagePanel):
     check_text = "Check only — do not generate exports"
 
     def build(self) -> None:
+        c0 = self.card("Zooniverse account",
+                       "The same sign-in as stage 5 — signing in on either "
+                       "page signs in for both.")
+        self.account = AccountCard(self, c0)
+
         c1 = self.card(
             "Which subject sets",
             "The last number in a subject set's Zooniverse URL — "
@@ -1036,6 +1186,7 @@ class ExportPanel(StagePanel):
         self.combined.set(e.combined_csv or self._suggest_combined())
         self.reuse.set(e.reuse_existing)
         self.refresh.set(e.refresh_ids)
+        self.account.load()
         self._reuse_toggled()
         # The combined file is named per transect, and the name sticks in the
         # config. Moving to the next transect without changing it would
@@ -1058,6 +1209,7 @@ class ExportPanel(StagePanel):
         e.combined_csv = self.combined.get()
         e.reuse_existing = bool(self.reuse.get())
         e.refresh_ids = self.refresh.get()
+        self.account.collect()
 
     def validate(self) -> str | None:
         if not export.parse_ids(self.set_ids.get()):

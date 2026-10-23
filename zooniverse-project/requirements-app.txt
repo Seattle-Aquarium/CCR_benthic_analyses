@@ -29,3 +29,9 @@ ultralytics>=8.3.0
 # dies with an access violation -- a segfault, taking the whole app with it.
 # This wheel bundles both the library and the database.
 python-magic-bin>=0.4.14; sys_platform == "win32"
+
+# Remembers the Zooniverse password in the Windows Credential Manager, so it
+# is encrypted for one account on one machine rather than written into this
+# project folder -- which OneDrive syncs. Pure-python wheels, no compiler.
+keyring>=24.0
+

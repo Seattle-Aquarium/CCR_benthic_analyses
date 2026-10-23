@@ -76,23 +76,220 @@ class UploadResult:
 # --------------------------------------------------------------------------
 
 
-def load_env() -> tuple[str, list[Path]]:
-    """Read the credential files; return the project id and what was read.
+USER_KEY = "ZOONIVERSE_USERNAME"
+PASS_KEY = "ZOONIVERSE_PASSWORD"
+PROJECT_KEY = "ZOONIVERSE_PROJECT_ID"
 
-    Never returns or logs the password - the GUI only ever needs to say
-    whether credentials were found and which file they came from.
+#: Where a password saved from the GUI is kept. On Windows `keyring` stores it
+#: in the Credential Manager, which encrypts it with the signed-in account's
+#: own key -- so it is readable by this user on this machine and by nothing
+#: else. The alternative, a line in a file, is readable by anything that can
+#: read the folder, and this project's folder is inside OneDrive.
+KEYRING_SERVICE = "KelpQuest Zooniverse"
+
+KEYRING_ADVICE = (
+    "Saving a password needs the `keyring` package, which stores it in the "
+    "Windows Credential Manager.\n\nInstall it with:\n\n    pip install keyring"
+    "\n\nWithout it the app can still read credentials from scripts/.env.")
+
+
+@dataclass
+class Credentials:
+    """Who to sign in as, and where each piece came from.
+
+    The password is deliberately absent from ``__repr__``: a dataclass prints
+    every field, and this object ends up in tracebacks and debugger frames.
     """
+
+    username: str = ""
+    password: str = ""
+    project_id: str = ""
+    #: Human-readable origin of the password, for the GUI to show.
+    source: str = ""
+    files_read: list[Path] = field(default_factory=list)
+
+    def __repr__(self) -> str:                      # noqa: D105
+        return (f"Credentials(username={self.username!r}, "
+                f"project_id={self.project_id!r}, source={self.source!r}, "
+                f"password={'set' if self.password else 'unset'})")
+
+    @property
+    def complete(self) -> bool:
+        return bool(self.username and self.password and self.project_id)
+
+
+def keyring_available() -> tuple[bool, str]:
+    """Whether a password can be saved to the OS credential store."""
+    try:
+        import keyring
+    except ImportError:
+        return False, KEYRING_ADVICE
+    try:
+        backend = keyring.get_keyring()
+    except Exception as exc:
+        return False, f"keyring is installed but unusable here: {exc}"
+    name = type(backend).__name__
+    if "fail" in name.lower():
+        return False, ("keyring found no credential store on this machine, so "
+                       "a password cannot be saved securely.")
+    return True, name
+
+
+def _from_files() -> tuple[dict[str, str], list[Path]]:
+    """Parse the credential files, without touching ``os.environ``.
+
+    Reading them into the process environment -- which is what this used to do
+    -- makes "came from the environment" and "came from a file" impossible to
+    tell apart afterwards, and the GUI has to be able to say which.
+    """
+    values: dict[str, str] = {}
     read: list[Path] = []
     try:
-        from dotenv import load_dotenv
+        from dotenv import dotenv_values
     except ImportError:
-        return os.getenv("ZOONIVERSE_PROJECT_ID", ""), read
+        def dotenv_values(path):                      # minimal stand-in
+            out = {}
+            for line in Path(path).read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, raw = line.partition("=")
+                out[key.strip()] = raw.strip().strip("'\"")
+            return out
 
     for path in ENV_CANDIDATES:
-        if path.is_file():
-            load_dotenv(path, override=False)
-            read.append(path)
-    return os.getenv("ZOONIVERSE_PROJECT_ID", "").strip(), read
+        if not path.is_file():
+            continue
+        try:
+            found = dotenv_values(path) or {}
+        except OSError as exc:
+            log.warning(f"Could not read {path.name}: {exc}")
+            continue
+        read.append(path)
+        for key in (USER_KEY, PASS_KEY, PROJECT_KEY):
+            # First file wins, to match the old load_dotenv(override=False).
+            if key not in values and (found.get(key) or "").strip():
+                values[key] = str(found[key]).strip()
+    return values, read
+
+
+def stored_password(username: str) -> str:
+    """The saved password for a username, or "". Never logged."""
+    if not username:
+        return ""
+    ok, _why = keyring_available()
+    if not ok:
+        return ""
+    import keyring
+
+    try:
+        return (keyring.get_password(KEYRING_SERVICE, username) or "").strip()
+    except Exception as exc:
+        log.warning(f"Could not read the saved password: {exc}")
+        return ""
+
+
+def save_credentials(username: str, password: str) -> str:
+    """Save the password to the OS credential store. Returns where it went."""
+    ok, why = keyring_available()
+    if not ok:
+        raise RuntimeError(why)
+    import keyring
+
+    keyring.set_password(KEYRING_SERVICE, username, password)
+    backend = type(keyring.get_keyring()).__name__
+    # The username is fine to log. The password is not, and is not passed on
+    # to the logger anywhere in this module.
+    log.info(f"Saved the Zooniverse password for {username} to the OS "
+             f"credential store ({backend}).")
+    return backend
+
+
+def forget_credentials(username: str) -> bool:
+    """Remove a saved password. False when there was nothing to remove."""
+    ok, _why = keyring_available()
+    if not ok or not username:
+        return False
+    import keyring
+
+    try:
+        keyring.delete_password(KEYRING_SERVICE, username)
+    except Exception:
+        return False
+    log.info(f"Removed the saved Zooniverse password for {username}.")
+    return True
+
+
+#: The account the app is configured with: (username, project id). Neither is
+#: secret. Module state because `connect` is reached from `export.inspect` and
+#: `export.list_project_sets` as well as from here, and threading an account
+#: argument through all of those to describe one signed-in user would be a lot
+#: of plumbing for one fact that does not change during a run.
+_account: tuple[str, str] = ("", "")
+
+
+def set_account(username: str, project_id: str) -> None:
+    """Tell this module which account the app has remembered."""
+    global _account
+    _account = ((username or "").strip(), (project_id or "").strip())
+
+
+def resolve(username: str = "", project_id: str = "") -> Credentials:
+    """Work out which credentials a run would use, and from where.
+
+    Order, most deliberate first: the process environment, then the password
+    saved from the GUI, then the credential files. The files come last so that
+    signing in through the app takes effect immediately rather than being
+    shadowed by a stale `config.env` -- and ``source`` always says which won,
+    because a silent order is the thing that makes either order dangerous.
+
+    ``username`` and ``project_id`` are what the app has remembered; they are
+    not secret and live in the ordinary settings file.
+    """
+    files, read = _from_files()
+    env = {k: (os.getenv(k) or "").strip()
+           for k in (USER_KEY, PASS_KEY, PROJECT_KEY)}
+    remembered_user, remembered_project = _account
+
+    creds = Credentials(files_read=read)
+    creds.username = (env[USER_KEY] or (username or "").strip()
+                      or remembered_user or files.get(USER_KEY, ""))
+    creds.project_id = (env[PROJECT_KEY] or (project_id or "").strip()
+                        or remembered_project or files.get(PROJECT_KEY, ""))
+
+    if env[PASS_KEY]:
+        creds.password, creds.source = env[PASS_KEY], "the environment"
+    else:
+        saved = stored_password(creds.username)
+        if saved:
+            creds.password, creds.source = saved, "the OS credential store"
+        elif files.get(PASS_KEY):
+            creds.password = files[PASS_KEY]
+            creds.source = read[0].name if read else "a credentials file"
+    return creds
+
+
+def verify(username: str, password: str) -> str:
+    """Sign in to check a username and password actually work.
+
+    Done before saving, so a typo is caught at the moment it can still be
+    corrected rather than at the start of a two-hour upload.
+    """
+    from panoptes_client import Panoptes
+
+    Panoptes.connect(username=username, password=password)
+    log.info(f"Signed in to Zooniverse as {username}.")
+    return username
+
+
+def load_env() -> tuple[str, list[Path]]:
+    """Back-compatible shim: (project id, files read).
+
+    Kept because the older call sites read it this way. New code should use
+    `resolve`, which also says where the password came from.
+    """
+    creds = resolve()
+    return creds.project_id, creds.files_read
 
 
 MAGIC_ADVICE = (
@@ -207,37 +404,39 @@ def _no_crash_dialog():
             pass
 
 
-def credentials_status() -> tuple[bool, str]:
-    """(ready, human-readable status) for the GUI to show before a run."""
-    project_id, read = load_env()
-    user = os.getenv("ZOONIVERSE_USERNAME", "").strip()
-    password = os.getenv("ZOONIVERSE_PASSWORD", "").strip()
-    if not read:
-        return False, ("No credentials file found. Copy scripts/config.env to "
-                       "scripts/.env and fill in your Zooniverse details.")
-    where = read[0].name
-    missing = [n for n, v in (("username", user), ("password", password),
-                              ("project id", project_id)) if not v]
+def credentials_status(username: str = "",
+                       project_id: str = "") -> tuple[bool, str]:
+    """(ready, human-readable status) for the GUI to show before a run.
+
+    Says the username, the project and where the password came from -- never
+    the password itself, and never whether a guess at it would be close.
+    """
+    creds = resolve(username, project_id)
+    missing = [n for n, v in (("username", creds.username),
+                              ("password", creds.password),
+                              ("project id", creds.project_id)) if not v]
     if missing:
-        return False, f"{where} is missing: {', '.join(missing)}"
-    return True, f"Signed in as {user} · project {project_id} · from {where}"
+        return False, ("Not signed in — no " + ", ".join(missing)
+                       + ". Fill in the account card above, or put them in "
+                         "scripts/.env.")
+    return True, (f"Signed in as {creds.username} · project "
+                  f"{creds.project_id} · password from {creds.source}")
 
 
-def connect() -> str:
+def connect(username: str = "", project_id: str = "") -> str:
     """Authenticate and return the project id."""
     from panoptes_client import Panoptes
 
-    project_id, _read = load_env()
-    user = os.getenv("ZOONIVERSE_USERNAME", "").strip()
-    password = os.getenv("ZOONIVERSE_PASSWORD", "").strip()
-    if not (user and password and project_id):
+    creds = resolve(username, project_id)
+    if not creds.complete:
         raise RuntimeError(
-            "Zooniverse credentials are incomplete. Fill in "
-            "ZOONIVERSE_USERNAME, ZOONIVERSE_PASSWORD and "
+            "Zooniverse credentials are incomplete. Sign in on the Upload "
+            "page, or fill in ZOONIVERSE_USERNAME, ZOONIVERSE_PASSWORD and "
             "ZOONIVERSE_PROJECT_ID in scripts/.env.")
-    Panoptes.connect(username=user, password=password)
-    log.info(f"Connected to Zooniverse as {user} (project {project_id}).")
-    return project_id
+    Panoptes.connect(username=creds.username, password=creds.password)
+    log.info(f"Connected to Zooniverse as {creds.username} "
+             f"(project {creds.project_id}).")
+    return creds.project_id
 
 
 # --------------------------------------------------------------------------

@@ -119,6 +119,20 @@ class ExportSettings:
 
 
 @dataclass
+class AccountSettings:
+    """Which Zooniverse account, and which project.
+
+    The password is deliberately not here. This file is plain JSON in a folder
+    that OneDrive syncs, so anything written to it is on somebody's cloud
+    storage; the password goes to the OS credential store instead, keyed on
+    this username. See `zooniverse.save_credentials`.
+    """
+
+    username: str = ""
+    project_id: str = ""
+
+
+@dataclass
 class RejoinSettings:
     """Bringing the answers back to the Toolbox annotations."""
 
@@ -162,6 +176,7 @@ class AppConfig:
     #: because somebody edited half the id.
     transect_id_prefix: str = ""
 
+    account: AccountSettings = field(default_factory=AccountSettings)
     sample: SampleSettings = field(default_factory=SampleSettings)
     patch: PatchSettings = field(default_factory=PatchSettings)
     classify: ClassifySettings = field(default_factory=ClassifySettings)
@@ -205,6 +220,7 @@ class AppConfig:
 #: string here (the module uses postponed annotations), so the mapping is
 #: written out rather than inferred.
 _NESTED = {
+    "account": AccountSettings,
     "sample": SampleSettings,
     "patch": PatchSettings,
     "classify": ClassifySettings,

@@ -315,11 +315,57 @@ that writes anything.
   before starting.
 - **Record the Subject Set ID.** It is shown on the Upload page after a run and
   goes in `tracker.xlsx`.
-- **Credentials** come from `scripts/.env`, the same file the scripts use. The
-  app never writes them anywhere.
+- **Credentials** are typed into the app — see below. An existing
+  `scripts/.env` keeps working.
 - **The report** delegates to `scripts/analyze_classifications.py`, and the
   rejoin to `scripts/zooni_to_toolbox_annot.py`, so the sheets and the rules
   each have one implementation rather than two to keep in step.
+
+### Signing in to Zooniverse
+
+Stages 5 and 6 are the two that talk to Zooniverse, and each carries the same
+**Zooniverse account** card: username, password, project ID. Signing in on
+either page signs in for both — the card holds no state of its own.
+
+**Sign in and remember** checks the password with Zooniverse first and only
+saves it if it is accepted, so a typo costs a retype now rather than the start
+of a two-hour upload. The box is then cleared.
+
+**The password goes to the Windows Credential Manager, not to a file.** Windows
+encrypts it with the signed-in account's own key, so it is readable by you on
+this machine and by nothing else. This matters more than it sounds: this
+project's folder is inside OneDrive, so a password written into
+`scripts/.env` — or into the app's own settings file — is synced to the cloud in
+plain text. It is kept out of Git by `.gitignore`, which is not the same as
+being private. `settings.json` holds the username and the project ID only, and
+there is a test asserting the word "password" never appears in it.
+
+The password box is never pre-filled, even once one is saved. A box that
+renders the password puts it on screen for anyone walking past and into any
+screen recording; empty means "unchanged", not "none". **Forget password**
+removes it.
+
+Three places can supply a password, and the status line always says which one
+won, because an order nobody can see is what makes any order dangerous:
+
+| | |
+|---|---|
+| The environment | `ZOONIVERSE_PASSWORD` exported for one run — most deliberate, so it wins |
+| The credential store | What **Sign in and remember** saved |
+| `scripts/.env`, `scripts/config.env` | Existing setups, and the scripts' own route |
+
+The credential store beats the files so that signing in through the app takes
+effect immediately, rather than being shadowed by a `config.env` holding the
+password it was meant to replace.
+
+Saving needs the `keyring` package. Without it the **Sign in** button is
+disabled and says so, rather than appearing to work and forgetting between
+runs — the app still reads `scripts/.env` in that case. `run_KelpQuest.bat`
+checks for it on startup and installs it if an existing environment is missing
+it.
+
+The standalone scripts in `scripts/` still read `scripts/.env` directly; they
+do not consult the credential store.
 
 ### One transect, several, or all of them
 

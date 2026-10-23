@@ -21,8 +21,13 @@ set "VPY=%VENV%\Scripts\python.exe"
 set "VPYW=%VENV%\Scripts\pythonw.exe"
 
 REM ---- 1. a working environment already? --------------------------------
+REM The probe names the packages a *new* requirement would add, not just the
+REM app. An existing venv satisfies "import kelpquest.gui.app" whatever it is
+REM missing, so without naming them here a dependency added later is never
+REM installed into an environment somebody already has -- and the failure
+REM arrives as a disabled button rather than as a setup step.
 if exist "%VPY%" (
-  "%VPY%" -c "import kelpquest.gui.app" >nul 2>&1
+  "%VPY%" -c "import kelpquest.gui.app, keyring" >nul 2>&1
   if not errorlevel 1 goto run
 )
 
