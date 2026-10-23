@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .. import hashing
+from .. import hashing, provenance
 from ..fsutil import list_class_images, looks_like_split_dataset
 from ..logging_setup import get_logger
 from ..progress import ProgressCB, Stages, check_cancelled
@@ -118,21 +118,35 @@ def _run(cfg, progress, cancel) -> StageResult:
     model_classes = list(model.names.values())
     log.info(f"Model knows {len(model_classes)} class(es).")
 
-    unknown = sorted(set(class_files) - set(model_classes))
-    if unknown:
-        res.warnings.append(
-            f"{len(unknown)} held-out class(es) are not in the model's "
-            f"taxonomy and can never be predicted correctly: {unknown}. They "
-            f"drag the overall accuracy down; the per-class report separates "
-            f"them out.")
+    untrained = sorted(set(class_files) - set(model_classes))
+    if untrained:
+        log.info(f"Held-out classes the model was not trained on: {untrained} "
+                 f"- scored separately, not counted against it.")
 
     df = _infer(model, class_files, cfg, st.sub("infer"), cancel)
     if df.empty:
         res.errors.append("No images were successfully evaluated.")
         return res
 
+    # A model cannot be right about a class it has never seen, so those images
+    # would be guaranteed misses -- and worse, whatever the model calls each
+    # one lands as a false positive on a class it *does* know, deflating that
+    # class's precision and inflating its apparent cover. Leaving a class out
+    # of training is a deliberate choice now, so its held-out images are set
+    # aside from every metric and reported on their own terms: what did the
+    # model make of them?
+    foreign = df[~df["true_label"].isin(model_classes)]
+    df = df[df["true_label"].isin(model_classes)].reset_index(drop=True)
+    if len(foreign):
+        _report_untrained(foreign, output_dir, label, res)
+    if df.empty:
+        res.errors.append("Every held-out image belongs to a class the model "
+                          "was not trained on - nothing to score.")
+        return res
+
     res.outputs["evaluated"] = len(df)
-    res.outputs["failed"] = total - len(df)
+    res.outputs["failed"] = total - len(df) - len(foreign)
+    res.outputs["untrained_images"] = int(len(foreign))
 
     # ---- report -----------------------------------------------------
     accuracy = 100.0 * df["correct"].sum() / len(df)
@@ -164,6 +178,36 @@ def _run(cfg, progress, cancel) -> StageResult:
     return res
 
 
+def _report_untrained(foreign: pd.DataFrame, output_dir: Path, label: str,
+                      res: StageResult) -> None:
+    """What the model did with images from classes it does not know.
+
+    Not an accuracy figure -- there is no right answer available to it -- but
+    worth knowing for percent cover: in the field these points exist and will
+    be given *some* label, and this is the label they get.
+    """
+    path = output_dir / f"{label}_untrained_classes.csv"
+    foreign.to_csv(path, index=False)
+    res.outputs["untrained_classes_csv"] = str(path)
+
+    by_class = foreign.groupby("true_label")
+    log.info("=" * 60)
+    log.info(f"{len(foreign):,} held-out image(s) belong to class(es) the model "
+             f"was not trained on. Excluded from every accuracy figure.")
+    for cls, group in by_class:
+        called = (group["pred_label"].value_counts(normalize=True).head(3))
+        log.info(f"  {cls} ({len(group):,} images) - the model called them: "
+                 + ", ".join(f"{p} {v:.0%}" for p, v in called.items()))
+    log.info(f"  Full list: {path}")
+    log.info("=" * 60)
+
+    summary = "; ".join(
+        f"{cls} ({len(g):,}) -> mostly {g['pred_label'].mode().iat[0]}"
+        for cls, g in by_class)
+    res.say(f"Set aside {len(foreign):,} image(s) from class(es) the model was "
+            f"not trained on: {summary}. See {path.name}.")
+
+
 # --------------------------------------------------------------------------
 #  Independence
 # --------------------------------------------------------------------------
@@ -175,6 +219,35 @@ def _verify_independence(cfg, res: StageResult, progress, cancel) -> set[str]:
     report = hashing.audit(cfg.train_dataset_dir, cfg.eval_dir,
                            progress=progress, cancel=cancel)
     leaks = [g for g in report.groups if g.category == "holdout_leak"]
+
+    # The hash check passes two different points cut from the same photo,
+    # and those are near-duplicates. Not a block -- the existing held-out set
+    # carries a few dozen of these from before the check existed, and they
+    # do not move a number -- but reported, listed, and counted, because
+    # a new batch of held-out patches cut from the wrong transects would.
+    shared, affected = provenance.shared_photos(cfg.eval_dir, cfg.train_dataset_dir)
+    if affected:
+        total = sum(len(v) for v in list_class_images(cfg.eval_dir, None).values())
+        pct = 100.0 * len(affected) / max(1, total)
+        listing = Path(cfg.output_dir or cfg.eval_dir) / "holdout_shared_photos.csv"
+        pd.DataFrame({"held_out_patch": [str(p) for p in affected],
+                      "photo": [provenance.photo_of(p.name) for p in affected],
+                      "class": [p.parent.name for p in affected]}
+                     ).to_csv(listing, index=False)
+        res.outputs["shared_photo_patches"] = len(affected)
+        res.outputs["shared_photo_report"] = str(listing)
+        level = res.warnings
+        level.append(
+            f"{len(affected):,} held-out patch(es) ({pct:.1f}%) were cut from "
+            f"{len(shared):,} photo(s) that also fed the training set. Not "
+            f"identical images, but near-duplicates the model has effectively "
+            f"seen; they flatter the score slightly. List: {listing.name}."
+            + (" At this share the effect is negligible." if pct < 1 else
+               " At this share the held-out number is not trustworthy - "
+               "rebuild the set from transects kept out of training."))
+        log.warning(f"{len(affected):,} held-out patch(es) share a source photo "
+                    f"with training ({pct:.1f}%) - see {listing.name}")
+
     if not leaks:
         log.info("No held-out image appears in the training set.")
         return set()

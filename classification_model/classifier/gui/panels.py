@@ -17,11 +17,12 @@ from pathlib import Path
 
 import customtkinter as ctk
 
-from ..config import (AUGMENTATION_PRESETS, PRESET_NOTES,
-                      BalanceConfig, CompareConfig, EvalConfig,
+from ..config import (AUGMENTATION_PRESETS, CUSTOM_AUGMENTATIONS,
+                      PRESET_NOTES, BalanceConfig, CompareConfig, EvalConfig,
                       ExtractConfig, TrainConfig)
 from . import theme as T
-from .widgets import (Card, PathList, PathRow, checkbox, entry, hint, label)
+from .widgets import (Card, PathList, PathRow, button, checkbox, entry,
+                      hint, label)
 
 #: Shown in the label-authority dropdown when no dataset has been nominated.
 NO_AUTHORITY = "(no preference - resolved by path order)"
@@ -141,6 +142,29 @@ class ExtractPanel(StagePanel):
         self.split_note = hint(c.body, "")
         self.split_note.grid(row=2, column=0, sticky="w", pady=(4, 0))
 
+        # Held-out mode only: shown and hidden by _split_changed.
+        self.holdout_card = self.card(
+            "Keeping the held-out set independent",
+            "Point at an existing held-out folder as the output and new patches "
+            "are added to it; points already there are skipped. Name the "
+            "training set to stay independent of, and any point on a photo "
+            "that fed it is left out before anything is cut - the hash check "
+            "cannot see two different points on the same photo, and they are "
+            "near-duplicates.")
+        self.independent_of = PathRow(self.holdout_card.body,
+                                      "Independent of", "folder")
+        self.independent_of.grid(row=0, column=0, sticky="ew")
+        g = ctk.CTkFrame(self.holdout_card.body, fg_color="transparent")
+        g.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        self.holdout_target = Field(g, 0, 0, "Target per class", int,
+                                    note="below this, a class's held-out F1 "
+                                         "is decided by one or two images")
+        hint(self.holdout_card.body,
+             "The preview lists which classes would still be missing or short "
+             "after this run, so the next round of annotation can be aimed at "
+             "them."
+             ).grid(row=2, column=0, sticky="w", pady=(8, 0))
+
         c = self.card("Split and quality")
         g = self.grid_body(c)
         self.val_frac = Field(g, 0, 0, "Val fraction", float, note="of each class")
@@ -170,18 +194,25 @@ class ExtractPanel(StagePanel):
              ).grid(row=1, column=0, sticky="w", pady=(6, 0))
 
     def _split_changed(self) -> None:
+        held_out = bool(self.no_split.get())
         self.split_note.configure(
             text=("Flat <Label>/ folders. This output feeds stage 4 only - it "
                   "must never be trained on."
-                  if self.no_split.get() else
+                  if held_out else
                   "train/ and val/ subfolders. This output feeds stage 2."),
-            text_color=T.WARN if self.no_split.get() else T.TEXT_MUTED)
+            text_color=T.WARN if held_out else T.TEXT_MUTED)
+        if held_out:
+            self.holdout_card.grid()
+        else:
+            self.holdout_card.grid_remove()
 
     def load(self) -> None:
         cfg: ExtractConfig = self.state.extract
         self.csvs.set(cfg.annotation_csvs)
         self.out.set(cfg.output_dir)
         self.no_split.set(cfg.no_split)
+        self.independent_of.set(cfg.independent_of)
+        self.holdout_target.set(cfg.holdout_target)
         self.val_frac.set(cfg.val_frac)
         self.min_val.set(cfg.min_val_count)
         self.quality.set(cfg.jpeg_quality)
@@ -198,6 +229,8 @@ class ExtractPanel(StagePanel):
         cfg.annotation_csvs = self.csvs.get()
         cfg.output_dir = self.out.get()
         cfg.no_split = bool(self.no_split.get())
+        cfg.independent_of = self.independent_of.get()
+        cfg.holdout_target = self.holdout_target.get() or 30
         cfg.val_frac = self.val_frac.get() or 0.2
         cfg.min_val_count = self.min_val.get() or 5
         cfg.jpeg_quality = self.quality.get() or 95
@@ -460,21 +493,45 @@ class TrainPanel(StagePanel):
              "Folders are moved aside for the run and restored afterwards."
              ).grid(row=2, column=0, sticky="w", pady=(4, 0))
 
-        c = self.card("Model and schedule")
-        g = self.grid_body(c)
-        label(g, "Base model", muted=True).grid(row=0, column=0, sticky="w",
-                                                padx=(0, 6), pady=5)
-        self.model = entry(g, "yolo26s-cls.pt", width=220)
-        self.model.grid(row=0, column=1, sticky="w", pady=5)
-        hint(g, "downloaded on first use").grid(row=0, column=2, sticky="w",
-                                                padx=(12, 0))
+        c = self.card(
+            "Notes for the record",
+            "What is different about this run, and why you are trying it. "
+            "Written into the run folder beside the weights, and read back by "
+            "stage 5 - so the comparison months from now says what each model "
+            "was for, not only how it scored.")
+        self.notes = ctk.CTkTextbox(
+            c.body, height=72, font=T.FONT_BODY, fg_color=T.FIELD_BG,
+            text_color=T.TEXT, border_width=1, border_color=T.BORDER,
+            corner_radius=6, wrap="word")
+        self.notes.grid(row=0, column=0, sticky="ew")
+        hint(c.body, "e.g.  Raised KE_sieve cap to 4000 after it scored 0.21; "
+                     "everything else as 08_24."
+             ).grid(row=1, column=0, sticky="w", pady=(6, 0))
 
-        self.epochs = Field(g, 1, 0, "Epochs", int)
-        self.patience = Field(g, 2, 0, "Patience", int,
+        c = self.card(
+            "Starting weights",
+            "A stock Ultralytics name (yolo26s-cls.pt, downloaded on first use) "
+            "starts from ImageNet features. Browse to a best.pt from an earlier "
+            "run to continue from what that model already knows.")
+        self.model = PathRow(c.body, "Base model", "file",
+                             filetypes=[("PyTorch weights", "*.pt"),
+                                        ("All files", "*.*")])
+        self.model.grid(row=0, column=0, sticky="ew")
+        hint(c.body,
+             "Starting from an earlier model means its training data counts "
+             "as seen by this one. The held-out set must be independent of "
+             "every dataset in that lineage, not only the one trained on here."
+             ).grid(row=1, column=0, sticky="w", pady=(8, 0))
+
+        c = self.card("Schedule")
+        g = self.grid_body(c)
+
+        self.epochs = Field(g, 0, 0, "Epochs", int)
+        self.patience = Field(g, 1, 0, "Patience", int,
                               note="stop after this many epochs without improving")
-        self.imgsz = Field(g, 3, 0, "Image size", int,
+        self.imgsz = Field(g, 2, 0, "Image size", int,
                            note="the main driver of GPU memory use")
-        self.seed = Field(g, 4, 0, "Seed", int)
+        self.seed = Field(g, 3, 0, "Seed", int)
 
         hint(c.body,
              "Ultralytics defaults patience to 100, which with 100 epochs can "
@@ -482,6 +539,20 @@ class TrainPanel(StagePanel):
              "is still learning. best.pt is the best epoch either way; patience "
              "decides how long the run continues past it."
              ).grid(row=1, column=0, sticky="w", pady=(8, 0))
+
+        c = self.card(
+            "Classes to leave out",
+            "Comma-separated class names to hold out of this run - a workflow "
+            "state like 'unknown', or a taxon not worth modelling. The folders "
+            "are moved aside for the run and put back afterwards.")
+        self.exclude_classes = entry(c.body, "unknown", width=460)
+        self.exclude_classes.grid(row=0, column=0, sticky="w")
+        hint(c.body,
+             "Renaming a folder or nesting it inside another does not work: "
+             "every directory inside train/ is a class to Ultralytics, "
+             "whatever it is called. A folder called '_dont_train' becomes a "
+             "class named '_dont_train'."
+             ).grid(row=1, column=0, sticky="w", pady=(6, 0))
 
         c = self.card(
             "Augmentation and regularisation",
@@ -548,8 +619,15 @@ class TrainPanel(StagePanel):
                                on_change=lambda _p: self._preview_path())
         self.project.grid(row=0, column=0, sticky="ew")
 
+        s = ctk.CTkFrame(c.body, fg_color="transparent")
+        s.grid(row=1, column=0, sticky="ew", pady=(6, 0))
+        button(s, "Suggest a name", self._suggest_name, "ghost", width=150
+               ).grid(row=0, column=0, sticky="w")
+        self.suggest_note = hint(s, "")
+        self.suggest_note.grid(row=0, column=1, sticky="w", padx=(12, 0))
+
         g = ctk.CTkFrame(c.body, fg_color="transparent")
-        g.grid(row=1, column=0, sticky="ew", pady=(10, 0))
+        g.grid(row=2, column=0, sticky="ew", pady=(10, 0))
         label(g, "Run name", muted=True, width=132).grid(row=0, column=0,
                                                          sticky="w", padx=(0, 8))
         self.name = entry(g, "train", width=240)
@@ -559,7 +637,43 @@ class TrainPanel(StagePanel):
         self.name.bind("<KeyRelease>", lambda _e: self._preview_path())
 
         self.path_preview = hint(c.body, "")
-        self.path_preview.grid(row=2, column=0, sticky="w", pady=(8, 0))
+        self.path_preview.grid(row=3, column=0, sticky="w", pady=(8, 0))
+
+    def _suggest_name(self) -> None:
+        """Fill the output folder by the naming convention.
+
+        YYYY_MM_DD_<dataset>_<preset>, under the models root from stage 5 --
+        the same folder stage 5 scans, so a run named this way joins the
+        history without being pointed at. The date sorts it; the dataset says
+        what it was trained on; the preset is the most likely thing varied.
+        The operator trims the tail to whatever this run is really testing.
+        """
+        from datetime import date
+
+        root = (self.state.compare.models_root.strip()
+                or str(Path(self.project.get()).parent) if self.project.get()
+                else "")
+        if not root:
+            self.suggest_note.configure(
+                text="Set a models root on stage 5 first, so the name has "
+                     "somewhere to go.", text_color=T.WARN)
+            return
+
+        dataset = Path(self.data.get()).name if self.data.get() else "dataset"
+        # A dataset already carries its own date; two dates in one name says
+        # nothing the folder listing does not.
+        parts = dataset.split("_")
+        if len(parts) > 3 and all(p.isdigit() for p in parts[:3]):
+            dataset = "_".join(parts[3:]) or dataset
+        preset = self.augmentation.get().replace(" ", "_")
+        name = f"{date.today():%Y_%m_%d}_{dataset}_{preset}"
+
+        self.project.set(str(Path(root) / name))
+        self._preview_path()
+        self.suggest_note.configure(
+            text="Trim the tail to the one thing this run is testing - "
+                 "the full recipe is recorded in run_notes.md.",
+            text_color=T.TEXT_MUTED)
 
     def _preset_changed(self) -> None:
         """Show what the chosen preset actually does, rather than its name."""
@@ -568,12 +682,16 @@ class TrainPanel(StagePanel):
             text=PRESET_NOTES.get(name, ""),
             text_color=T.WARN if name == "ultralytics defaults" else T.TEXT_MUTED)
         values = AUGMENTATION_PRESETS.get(name, {})
-        interesting = ("hsv_s", "degrees", "translate", "mixup", "dropout",
+        interesting = ("hsv_h", "hsv_s", "hsv_v", "flipud", "dropout",
                        "weight_decay", "erasing", "scale")
         shown = [f"{k}={values[k]}" for k in interesting if k in values]
+        extras = CUSTOM_AUGMENTATIONS.get(name, {})
+        extra = [k if v is True else f"{k}={v}" for k, v in extras.items() if v]
         self.preset_values.configure(
             text=("Ultralytics decides everything." if not shown
-                  else "Sets  " + "   ".join(shown)))
+                  else "Sets  " + "   ".join(shown)
+                  + ("\nPlus, outside Ultralytics:  " + "   ".join(extra)
+                     if extra else "")))
 
     def _preview_path(self) -> None:
         """Show exactly where best.pt will land.
@@ -600,8 +718,7 @@ class TrainPanel(StagePanel):
         cfg: TrainConfig = self.state.train
         self.data.set(cfg.data_dir)
         self.exclude_mismatched.set(cfg.exclude_mismatched)
-        self.model.delete(0, "end")
-        self.model.insert(0, cfg.model)
+        self.model.set(cfg.model)
         self.epochs.set(cfg.epochs)
         self.patience.set(cfg.patience)
         self.imgsz.set(cfg.imgsz)
@@ -612,6 +729,10 @@ class TrainPanel(StagePanel):
         self.project.set(cfg.project)
         self.name.delete(0, "end")
         self.name.insert(0, cfg.name)
+        self.exclude_classes.delete(0, "end")
+        self.exclude_classes.insert(0, ", ".join(cfg.exclude_classes or []))
+        self.notes.delete("1.0", "end")
+        self.notes.insert("1.0", cfg.notes)
         self.augmentation.set(cfg.augmentation if cfg.augmentation
                               in AUGMENTATION_PRESETS else "standard")
         self.extra_args.delete("1.0", "end")
@@ -634,6 +755,10 @@ class TrainPanel(StagePanel):
         cfg.device = self.device.get().strip()
         cfg.project = self.project.get()
         cfg.name = self.name.get().strip()
+        cfg.exclude_classes = [c.strip() for c
+                               in self.exclude_classes.get().split(",")
+                               if c.strip()]
+        cfg.notes = self.notes.get("1.0", "end").strip()
         cfg.augmentation = self.augmentation.get()
         cfg.extra_args = _parse_extra_args(self.extra_args.get("1.0", "end"))
         cfg.validate_only = bool(self.preview.get())
@@ -774,7 +899,8 @@ class ComparePanel(StagePanel):
             "stage 4 also wrote its reports into. A run only joins the "
             "ranking once it has been evaluated on the held-out set.")
         self.runs = PathList(c.body, mode="folder", add_text="+ Add model…",
-                             empty_text="No model selected yet.")
+                             empty_text="No model selected yet - or set a "
+                                        "models root below.")
         self.runs.grid(row=0, column=0, sticky="ew")
         hint(c.body,
              "Models are only ranked against each other when they were "
@@ -784,6 +910,19 @@ class ComparePanel(StagePanel):
              ).grid(row=1, column=0, sticky="w", pady=(10, 0))
 
         c = self.card(
+            "Models root",
+            "Optional. Every run folder beneath it is compared automatically, "
+            "so this is 'compare everything I have trained' in one field. The "
+            "record lives here too: model_history.md, regenerated from the run "
+            "folders each time, and decisions.md, which only ever grows.")
+        self.models_root = PathRow(c.body, "Models root", "folder")
+        self.models_root.grid(row=0, column=0, sticky="ew")
+        hint(c.body,
+             "An archive/ folder beneath it is skipped. Runs without a stage 4 "
+             "evaluation appear in the history but not the ranking."
+             ).grid(row=1, column=0, sticky="w", pady=(8, 0))
+
+        c = self.card(
             "Report",
             "One workbook plus two figures: the ranking and why, per-class F1 "
             "for every model, the training curves, and what to try next.")
@@ -791,25 +930,28 @@ class ComparePanel(StagePanel):
         self.out.grid(row=0, column=0, sticky="ew")
         hint(c.body,
              "Writes model_comparison.xlsx, model_comparison_curves.png and "
-             "model_comparison_per_class.png."
+             "model_comparison_per_class.png. With no models root set, the "
+             "history and decisions files land here as well."
              ).grid(row=1, column=0, sticky="w", pady=(8, 0))
 
     def load(self) -> None:
         cfg: CompareConfig = self.state.compare
         self.runs.set(cfg.runs)
+        self.models_root.set(cfg.models_root)
         self.out.set(cfg.output_dir)
         self.preview.set(cfg.preview_only)
 
     def collect(self) -> None:
         cfg: CompareConfig = self.state.compare
         cfg.runs = self.runs.get()
+        cfg.models_root = self.models_root.get()
         cfg.output_dir = self.out.get()
         cfg.preview_only = bool(self.preview.get())
 
     def validate(self) -> str | None:
-        if len(self.runs.get()) < 2:
-            return ("Add at least two model folders - a comparison needs "
-                    "something to compare against.")
+        if len(self.runs.get()) < 2 and not self.models_root.get():
+            return ("Add at least two model folders, or set a models root - "
+                    "a comparison needs something to compare against.")
         if not self.preview.get() and not self.out.get():
             return "Choose an output folder for the comparison report."
         return None

@@ -30,7 +30,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .. import imaging
+from .. import imaging, provenance
 from ..fsutil import (IMG_EXTS, parse_remaps, resolve_source, sanitize_label,
                       unique_dest)
 from ..logging_setup import get_logger
@@ -214,6 +214,54 @@ def _run(cfg, progress, cancel) -> StageResult:
             f"{len(missing):,} of {len(sources):,} source image(s) not found - "
             f"{n_rows:,} point(s) cannot be extracted. Check the path remaps.")
 
+    # ---- keep a held-out set independent, at the photo level ---------
+    excluded_photos = pd.DataFrame()
+    already = 0
+    if cfg.no_split and cfg.independent_of.strip():
+        if not Path(cfg.independent_of).is_dir():
+            res.errors.append(f"Training dataset not found: {cfg.independent_of}")
+            return res
+        trained_on = provenance.training_photos(cfg.independent_of)
+        stems = df["Name"].map(lambda n: Path(str(n)).stem)
+        clash = stems.isin(trained_on)
+        excluded_photos = df[clash]
+        df = df[~clash].reset_index(drop=True)
+        if len(excluded_photos):
+            by_cls = excluded_photos["Label"].value_counts()
+            log.warning("=" * 66)
+            log.warning(f"{len(excluded_photos):,} point(s) sit on "
+                        f"{excluded_photos['Name'].nunique():,} photo(s) that "
+                        f"also fed {Path(cfg.independent_of).name}. Left out: "
+                        f"a held-out patch cut from a training photo is a "
+                        f"near-duplicate the hash check cannot see.")
+            for label, n in by_cls.head(8).items():
+                log.warning(f"    {label:<14} {n:>6,}")
+            log.warning("=" * 66)
+        else:
+            log.info(f"No annotation point shares a photo with "
+                     f"{Path(cfg.independent_of).name} - independent.")
+        if df.empty:
+            res.errors.append(
+                "Every annotation point is on a photo the training set already "
+                "used. A held-out set needs photos the model has never seen - "
+                "annotate transects that were kept out of training.")
+            return res
+
+    # ---- adding to a held-out set that already exists ----------------
+    if cfg.no_split and Path(cfg.output_dir).is_dir():
+        have = {p.name for p in Path(cfg.output_dir).rglob("*.jp*g")}
+        names = df.apply(lambda r: f"{Path(str(r['Name'])).stem}_r{int(r['Row'])}"
+                                   f"_c{int(r['Column'])}.jpg", axis=1)
+        present = names.isin(have)
+        already = int(present.sum())
+        if already:
+            log.info(f"{already:,} point(s) are already in {Path(cfg.output_dir).name} "
+                     f"- not extracted again.")
+            df = df[~present].reset_index(drop=True)
+
+    # Recounted after the held-out exclusions above, so the preview says how
+    # many photos will actually be cut, not how many the CSV mentioned.
+    sources = df["_src"].unique()
     class_counts = df["Label"].value_counts()
     log.info("Class counts to extract:")
     for label, n in class_counts.items():
@@ -238,8 +286,16 @@ def _run(cfg, progress, cancel) -> StageResult:
         "missing_sources": len(missing),
         "classes": {str(k): int(v) for k, v in class_counts.items()},
         "duplicates_dropped": dropped,
+        "excluded_shared_photo": int(len(excluded_photos)),
+        "already_present": already,
     })
     st.finish("prepare", "ready to extract")
+
+    if len(excluded_photos):
+        res.warnings.append(
+            f"{len(excluded_photos):,} point(s) left out because their photo "
+            f"also fed {Path(cfg.independent_of).name}. To grow the held-out "
+            f"set, annotate photos from transects that were never trained on.")
 
     if cfg.dry_run:
         res.say(f"Preview: {len(df):,} patch(es) from {len(sources):,} source "
@@ -252,6 +308,9 @@ def _run(cfg, progress, cancel) -> StageResult:
                     f"{counts.get('val', 0):,} val.")
         res.say(f"{len(missing):,} source image(s) missing."
                 if missing else "All source images found.")
+        if cfg.no_split:
+            for line in coverage_report(cfg, class_counts):
+                res.say(line)
         res.say("Nothing written - clear 'Preview only' to extract.")
         return res
 
@@ -267,9 +326,55 @@ def _run(cfg, progress, cancel) -> StageResult:
         res.say(f"{skipped:,} skipped (unreadable source, or too close to an edge).")
     res.say(f"Wrote {UPDATED_CSV} - a later run needs no path remaps.")
     if cfg.no_split:
+        for line in coverage_report(cfg):
+            res.say(line)
         res.say("This is a HELD-OUT set. Point stage 4 at it; never stage 2's "
                 "merge list.")
     return res
+
+
+def coverage_report(cfg, pending: "pd.Series | None" = None) -> list[str]:
+    """Which classes the held-out set can and cannot yet measure.
+
+    Measured against the classes of the training set it is kept independent
+    of, since those are the classes a model will be asked about. Counts what
+    is in the folder now plus, in a preview, what this run would add -- so
+    the message is "after this, X is still short", which is the one that
+    directs the next round of annotation.
+    """
+    out = Path(cfg.output_dir)
+    have: dict[str, int] = {}
+    if out.is_dir():
+        for d in out.iterdir():
+            if d.is_dir() and not d.name.startswith("_"):
+                have[d.name] = sum(1 for f in d.iterdir()
+                                   if f.suffix.lower() in IMG_EXTS)
+    if pending is not None:
+        for label, n in pending.items():
+            have[str(label)] = have.get(str(label), 0) + int(n)
+
+    taxonomy = set(have)
+    if cfg.independent_of.strip() and Path(cfg.independent_of, "train").is_dir():
+        taxonomy |= {d.name for d in Path(cfg.independent_of, "train").iterdir()
+                     if d.is_dir() and not d.name.startswith("_")}
+    if not taxonomy:
+        return []
+
+    target = cfg.holdout_target
+    missing = sorted(c for c in taxonomy if have.get(c, 0) == 0)
+    thin = sorted((c, have[c]) for c in taxonomy
+                  if 0 < have.get(c, 0) < target)
+    lines = [f"Held-out coverage ({'after this run, ' if pending is not None else ''}"
+             f"target {target} per class): "
+             f"{len(taxonomy) - len(missing) - len(thin)} of {len(taxonomy)} "
+             f"classes at or above target."]
+    if missing:
+        lines.append(f"   Cannot be measured at all - no images: "
+                     + ", ".join(missing))
+    if thin:
+        lines.append("   Too few to trust: " + ", ".join(
+            f"{c} ({n}, need {target - n} more)" for c, n in thin))
+    return lines
 
 
 def _extract_patches(df: pd.DataFrame, cfg, progress: ProgressCB,

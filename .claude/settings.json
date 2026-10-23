@@ -10,7 +10,26 @@
       "Bash(find \"/c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env\" -iname \"*magic*\" 2>/dev/null)",
       "Read(//c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/**)",
       "Bash(grep -rn \"import magic\\\\|magic\\\\.\" \"/c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/Lib/site-packages/panoptes_client/\" 2>/dev/null)",
-      "Read(//c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/Lib/site-packages/panoptes_client//**)"
+      "Read(//c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/Lib/site-packages/panoptes_client//**)",
+      "Bash(python -m py_compile \"zooniverse-project/scripts/percent_cover_telemetry.py\")",
+      "Bash(python -c ' *)",
+      "Bash(python verification_accuracy.py)",
+      "Bash(grep -iE '\\\\.\\(py|R|Rmd\\)$')",
+      "Bash(python -m py_compile verification_accuracy.py)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('verification_accuracy.py'\\).read\\(\\)\\)\")",
+      "Bash(python -m py_compile \"classification_model/extract_training_patches.py\")",
+      "Bash(python -m py_compile \"classification_model/merge_and_balance_dataset.py\")",
+      "Bash(python -m py_compile \"classification_model/remove_duplicate_images.py\")",
+      "Bash(python -m py_compile \"classification_model/rebalance_train_val_split.py\")",
+      "Bash(python -m py_compile \"classification_model/merge_and_balance_dataset.py\" \"classification_model/rebalance_train_val_split.py\")",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(where python *)",
+      "Read(//c//**)",
+      "Bash(/c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/python.exe -c ' *)",
+      "Bash(python -m py_compile \"classification_model/train_classification_model.py\")",
+      "Read(//c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/Lib/site-packages/ultralytics/**)",
+      "Read(//c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/Lib/site-packages/ultralytics/models/yolo/detect/**)",
+      "Read(//c/Users/williamsm/AppData/Local/anaconda3/envs/rov_env/Lib/site-packages/ultralytics/models/yolo/classify/**)"
     ]
   }
 }

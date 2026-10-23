@@ -56,6 +56,18 @@ class ExtractConfig:
     #: evaluation set is made: it must never be trained or validated on.
     no_split: bool = False
 
+    #: Held-out mode only. A training dataset whose *photos* the new patches
+    #: must not share. Any annotation point on a photo that fed this dataset
+    #: is left out before anything is cut, so a held-out set built this way
+    #: cannot be contaminated by near-duplicates -- the thing the hash check
+    #: cannot see. Blank skips the check.
+    independent_of: str = ""
+
+    #: Held-out mode only. Below this many patches a class's held-out F1 is
+    #: decided by one or two images; the coverage report says which classes
+    #: are short so the next round of annotation can be aimed.
+    holdout_target: int = 30
+
     dry_run: bool = True
 
 
@@ -124,39 +136,42 @@ class BalanceConfig:
 #: turned them off. They stay off in every preset except the one that exists
 #: to reproduce stock behaviour.
 #:
-#: What is left to vary is colour and orientation, which is genuinely useful
-#: here: underwater colour shifts hard with depth and turbidity, and the
-#: seafloor has no canonical "up".
+#: What is left to vary is colour and flips, which is genuinely useful here:
+#: underwater colour shifts hard with depth and turbidity, and the seafloor has
+#: no canonical "up". Beyond that, regularisation: dropout on the classifier
+#: head and weight decay in the optimiser.
+#:
+#: Only the arguments the *classification* pipeline reads are set. Ultralytics
+#: builds classify transforms from torchvision, and that path reads hsv_*,
+#: fliplr, flipud, scale, erasing and auto_augment -- nothing else. degrees,
+#: translate, shear, mixup and cutmix belong to the detection augmenter and are
+#: silently ignored for classification, so an earlier version of the
+#: "stronger" preset that set degrees=180 and mixup=0.15 was rotating and
+#: mixing nothing. They are left out so the recorded settings say what
+#: actually happened.
 AUGMENTATION_PRESETS: dict[str, dict] = {
     "standard": {
         "hsv_h": 0.015, "hsv_s": 0.7, "hsv_v": 0.4,
-        "degrees": 0.0, "translate": 0.1, "shear": 0.0,
-        "scale": 0.0, "erasing": 0.0, "auto_augment": None,
         "fliplr": 0.5, "flipud": 0.5,
-        "mixup": 0.0, "cutmix": 0.0,
+        "scale": 0.0, "erasing": 0.0, "auto_augment": None,
         "dropout": 0.0, "weight_decay": 0.0005,
     },
     "stronger": {
-        # For a run that overfits. Every image is seen under more variation,
-        # and the head is regularised harder. Rotation is safe because it
-        # turns about the centre, so the annotated point stays put -- at the
-        # cost of padded corners at angles off the square.
+        # For a run that overfits: wider colour jitter, and the head
+        # regularised harder. This is all the classification pipeline can
+        # vary without touching the centre of the patch.
         "hsv_h": 0.03, "hsv_s": 0.8, "hsv_v": 0.5,
-        "degrees": 180.0, "translate": 0.05, "shear": 0.0,
-        "scale": 0.0, "erasing": 0.0, "auto_augment": None,
         "fliplr": 0.5, "flipud": 0.5,
-        "mixup": 0.15, "cutmix": 0.0,
+        "scale": 0.0, "erasing": 0.0, "auto_augment": None,
         "dropout": 0.2, "weight_decay": 0.001,
     },
     "lighter": {
         # For a run that underfits -- validation loss below training loss, or
-        # still improving when the epochs ran out. Less distortion, so the
-        # model can fit what is actually in front of it.
+        # still improving when the epochs ran out. Less colour distortion, so
+        # the model can fit what is actually in front of it.
         "hsv_h": 0.01, "hsv_s": 0.4, "hsv_v": 0.3,
-        "degrees": 0.0, "translate": 0.0, "shear": 0.0,
-        "scale": 0.0, "erasing": 0.0, "auto_augment": None,
         "fliplr": 0.5, "flipud": 0.5,
-        "mixup": 0.0, "cutmix": 0.0,
+        "scale": 0.0, "erasing": 0.0, "auto_augment": None,
         "dropout": 0.0, "weight_decay": 0.0005,
     },
     # Nothing overridden: whatever Ultralytics ships, crop-and-erase included.
@@ -164,13 +179,30 @@ AUGMENTATION_PRESETS: dict[str, dict] = {
     "ultralytics defaults": {},
 }
 
+#: What each preset adds *outside* Ultralytics -- see ``classifier.augment``.
+#: These reach the images through a trainer subclass, not through arguments,
+#: so they never appear in args.yaml; run_notes.md is where they are recorded.
+#: All three keep the annotated point at the centre of the patch.
+#:
+#: rot90 is on for every real preset: a seafloor patch has no "up", rotation
+#: by right angles is exact (no interpolation, no padded corners), and with
+#: the two flips it covers all eight orientations. Zoom and blur are the
+#: strength knobs and belong to "stronger" only.
+CUSTOM_AUGMENTATIONS: dict[str, dict] = {
+    "standard": {"rot90": True, "center_zoom": 0.0, "blur": 0.0},
+    "stronger": {"rot90": True, "center_zoom": 0.15, "blur": 0.25},
+    "lighter": {"rot90": True, "center_zoom": 0.0, "blur": 0.0},
+    "ultralytics defaults": {},
+}
+
 #: What each preset is for, in the words the panel shows.
 PRESET_NOTES = {
-    "standard": "Colour jitter and flips. What every run so far has used.",
-    "stronger": "More colour and full rotation, plus mixup, dropout 0.2 and "
-                "double the weight decay. Use when a run overfits.",
-    "lighter": "Less distortion. Use when a run underfits or was still "
-               "improving when it stopped.",
+    "standard": "Colour jitter, flips and right-angle rotation.",
+    "stronger": "Wider colour jitter, centre-pinned zoom to 1.15x, mild blur "
+                "a quarter of the time, dropout 0.2 on the head, double the "
+                "weight decay. Use when a run overfits.",
+    "lighter": "Less colour distortion; flips and rotation only. Use when a "
+               "run underfits or was still improving when it stopped.",
     "ultralytics defaults": "Stock Ultralytics, including random-resized-crop "
                             "and random erasing - both of which can remove the "
                             "annotated point from its own patch.",
@@ -203,8 +235,22 @@ class TrainConfig:
     #: run keeps going after it.
     patience: int = 20
 
+    #: Class folders to hold out of this run entirely -- a taxon not worth
+    #: modelling, or a workflow state like ``unknown`` that is not a taxon at
+    #: all. Moved aside for the duration and restored afterwards, exactly like
+    #: a mismatched class, so the dataset on disk is unchanged either way.
+    #: Renaming or nesting a folder inside ``train/`` does *not* achieve this:
+    #: every directory under a split is a class to Ultralytics.
+    exclude_classes: list[str] = field(default_factory=list)
+
     #: Which entry of ``AUGMENTATION_PRESETS`` to train with.
     augmentation: str = "standard"
+
+    #: What changed in this run and why, in the operator's words. Written
+    #: into the run folder as run_notes.md alongside the settings the run
+    #: actually used, and read back by stage 5 -- so a comparison months later
+    #: can say not just that model B beat model A but what B was trying.
+    notes: str = ""
 
     #: Anything else to hand Ultralytics, as ``{key: value}``. Applied last,
     #: so it overrides the preset. Validated against Ultralytics' own argument
@@ -273,6 +319,12 @@ class CompareConfig:
     #: recognised, so this is whatever was typed into stage 3's Output folder.
     runs: list[str] = field(default_factory=list)
     output_dir: str = ""
+
+    #: Optional. Every run folder beneath this is included automatically, so
+    #: "compare everything I have ever trained" is one field rather than a
+    #: list to maintain. The decisions log lives here too, since it has to
+    #: outlive any single comparison.
+    models_root: str = ""
 
     #: Reads and reports without writing the workbook. On by default like
     #: every other stage, though this one only ever writes a report.

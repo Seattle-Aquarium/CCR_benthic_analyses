@@ -256,34 +256,47 @@ class TearSheet(ctk.CTkToplevel):
             "The work queue",
             "Weakest classes ordered by how many held-out points they get "
             "wrong, not by score - a big class at 0.7 costs the survey more "
-            "than a tiny one at 0.1.")
+            "than a tiny one at 0.1. Each row says what the class is being "
+            "confused with, which is the part that tells you what to fix.")
         self._mono(inner,
-                   f"{'class':<12}{'points':>8}  {'F1':>5}   {'problem':<13}"
-                   f"{'cover':>7}", 0, T.TEXT_MUTED)
-        for i, c in enumerate(weakest, start=1):
-            bias = ("-" if c["cover_bias_pct"] is None
+                   f"{'class':<12}{'points':>7}  {'F1':>5}  {'problem':<15}"
+                   f"{'cover':>6}  {'trust':<8}  what is going on",
+                   0, T.TEXT_MUTED)
+        row = 1
+        for c in weakest:
+            bias = ("-" if c.get("cover_bias_pct") is None
                     else f"{c['cover_bias_pct']:+.0f}%")
+            trust = (c.get("reliability") or "ok").split(" ")[0]
+            colour = (T.WARN if trust in ("too", "no") else
+                      T.TEXT_MUTED if trust == "thin" else T.TEXT)
             self._mono(
                 inner,
-                f"{c['label']:<12}{c['support']:>8,}  {c['f1']:>5.2f}   "
-                f"{c['problem']:<13}{bias:>7}", i)
+                f"{c['label']:<12}{c['support']:>7,}  {c['f1']:>5.2f}  "
+                f"{c['problem']:<15}{bias:>6}  {trust:<8}  "
+                f"{(c.get('diagnosis') or '')[:70]}", row, colour)
+            row += 1
+            if c.get("suggestion"):
+                ctk.CTkLabel(inner, text="    -> " + c["suggestion"],
+                             font=T.FONT_SMALL, text_color=T.TEXT_MUTED,
+                             anchor="w", justify="left", wraplength=900
+                             ).grid(row=row, column=0, sticky="ew", pady=(0, 6))
+                row += 1
 
         legend = (
-            "missed        where this class really is, the model usually "
-            "calls it something else.\n"
-            "              It needs more, or more varied, training examples.\n"
-            "over-called   when the model says this class, it is often "
-            "something else. More\n"
-            "              examples of it will not help - it needs more of "
-            "whatever it is absorbing.\n"
-            "cover         reported abundance against the truth. Negative "
-            "means the model\n"
-            "              under-reports this class, positive means it "
-            "over-reports it.")
+            "problem   missed         where this class really is, the model "
+            "calls it something else\n"
+            "          over-called    when the model says this class, it is "
+            "often something else\n"
+            "          weak both ways both of the above, about equally\n"
+            "          never right    not one held-out example was recognised\n"
+            "          unmeasured     no held-out examples exist for it\n"
+            "cover     reported abundance against the truth: negative = "
+            "under-reported, positive = over-reported\n"
+            "trust     ok / thin (under 30 held-out examples) / too few (under "
+            "10 - one image swings it) / no examples")
         ctk.CTkLabel(inner, text=legend, font=T.FONT_MONO, anchor="w",
                      justify="left", text_color=T.TEXT_MUTED
-                     ).grid(row=len(weakest) + 1, column=0, sticky="ew",
-                            pady=(10, 0))
+                     ).grid(row=row, column=0, sticky="ew", pady=(10, 0))
 
     def _build_figures(self) -> None:
         figures = self.digest.get("figures") or {}
@@ -328,17 +341,31 @@ class TearSheet(ctk.CTkToplevel):
         f.grid_columnconfigure(0, weight=1)
 
         workbook = self.digest.get("workbook")
-        hint(f, "The workbook holds every per-class number, the full confusion "
-                "tables and the training arguments." if workbook else ""
+        summary = self.digest.get("summary")
+
+        # This window is live only; everything in it is also on disk, and the
+        # operator should not have to know that from a log line.
+        hint(f, ("Saved beside the report: this page as "
+                 f"{Path(summary).name}, plus the workbook and figures."
+                 if summary else
+                 "The workbook holds every per-class number, the full "
+                 "confusion tables and the training arguments.")
              ).grid(row=0, column=0, sticky="w", padx=18, pady=14)
 
+        col = 1
+        if summary:
+            button(f, "Open this page", lambda: _open(summary), "ghost",
+                   width=140).grid(row=0, column=col, padx=(6, 6), pady=12)
+            col += 1
         if workbook:
             button(f, "Open workbook", lambda: _open(workbook), "ghost",
-                   width=150).grid(row=0, column=1, padx=(6, 6), pady=12)
+                   width=140).grid(row=0, column=col, padx=(0, 6), pady=12)
+            col += 1
             button(f, "Open folder", lambda: _open(Path(workbook).parent),
-                   "ghost", width=130).grid(row=0, column=2, padx=(0, 6), pady=12)
+                   "ghost", width=130).grid(row=0, column=col, padx=(0, 6), pady=12)
+            col += 1
         button(f, "Close", self.destroy, "primary", width=110
-               ).grid(row=0, column=3, padx=(0, 18), pady=12)
+               ).grid(row=0, column=col, padx=(0, 18), pady=12)
 
 
 def _open(path) -> None:

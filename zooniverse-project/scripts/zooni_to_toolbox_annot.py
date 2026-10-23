@@ -31,8 +31,12 @@ Label determination rules (applied in priority order):
        - Zooniverse choice text is cleaned: image markdown (![img](url) Label)
          is reduced to the trailing text ("Label"); if no text follows the
          image, the alt text is used instead.
-       - Cleaned text is looked up in the labelset JSON, then in a built-in
-         expansions table (common alt-text shortcuts → short label codes).
+       - Cleaned text is looked up in the labelset JSON, then in an
+         expansions table (choice text → short label code): DEFAULT_EXPANSIONS
+         below, merged with label_expansions.json beside this script. That
+         file is where a new choice gets mapped — by hand, or by stage 7 of
+         the Kelp Quest app, which writes it when it reports an unmapped
+         label. No code edit is needed for a new label.
        - Ambiguous or project-specific mappings can be added to
          manual_overrides in main().
        - If the label cannot be mapped → Label = "Review", Verified = FALSE,
@@ -347,40 +351,127 @@ def load_labelset_map(labelset_json_path: str):
             label_map[_norm_key(long_c)]  = (short_c or long_c, long_c)
     return label_map
 
+# ------------------------------------------------------------
+#  Expansions: volunteer-facing choice text -> labelset short code
+# ------------------------------------------------------------
+# A Zooniverse choice is written for somebody to read on a button -- "Sugar",
+# "5-rib" -- not for the labelset, which calls those KE_sugar and KE_5rib.
+# Where the cleaned choice text is not itself a labelset code, this says which
+# code it meant.
+#
+# Additions go in a JSON file beside this script rather than in the dict below,
+# and load_expansions merges the two. A new workflow choice then needs no code
+# edit: the Kelp Quest GUI writes that file when it reports an unmapped label,
+# and the next run of either the GUI or this script picks it up. Keeping the
+# defaults in code means a correction made here is not shadowed by a stale
+# copy of it in the file.
+DEFAULT_EXPANSIONS = {
+    "cca":          "RE_CCA",
+    "sugar":        "KE_sugar",
+    "leafy":        "RE_leaf",
+    "green_algae":  "GR_ulva",
+    "boulder":      "SU_bould",
+    "cobble":       "SU_cob",
+    "pebble":       "SU_peb",
+    "bushy":        "RE_bush",
+    "silt":         "SU_silt",
+    "brown_algae":  "BR_sarg",
+    "shell":        "SU_shell",
+    "unknown_cannot_be_determined_from_image": "unknown",
+    "sand":         "SU_sand",
+    "branching":    "RE_branch",
+    "sieve":         "KE_sieve",
+    "filamentous":   "RE_fil",
+    "sessile_invert": "SI",
+    "5-rib":           "KE_5rib",
+    "anthropogenic_debris": "SU_anth",
+    "bull":              "KE_bull",
+    "holdfast":          "KE_holdfas",
+    "mobile_species":     "MS",
+    "stipe":              "KE_stipe",
+
+}
+
+#: Where additions live: ``{"choice text": "SHORT_CODE"}``.
+EXPANSIONS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "label_expansions.json")
+
+
+def load_expansions(path: str | None = None) -> dict:
+    """DEFAULT_EXPANSIONS plus whatever has been added since.
+
+    Keys come back normalised, so the caller can look up ``_norm_key(text)``
+    directly. A missing file is the normal case -- it only exists once
+    somebody has added a mapping.
+    """
+    table = {_norm_key(k): v for k, v in DEFAULT_EXPANSIONS.items()}
+    p = path or EXPANSIONS_PATH
+    if not os.path.isfile(p):
+        return table
+    try:
+        with open(p, "r", encoding="utf-8") as fh:
+            extra = json.load(fh)
+    except (OSError, ValueError) as exc:
+        print(f"WARNING: could not read {p}: {exc}\n"
+              "         Using the built-in expansions only.")
+        return table
+    if not isinstance(extra, dict):
+        print(f"WARNING: {p} should be a JSON object of "
+              '{"choice text": "SHORT_CODE"}. Ignoring it.')
+        return table
+    for raw, code in extra.items():
+        code = norm_str(code)
+        if code:
+            table[_norm_key(raw)] = code
+    return table
+
+
+def save_expansions(additions: dict, path: str | None = None) -> str:
+    """Merge `additions` into the expansions file; returns where it went.
+
+    Only what differs from DEFAULT_EXPANSIONS is written. Writing the whole
+    merged table would freeze a copy of the defaults, so a later correction to
+    the dict above would be silently overridden by the file.
+    """
+    p = path or EXPANSIONS_PATH
+    current: dict = {}
+    if os.path.isfile(p):
+        try:
+            with open(p, "r", encoding="utf-8") as fh:
+                loaded = json.load(fh)
+            if isinstance(loaded, dict):
+                current = {_norm_key(k): norm_str(v)
+                           for k, v in loaded.items() if norm_str(v)}
+        except (OSError, ValueError):
+            pass          # a file we cannot read is replaced, not appended to
+    defaults = {_norm_key(k): v for k, v in DEFAULT_EXPANSIONS.items()}
+    for raw, code in (additions or {}).items():
+        key, code = _norm_key(raw), norm_str(code)
+        if not key or not code:
+            continue
+        if defaults.get(key) == code:
+            current.pop(key, None)   # already the default; nothing to record
+        else:
+            current[key] = code
+    os.makedirs(os.path.dirname(os.path.abspath(p)), exist_ok=True)
+    with open(p, "w", encoding="utf-8") as fh:
+        json.dump(dict(sorted(current.items())), fh, indent=2,
+                  ensure_ascii=False)
+        fh.write("\n")
+    return p
+
+
 def map_to_toolbox_codes(consensus_label: str, label_map: dict,
-                         manual_overrides: dict | None = None):
+                         manual_overrides: dict | None = None,
+                         expansions: dict | None = None):
     raw = norm_str(consensus_label)
     if manual_overrides and raw in manual_overrides:
         return manual_overrides[raw]
     k = _norm_key(raw)
     if k in label_map:
         return label_map[k]
-    expansions = {
-        "cca":          "RE_CCA",
-        "sugar":        "KE_sugar",
-        "leafy":        "RE_leaf",
-        "green_algae":  "GR_ulva",
-        "boulder":      "SU_bould",
-        "cobble":       "SU_cob",
-        "pebble":       "SU_peb",
-        "bushy":        "RE_bush",
-        "silt":         "SU_silt",
-        "brown_algae":  "BR_sarg",
-        "shell":        "SU_shell",
-        "unknown_cannot_be_determined_from_image": "unknown",
-        "sand":         "SU_sand",
-        "branching":    "RE_branch",
-        "sieve":         "KE_sieve",
-        "filamentous":   "RE_fil",
-        "sessile_invert": "SI",
-        "5-rib":           "KE_5rib",
-        "anthropogenic_debris": "SU_anth",
-        "bull":              "KE_bull",
-        "holdfast":          "KE_holdfas",
-        "mobile_species":     "MS",
-        "stipe":              "KE_stipe",
-
-    }
+    if expansions is None:
+        expansions = load_expansions()
     if k in expansions:
         kk = _norm_key(expansions[k])
         if kk in label_map:
@@ -675,61 +766,44 @@ def export_toolbox_json(merged: pd.DataFrame,
 
 
 # ============================================================
-# Main
+# The rules
 # ============================================================
-def main():
-    args = get_args_via_gui()
+def link_annotations(ds: pd.DataFrame,
+                     zc: pd.DataFrame,
+                     label_map: dict,
+                     manual_overrides: dict | None = None,
+                     expansions: dict | None = None,
+                     *,
+                     use_yn: bool = True,
+                     use_yn_exp: bool = True,
+                     use_multi: bool = True,
+                     use_multi_exp: bool = True) -> pd.DataFrame:
+    """
+    Apply the label determination rules to a Toolbox annotation table.
 
-    print("\n--- Zooniverse Workflows → Toolbox Linker ---\n")
-    use_yn        = args["use_yn"]
-    use_yn_exp    = args["use_yn_exp"]
-    use_multi     = args["use_multi"]
-    use_multi_exp = args["use_multi_exp"]
+    ds  : Toolbox annotation.csv as a DataFrame (see REQUIRED_TOOLBOX_COLUMNS)
+    zc  : Zooniverse classification export as a DataFrame, raw -- subject
+          fields are extracted here, so several subject-set exports can simply
+          be concatenated before calling (dedupe on classification_id first).
 
-    any_yesno = use_yn or use_yn_exp
-    any_multi = use_multi or use_multi_exp
+    Returns the merged table with Label / Long Label / Verified / zoon_status
+    set per the rules in this module's docstring, plus every vote column used
+    to reach them. INNER JOIN: only points matched in at least one selected
+    workflow come back, so a caller wanting the whole Toolbox table should
+    left-join this onto it.
 
-    os.makedirs(args["outdir"], exist_ok=True)
+    Extracted from main() so the GUI in kelpquest/ applies exactly these rules
+    rather than its own copy of them.
+    """
+    manual_overrides = manual_overrides or {}
+    # Read once here, not inside map_to_toolbox_codes: that is called per
+    # consensus label, and re-reading the file thousands of times would be a
+    # lot of stat() calls for a table that cannot change mid-run.
+    expansions = load_expansions() if expansions is None else expansions
 
-    # ── Load labelset ─────────────────────────────────────────────────────────
-    with open(args["labelset"], "r", encoding="utf-8") as f:
-        labelset_raw = json.load(f)
-    if not isinstance(labelset_raw, list) or (labelset_raw and not isinstance(labelset_raw[0], dict)):
-        raise ValueError(
-            f"Labelset JSON does not look right — expected a list of label objects "
-            f"(each with 'short_label_code' / 'long_label_code').\n"
-            f"Got: {type(labelset_raw).__name__}. "
-            f"Did you accidentally select the annotation JSON instead?"
-        )
-    label_map = {}
-    for it in labelset_raw:
-        short_c = norm_str(it.get("short_label_code", ""))
-        long_c  = norm_str(it.get("long_label_code", ""))
-        if short_c:
-            label_map[_norm_key(short_c)] = (short_c, long_c or short_c)
-        if long_c:
-            label_map[_norm_key(long_c)]  = (short_c or long_c, long_c)
-
-    manual_overrides: dict = {
-        # Labels that intentionally mean "needs review" — not a mapping gap
-        "Not sure (needs expert review)": ("Review", "Review"),
-    }
-
-    # ── Load input annotation JSON (optional) ─────────────────────────────────
-    raw_json = None
-    if args.get("annot_json"):
-        print("Loading Toolbox annotation JSON...")
-        raw_json = load_toolbox_annotation_json(args["annot_json"])
-        total_in = sum(len(v) for v in raw_json.values())
-        print(f"  Loaded {len(raw_json)} images, {total_in} annotations from JSON.")
-
-    # ── Load CSVs ─────────────────────────────────────────────────────────────
-    ds = pd.read_csv(args["dataset"])
-    ensure_required_columns(ds)
-
-    zc = pd.read_csv(args["zoo"])
     z_meta = zc["subject_data"].apply(extract_subject_fields)
-    z = pd.concat([zc, z_meta], axis=1)
+    z = pd.concat([zc.reset_index(drop=True), z_meta.reset_index(drop=True)],
+                  axis=1)
 
     # ── Aggregate votes per selected workflow ─────────────────────────────────
     votes_yn     = aggregate_yesno_votes(z, WORKFLOW_YESNO,        "yn")     if use_yn      else None
@@ -738,22 +812,23 @@ def main():
     votes_m_exp  = aggregate_multi_votes(z, WORKFLOW_MULTI_EXPERT, "m_exp")  if use_multi_exp else None
 
     # ── Build join keys ───────────────────────────────────────────────────────
+    ds = ds.copy()
     ds["source_image"] = ds["Name"].astype(str).str.replace(".jpg", "", regex=False)
     ds["Row_int"]    = pd.to_numeric(ds["Row"],    errors="coerce")
     ds["Column_int"] = pd.to_numeric(ds["Column"], errors="coerce")
     ds_keyed = ds.dropna(subset=["source_image", "Row_int", "Column_int"]).copy()
 
     key_cols = ["source_image", "Row_int", "Column_int"]
-    keys_any = pd.concat(
-        [v[key_cols] for v in [votes_yn, votes_yn_exp, votes_m, votes_m_exp]
-         if v is not None],
-        axis=0
-    ).dropna().drop_duplicates()
+    present = [v for v in [votes_yn, votes_yn_exp, votes_m, votes_m_exp]
+               if v is not None]
+    if not present:
+        raise ValueError("Select at least one workflow.")
+    keys_any = pd.concat([v[key_cols] for v in present],
+                         axis=0).dropna().drop_duplicates()
 
     merged = ds_keyed.merge(keys_any, on=key_cols, how="inner")
-    for v in [votes_yn, votes_yn_exp, votes_m, votes_m_exp]:
-        if v is not None:
-            merged = merged.merge(v, on=key_cols, how="left")
+    for v in present:
+        merged = merged.merge(v, on=key_cols, how="left")
 
     # ── Numeric safety ────────────────────────────────────────────────────────
     int_cols  = ["yn_n", "yn_yes", "yn_no",
@@ -826,7 +901,8 @@ def main():
             mapped = merged.loc[mask, label_col].apply(
                 lambda x: pd.Series(
                     map_to_toolbox_codes(clean_markdown_labels(x),
-                                        label_map, manual_overrides),
+                                        label_map, manual_overrides,
+                                        expansions),
                     index=["tb_short", "tb_long"]
                 )
             )
@@ -867,6 +943,79 @@ def main():
         merged = merged.drop(columns=["_orig_Label", "_orig_Long"], errors="ignore")
 
     # Everything else stays Review / False
+    return merged
+
+
+def build_label_map(labelset_raw: list) -> dict:
+    """Short/long label code -> (short, long), keyed on a normalised form."""
+    label_map = {}
+    for it in labelset_raw:
+        short_c = norm_str(it.get("short_label_code", ""))
+        long_c  = norm_str(it.get("long_label_code", ""))
+        if short_c:
+            label_map[_norm_key(short_c)] = (short_c, long_c or short_c)
+        if long_c:
+            label_map[_norm_key(long_c)]  = (short_c or long_c, long_c)
+    return label_map
+
+
+#: Labels that intentionally mean "needs review" rather than a mapping gap.
+DEFAULT_MANUAL_OVERRIDES = {
+    "Not sure (needs expert review)": ("Review", "Review"),
+}
+
+
+# ============================================================
+# Main
+# ============================================================
+def main():
+    args = get_args_via_gui()
+
+    print("\n--- Zooniverse Workflows → Toolbox Linker ---\n")
+    use_yn        = args["use_yn"]
+    use_yn_exp    = args["use_yn_exp"]
+    use_multi     = args["use_multi"]
+    use_multi_exp = args["use_multi_exp"]
+
+    os.makedirs(args["outdir"], exist_ok=True)
+
+    # ── Load labelset ─────────────────────────────────────────────────────────
+    with open(args["labelset"], "r", encoding="utf-8") as f:
+        labelset_raw = json.load(f)
+    if not isinstance(labelset_raw, list) or (labelset_raw and not isinstance(labelset_raw[0], dict)):
+        raise ValueError(
+            f"Labelset JSON does not look right — expected a list of label objects "
+            f"(each with 'short_label_code' / 'long_label_code').\n"
+            f"Got: {type(labelset_raw).__name__}. "
+            f"Did you accidentally select the annotation JSON instead?"
+        )
+    label_map = build_label_map(labelset_raw)
+    manual_overrides: dict = dict(DEFAULT_MANUAL_OVERRIDES)
+
+    # ── Load input annotation JSON (optional) ─────────────────────────────────
+    raw_json = None
+    if args.get("annot_json"):
+        print("Loading Toolbox annotation JSON...")
+        raw_json = load_toolbox_annotation_json(args["annot_json"])
+        total_in = sum(len(v) for v in raw_json.values())
+        print(f"  Loaded {len(raw_json)} images, {total_in} annotations from JSON.")
+
+    # ── Load CSVs ─────────────────────────────────────────────────────────────
+    ds = pd.read_csv(args["dataset"])
+    ensure_required_columns(ds)
+    zc = pd.read_csv(args["zoo"], low_memory=False)
+
+    # ── Apply the rules ───────────────────────────────────────────────────────
+    merged = link_annotations(
+        ds, zc, label_map, manual_overrides,
+        use_yn=use_yn, use_yn_exp=use_yn_exp,
+        use_multi=use_multi, use_multi_exp=use_multi_exp,
+    )
+
+    # Re-derive the flags the reports below need. They are cheap, and keeping
+    # link_annotations returning a plain table means the GUI does not have to
+    # unpack a bundle of masks it will not use.
+    multi_exp_consensus = merged["zoon_status"].eq("multi_expert")
 
     # ── Export toolbox CSV ────────────────────────────────────────────────────
     out_csv = os.path.join(args["outdir"], "toolbox_import.csv")
@@ -1010,7 +1159,10 @@ def main():
     print(merged["zoon_status"].value_counts(dropna=False))
     if len(unmapped_rows) > 0:
         print("\nWARNING: Some multi-consensus labels could not be mapped to the labelset.")
-        print("Add these to manual_overrides or expansions in map_to_toolbox_codes().")
+        print(f"Map them by adding them to {EXPANSIONS_PATH}")
+        print('  {"choice text": "SHORT_CODE"}   — e.g. {"Ribbon": "KE_ribbon"}')
+        print("or on stage 7 of the Kelp Quest app, which writes that file for you.")
+        print("Then run this again; the newly mapped points will resolve.")
 
 
 if __name__ == "__main__":
