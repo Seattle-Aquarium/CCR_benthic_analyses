@@ -127,6 +127,8 @@ def cmd_train(args, state: PipelineState) -> int:
                  "patience", "project", "name"):
         if getattr(args, name, None) is not None:
             setattr(cfg, name, getattr(args, name))
+    if args.exclude_class:
+        cfg.exclude_classes = list(args.exclude_class)
     cfg.validate_only = not args.commit
 
     result = train.run(cfg, progress=_progress)
@@ -167,6 +169,8 @@ def cmd_compare(args, state: PipelineState) -> int:
     cfg = state.compare
     if args.run:
         cfg.runs = args.run
+    if args.models_root:
+        cfg.models_root = args.models_root
     if args.out is not None:
         cfg.output_dir = args.out
     cfg.preview_only = not args.commit
@@ -280,6 +284,8 @@ def build_parser() -> argparse.ArgumentParser:
     t.add_argument("--data")
     t.add_argument("--model")
     t.add_argument("--epochs", type=int)
+    t.add_argument("--exclude-class", action="append", metavar="NAME",
+                   help="hold this class out of the run; repeatable")
     t.add_argument("--patience", type=int, help="epochs without improvement")
     t.add_argument("--imgsz", type=int)
     t.add_argument("--batch", type=int)
@@ -308,6 +314,9 @@ def build_parser() -> argparse.ArgumentParser:
     v.set_defaults(func=cmd_evaluate)
 
     c = sub.add_parser("compare", help="rank several trained models")
+    c.add_argument("--models-root", metavar="DIR",
+                   help="compare every run folder beneath this; the history "
+                        "and decisions files are kept here")
     c.add_argument("--run", action="append",
                    help="a model output folder; repeat for each model")
     c.add_argument("--out", help="where to write the comparison report")

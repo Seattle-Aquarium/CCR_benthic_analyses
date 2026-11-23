@@ -36,7 +36,8 @@ import shutil
 import time
 from pathlib import Path
 
-from ..config import AUGMENTATION_PRESETS, PRESET_NOTES
+from .. import augment
+from ..config import AUGMENTATION_PRESETS, CUSTOM_AUGMENTATIONS, PRESET_NOTES
 from ..fsutil import IMG_EXTS, inventory_table, looks_like_split_dataset
 from ..logging_setup import get_logger, quiet_progress
 from ..progress import ProgressCB, check_cancelled
@@ -64,10 +65,17 @@ def validate_dataset(data_dir: str) -> dict:
             report["problems"].append(f"Missing '{split}/' folder under {data_dir}")
             continue
         for class_dir in sorted(split_dir.iterdir()):
-            if not class_dir.is_dir() or class_dir.name.startswith("_"):
+            if not class_dir.is_dir():
                 continue
-            report[split][class_dir.name] = len(
-                [f for f in class_dir.iterdir() if f.suffix.lower() in IMG_EXTS])
+            # Counted recursively, and with no name filtering, because that is
+            # what torchvision's ImageFolder does -- every directory under the
+            # split is a class, whatever it is called, and images at any depth
+            # inside it belong to it. This function used to skip names starting
+            # with "_", which meant a folder parked inside train/ to keep it out
+            # of a run was reported as absent while Ultralytics trained on it.
+            report[split][class_dir.name] = sum(
+                1 for f in class_dir.rglob("*")
+                if f.is_file() and f.suffix.lower() in IMG_EXTS)
 
     only_train = sorted(set(report["train"]) - set(report["val"]))
     only_val = sorted(set(report["val"]) - set(report["train"]))
@@ -83,6 +91,18 @@ def validate_dataset(data_dir: str) -> dict:
     empty = [c for c, n in report["train"].items() if n == 0]
     if empty:
         report["problems"].append(f"Empty train class folders: {empty}")
+
+    # A leading underscore reads as "ignore me" but means nothing to the
+    # trainer. Anyone who has parked a folder inside train/ to hold it out of a
+    # run has instead renamed the class, so say so.
+    parked = sorted({c for split in ("train", "val") for c in report[split]
+                     if c.startswith("_")})
+    report["parked"] = parked
+    if parked:
+        report["problems"].append(
+            f"Folders that look set-aside but will be trained as classes: "
+            f"{parked}. A folder inside train/ or val/ is a class no matter "
+            f"what it is called - use 'Classes to leave out' instead.")
 
     return report
 
@@ -191,15 +211,38 @@ def _run(cfg, progress, cancel) -> StageResult:
             res.say("Class folders match across train and val.")
         res.say(f"Early stopping: patience={cfg.patience} epoch(s) of "
                 f"{cfg.epochs}.")
+        if cfg.exclude_classes:
+            present = [c for c in cfg.exclude_classes
+                       if c in report["train"] or c in report["val"]]
+            missing = sorted(set(cfg.exclude_classes) - set(present))
+            if present:
+                res.say(f"Leaving out {len(present)} class(es) at your "
+                        f"request: {sorted(present)}. The model will be "
+                        f"trained on {n_classes - len(present)} classes.")
+            if missing:
+                res.say(f"Not in this dataset, so nothing to leave out: "
+                        f"{missing} - check the spelling.")
         res.say(f"Augmentation: {cfg.augmentation} - "
                 f"{PRESET_NOTES.get(cfg.augmentation, '')}")
+        if cfg.notes.strip():
+            res.say(f"Notes to record: {cfg.notes.strip()[:120]}"
+                    + ("..." if len(cfg.notes.strip()) > 120 else ""))
+        else:
+            res.say("No notes entered - the run folder will record the "
+                    "settings but not what this run was trying. Worth a line.")
         bad = unknown_arguments(cfg.extra_args)
+        inert = ignored_arguments(cfg.extra_args)
         if bad:
             res.say(f"WARNING - not valid Ultralytics arguments, the run will "
                     f"refuse to start: {', '.join(bad)}")
         elif cfg.extra_args:
             res.say(f"Hand-set: "
                     f"{', '.join(f'{k}={v}' for k, v in cfg.extra_args.items())}")
+        if inert:
+            res.say(f"WARNING - valid, but the classification pipeline ignores "
+                    f"them, so they will do nothing: {', '.join(inert)}. Only "
+                    f"hsv_*, fliplr, flipud, scale, erasing and auto_augment "
+                    f"reach the images.")
         # Better to learn the GPU is idle now than an epoch into the run.
         _warn_if_cpu_by_accident(cfg, res)
         res.say("Nothing trained - clear 'Validate only' to start.")
@@ -212,6 +255,14 @@ def _run(cfg, progress, cancel) -> StageResult:
             f"Check the spelling - an unknown argument would stop the run "
             f"after the dataset has been scanned.")
         return res
+    inert = ignored_arguments(cfg.extra_args)
+    if inert:
+        res.warnings.append(
+            f"Hand-set argument(s) the classification pipeline ignores: "
+            f"{', '.join(inert)}. They are recorded but change nothing - only "
+            f"hsv_*, fliplr, flipud, scale, erasing and auto_augment reach the "
+            f"images.")
+        log.warning(f"Ignored for classification: {', '.join(inert)}")
 
     if not cfg.exclude_mismatched and (report["only_train"] or report["only_val"]):
         res.blocked.append(
@@ -223,6 +274,23 @@ def _run(cfg, progress, cancel) -> StageResult:
 
     check_cancelled(cancel, "validation")
     return _train(cfg, report, res, progress, cancel)
+
+
+#: Valid Ultralytics arguments that the *classification* pipeline never reads.
+#: They belong to the detection augmenter (RandomPerspective, Mosaic, MixUp)
+#: and are accepted without complaint, recorded in args.yaml, and do nothing.
+#: An earlier preset here set degrees=180 and mixup=0.15 on that basis.
+CLASSIFY_IGNORES = frozenset({
+    "degrees", "translate", "shear", "perspective", "mosaic", "mixup",
+    "cutmix", "copy_paste", "copy_paste_mode", "close_mosaic", "bgr",
+    "box", "cls", "dfl", "kobj", "pose", "overlap_mask", "mask_ratio",
+    "multi_scale", "rect", "single_cls",
+})
+
+
+def ignored_arguments(extra: dict | None) -> list[str]:
+    """Hand-set names that are valid but inert for classification."""
+    return sorted(k for k in (extra or {}) if k in CLASSIFY_IGNORES)
 
 
 def unknown_arguments(extra: dict | None) -> list[str]:
@@ -277,16 +345,39 @@ def _warn_if_cpu_by_accident(cfg, res: StageResult) -> None:
 def _train(cfg, report, res: StageResult, progress, cancel) -> StageResult:
     from ultralytics import YOLO
 
-    moved = []
-    if cfg.exclude_mismatched and (report["only_train"] or report["only_val"]):
-        moved = exclude_mismatched(cfg.data_dir, report["only_train"],
-                                   report["only_val"])
-        excluded = sorted(set(report["only_train"]) | set(report["only_val"]))
-        res.outputs["excluded_classes"] = excluded
+    # Two reasons a class leaves a run: the operator asked, or it exists in
+    # only one split and would otherwise train the model to chance accuracy.
+    # Both are handled by the same move-and-restore, so they are combined here
+    # rather than sequenced.
+    asked = [c for c in (cfg.exclude_classes or [])
+             if c in report["train"] or c in report["val"]]
+    unknown_names = sorted(set(cfg.exclude_classes or []) - set(asked))
+    if unknown_names:
         res.warnings.append(
-            f"{len(excluded)} class(es) set aside for this run (present in only "
-            f"one split): {excluded}. They are restored afterwards, but the "
-            f"model will not know them.")
+            f"Asked to leave out class(es) that are not in this dataset: "
+            f"{unknown_names}. Check the spelling against the inventory above.")
+
+    drop_train = list(asked)
+    drop_val = list(asked)
+    if cfg.exclude_mismatched:
+        drop_train += [c for c in report["only_train"] if c not in asked]
+        drop_val += [c for c in report["only_val"] if c not in asked]
+
+    moved = []
+    if drop_train or drop_val:
+        moved = exclude_mismatched(cfg.data_dir, drop_train, drop_val)
+        res.outputs["excluded_classes"] = sorted(set(drop_train) | set(drop_val))
+        if asked:
+            res.warnings.append(
+                f"Left out of this run at your request: {sorted(asked)}. The "
+                f"folders are restored afterwards; the model simply will not "
+                f"have a label for them.")
+        mismatched = sorted((set(drop_train) | set(drop_val)) - set(asked))
+        if mismatched:
+            res.warnings.append(
+                f"{len(mismatched)} class(es) set aside because they are "
+                f"present in only one split: {mismatched}. They are restored "
+                f"afterwards, but the model will not know them.")
 
     preset = AUGMENTATION_PRESETS.get(cfg.augmentation, {})
     kwargs = {
@@ -301,6 +392,13 @@ def _train(cfg, report, res: StageResult, progress, cancel) -> StageResult:
     }
     log.info(f"Augmentation preset: {cfg.augmentation} - "
              f"{PRESET_NOTES.get(cfg.augmentation, '')}")
+    extras = CUSTOM_AUGMENTATIONS.get(cfg.augmentation, {})
+    # Ultralytics has no argument for these, so they ride in on a trainer
+    # subclass that edits the training dataset's transform chain.
+    trainer_cls = augment.make_trainer(extras) if any(extras.values()) else None
+    if trainer_cls:
+        log.info(f"Centre-preserving extras (outside Ultralytics): "
+                 f"{augment.describe(extras)}")
     if cfg.extra_args:
         log.info(f"Overridden by hand: "
                  f"{', '.join(f'{k}={v}' for k, v in cfg.extra_args.items())}")
@@ -325,7 +423,7 @@ def _train(cfg, report, res: StageResult, progress, cancel) -> StageResult:
         # log. Ultralytics' own per-batch redraws are dropped in between --
         # see quiet_progress.
         with quiet_progress():
-            results = model.train(**kwargs)
+            results = model.train(trainer=trainer_cls, **kwargs)
 
         save_dir = (getattr(results, "save_dir", None)
                     or getattr(getattr(model, "trainer", None), "save_dir", None))
@@ -421,6 +519,75 @@ def _attach_epoch_progress(model, cfg, progress: ProgressCB | None, cancel) -> N
         log.debug(f"Could not attach epoch callback: {ex}")
 
 
+RUN_NOTES = "run_notes.md"
+
+
+def write_run_notes(save_dir: Path, cfg, outputs: dict) -> Path | None:
+    """Leave a human-readable record beside the weights.
+
+    Ultralytics already writes args.yaml and results.csv, which between them
+    say what was set and how it went. What they cannot say is *why* -- what
+    this run was trying that the last one was not -- and that is the part
+    nobody can reconstruct three months later. So the operator's own words go
+    here, next to the settings that were actually used, in a form that pastes
+    straight into a report. Stage 5 reads it back when comparing runs.
+    """
+    from datetime import datetime
+
+    from ..config import AUGMENTATION_PRESETS
+
+    try:
+        preset = AUGMENTATION_PRESETS.get(cfg.augmentation, {})
+        interesting = ("hsv_h", "hsv_s", "hsv_v", "flipud", "dropout",
+                       "weight_decay", "erasing", "scale")
+        preset_line = ", ".join(f"{k}={preset[k]}" for k in interesting
+                                if k in preset) or "Ultralytics defaults"
+        extras = ", ".join(f"{k}={v}" for k, v in (cfg.extra_args or {}).items())
+        excluded = ", ".join(cfg.exclude_classes) if cfg.exclude_classes else "none"
+        metrics = outputs.get("metrics", {}) or {}
+        top1 = metrics.get("metrics/accuracy_top1")
+
+        lines = [
+            f"# {save_dir.parent.name} / {save_dir.name}",
+            "",
+            f"- **Trained:** {datetime.now():%Y-%m-%d %H:%M}",
+            f"- **Base model:** `{cfg.model}`",
+            f"- **Dataset:** `{cfg.data_dir}`",
+            f"- **Classes left out:** {excluded}",
+            f"- **Augmentation preset:** {cfg.augmentation}  ({preset_line})",
+            f"- **Extra transforms:** "
+            f"{augment.describe(CUSTOM_AUGMENTATIONS.get(cfg.augmentation, {}))}"
+            f"  (centre-preserving, applied outside Ultralytics; not in args.yaml)",
+            f"- **Hand-set arguments:** {extras or 'none'}",
+            f"- **Schedule:** epochs={cfg.epochs}, patience={cfg.patience}, "
+            f"imgsz={cfg.imgsz}, batch={cfg.batch or 'auto'}, seed={cfg.seed}",
+            "",
+            "## What changed in this run, and why",
+            "",
+            cfg.notes.strip() or "_(no notes were entered for this run)_",
+            "",
+            "## How training went",
+            "",
+        ]
+        if outputs.get("best_epoch"):
+            lines.append(f"- Best epoch {outputs['best_epoch']} of "
+                         f"{outputs.get('epochs_run', cfg.epochs)} run")
+        if top1 is not None:
+            lines.append(f"- Internal validation top-1: {top1:.2%}  "
+                         f"(val/ shares the training pipeline -- the held-out "
+                         f"number from stage 4 is the one to report)")
+        lines.append("")
+        lines.append("_Held-out results and the comparison verdict are added by "
+                     "stages 4 and 5; see model_history.md at the models root._")
+
+        path = save_dir / RUN_NOTES
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return path
+    except Exception as ex:      # a missing note must never fail a finished run
+        log.warning(f"Could not write {RUN_NOTES}: {ex}")
+        return None
+
+
 def _collect_outputs(model, save_dir, cfg, res: StageResult) -> None:
     """Record where the weights landed and how the run actually went."""
     if not save_dir:
@@ -465,6 +632,11 @@ def _collect_outputs(model, save_dir, cfg, res: StageResult) -> None:
         # trainer.epoch is the 0-based loop counter.
         ran, best = int(last_epoch) + 1, int(best_epoch)
         res.outputs.update({"best_epoch": best, "epochs_run": ran})
+
+    notes_path = write_run_notes(save_dir, cfg, res.outputs)
+    if notes_path:
+        res.outputs["run_notes"] = str(notes_path)
+        log.info(f"Run notes written to {notes_path}")
         res.say(f"Best epoch {best} of {ran} run (limit {cfg.epochs}).")
         if ran < cfg.epochs:
             res.say(f"Early stopping fired - no improvement for "
