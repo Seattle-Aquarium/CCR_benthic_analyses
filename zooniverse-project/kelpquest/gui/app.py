@@ -1,7 +1,7 @@
 """
 The Kelp Quest desktop application.
 
-Eight stages down the left, the selected stage's settings in the middle, one
+Ten stages down the left, the selected stage's settings in the middle, one
 shared log and progress bar along the bottom. Finishing a stage fills in the
 next stage's inputs and moves the selection there, so paths are never retyped
 and a transect cannot be pointed at the wrong stage by accident.
@@ -302,6 +302,15 @@ class App(ctk.CTk):
     def ask(self, question: str) -> bool:
         """Yes/no for a panel's own button, outside the footer's Run flow."""
         return bool(messagebox.askyesno(APP_NAME, question))
+
+    def refresh_footer(self) -> None:
+        """Re-read the current panel's run_text onto the button.
+
+        For a page whose Run does one of two opposite things -- retire, or
+        put back -- the button has to say which, and the panel is the only
+        thing that knows.
+        """
+        self._check_toggled()
 
     def log_lines(self, text: str, warn: bool = False) -> None:
         """Put something in the log pane from a panel's own button.

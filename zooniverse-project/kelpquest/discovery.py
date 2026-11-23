@@ -7,10 +7,10 @@ practice something like
 out what is in it and what the transect is called, so the run can be confirmed
 before any of the expensive work starts.
 
-Identity comes from the UTC transect CSV where one can be found: it carries
+Identity comes from the transect CSV where one can be found: it carries
 ``Transect_ID``, ``Site_name``, ``Transect_number`` and ``Date`` as recorded on
 the dive, which beats anything inferred from a folder name. The path-reading
-below is the fallback for a transect that has not been through UTC.
+below is the fallback for a transect with no telemetry CSV beside it.
 
 Nothing here guesses silently: every inference is reported alongside where it
 came from, and everything it produces is editable in the GUI.
@@ -167,7 +167,7 @@ def scan(folder: str | Path, output_dir: Path | None = None,
     Never raises for a folder that is simply empty or wrong -- an empty result
     with a note is more useful on screen than a traceback.
 
-    Pass `telemetry_csv` to use a particular UTC transect CSV; leave it out and
+    Pass `telemetry_csv` to use a particular transect CSV; leave it out and
     one is looked for up the tree.
     """
     folder = Path(folder)
@@ -219,7 +219,7 @@ def scan(folder: str | Path, output_dir: Path | None = None,
 
 
 def _attach_telemetry(t: Transect, telemetry_csv: str | Path | None) -> None:
-    """Overlay the UTC transect CSV's identity onto a scanned transect.
+    """Overlay the transect CSV's identity onto a scanned transect.
 
     The CSV wins over the path for every field it carries. It was written from
     the dive log, whereas a folder name is whatever somebody typed -- and when
@@ -229,7 +229,7 @@ def _attach_telemetry(t: Transect, telemetry_csv: str | Path | None) -> None:
         t.folder, t.transect_number)
     if not path:
         t.notes.append(
-            "No UTC transect CSV found nearby. Site, date and transect are "
+            "No transect CSV found nearby. Site, date and transect are "
             "read off the folder names instead; pick a CSV to use the dive log.")
         return
     if not Path(path).is_file():

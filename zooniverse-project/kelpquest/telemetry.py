@@ -1,7 +1,9 @@
 """
-The UTC transect CSV, as the source of truth for what a transect is.
+The transect CSV from ROV Flight Operations, as the source of truth
+for what a transect is.
 
-`CCR_ROV_survey_methods/UTC` writes one CSV per transect with a row per second:
+`CCR_ROV_survey_methods/rov_flight_ops` writes one CSV per transect, a row a
+second, through its bundled `mcap_to_csv/` extractor:
 
     Date, Time, Site_name, Transect_number, Transect_ID, Mode, Battery_*,
     Latitude, Longitude, EKFlat, EKFlon, DVL*, Altitude, Depth, Depth_std,
@@ -32,13 +34,14 @@ from .logging_setup import get_logger
 
 log = get_logger("telemetry")
 
-#: `2025_01_28_11-34-11.jpg`, the name a UTC-processed still carries.
+#: `2025_01_28_11-34-11.jpg`, the name a flight-ops-processed still carries.
 _STILL_TS = re.compile(r"(\d{4})_(\d{2})_(\d{2})[_-](\d{2})-(\d{2})-(\d{2})")
 
 #: Trailing transect number on an id like `EBM_W25_T6`.
 _ID_TAIL = re.compile(r"_T\d+$", re.IGNORECASE)
 
-#: Where UTC puts them, relative to the flight folder. Tried in order.
+#: Where flight-ops puts them, relative to the flight folder. Tried in
+#: order.
 _SEARCH_DIRS = (
     Path("logs") / "transects" / "transects",
     Path("logs") / "transects",
@@ -145,14 +148,14 @@ class Telemetry:
 
 
 def load(path: str | Path) -> Telemetry:
-    """Read a UTC transect CSV. Raises only if the file cannot be read."""
+    """Read a transect CSV. Raises only if the file cannot be read."""
     path = Path(path)
     tel = Telemetry(path=path)
     with path.open(newline="", encoding="utf-8-sig") as fh:
         reader = csv.DictReader(fh)
         if not reader.fieldnames or "Time" not in reader.fieldnames:
             raise ValueError(
-                f"{path.name} does not look like a UTC transect CSV — it has no "
+                f"{path.name} does not look like a transect CSV — it has no "
                 "Time column.")
         for row in reader:
             stamp = _row_timestamp(row)
@@ -201,7 +204,8 @@ def _row_timestamp(row: dict) -> datetime | None:
 def candidates(transect_folder: str | Path) -> list[Path]:
     """Transect CSVs anywhere up the tree from a transect folder.
 
-    UTC writes them under the *flight* folder, several levels above the stills
+    Flight-ops writes them under the *flight* folder, several levels above
+    the stills
     (`2025_01_28_EBM/logs/transects/transects/EBM_W25_T6.csv` against
     `.../transects/T6_shallow/edited`), so this walks up rather than expecting
     a fixed relative path.

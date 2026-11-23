@@ -474,3 +474,95 @@ def test_without_a_keyring_the_save_button_is_off(app, monkeypatch):
     app.update()
     assert card.sign_in_btn.cget("state") == "disabled"
     assert "pip install keyring" in card.note.cget("text")
+
+
+def test_stage_nine_names_the_table_after_its_own_inputs(app, tmp_path):
+    """Not after stage 1, which is often pointed at a different transect."""
+    panel = app.panels["cover"]
+    app.cfg.transect_id_prefix, app.cfg.transect_number = "SOS_S25", "T1"
+    annotations = tmp_path / "FPR_S25_T1.csv"
+    annotations.write_text("Name,Label\n", encoding="utf-8")
+    panel.annotations.set([str(annotations)])
+    app.update()
+    assert panel.file_name.get() == "FPR_S25_T1_percent_cover_telemetry.csv"
+    assert "SOS_S25" not in panel.name_note.cget("text")
+
+
+def test_stage_nine_keeps_a_name_you_typed(app, tmp_path):
+    panel = app.panels["cover"]
+    first = tmp_path / "FPR_S25_T1.csv"
+    first.write_text("Name,Label\n", encoding="utf-8")
+    panel.annotations.set([str(first)])
+    app.update()
+    panel.file_name.set("port_of_seattle_2025.csv")
+    second = tmp_path / "FPR_S25_T2.csv"
+    second.write_text("Name,Label\n", encoding="utf-8")
+    panel.annotations.set([str(second)])
+    app.update()
+    assert panel.file_name.get() == "port_of_seattle_2025.csv"
+    assert "would be" in panel.name_note.cget("text")
+
+
+def test_stage_nine_note_follows_the_output_folder(app, tmp_path):
+    """The note said one folder while the box said another."""
+    panel = app.panels["cover"]
+    panel.output.set(str(tmp_path / "somewhere_else"))
+    app.update()
+    assert "somewhere_else" in panel.name_note.cget("text")
+
+
+@pytest.fixture
+def retire_log(tmp_path):
+    import csv
+
+    path = tmp_path / "upload_log.csv"
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["subject_id", "filename", "source_id", "transect_id",
+                         "subject_set_id", "uploaded_at"])
+        for i in range(12):
+            writer.writerow([100 + i, f"{i}.jpg", f"{i}.jpg", "FPR_S25_T1",
+                             "136807", "2026-05-27T10:27:10"])
+    return path
+
+
+def test_stage_seven_reads_the_transect_out_of_the_upload_log(app, retire_log):
+    """Typing a transect id that the log does not hold is the way to retire
+    nothing and believe you retired everything."""
+    panel = app.panels["retire"]
+    panel.transect.set("")
+    panel.upload_log.set(str(retire_log))
+    app.update()
+    assert panel.transect.get() == "FPR_S25_T1"
+    assert "12" in panel.transect.status.cget("text")
+    assert "FPR_S25_T1" in panel.log_box.get("1.0", "end")
+
+
+def test_stage_seven_will_not_run_without_a_workflow(app, retire_log):
+    """Retiring in no workflows changes nothing while looking like success."""
+    panel = app.panels["retire"]
+    panel.upload_log.set(str(retire_log))
+    panel.workflows.set("")
+    app.update()
+    assert "workflow ID" in (panel.validate() or "")
+    panel.workflows.set("28901")
+    app.update()
+    # Credentials and the client are the only things that may still object.
+    assert "workflow ID" not in (panel.validate() or "")
+
+
+def test_stage_seven_says_which_direction_the_run_goes(app, retire_log):
+    panel = app.panels["retire"]
+    app.select("retire")
+    app.check_var.set(False)
+    panel.unretire.set(False)
+    panel._mode_changed()
+    app.update()
+    assert app.run_btn.cget("text") == "Retire these subjects"
+    panel.unretire.set(True)
+    panel._mode_changed()
+    app.update()
+    assert app.run_btn.cget("text") == "Put these subjects back"
+    panel.unretire.set(False)
+    panel._mode_changed()
+    app.check_var.set(True)

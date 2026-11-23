@@ -12,7 +12,7 @@ The rest are the deliverables:
   whole transect can be imported there and verified point by point;
 * **the Zooniverse sheet** - ``metadata.csv`` beside the patch images, which is
   what the upload reads and what becomes each subject's metadata;
-* **annotations + telemetry** - written only when a UTC transect CSV is in
+* **annotations + telemetry** - written only when a transect CSV is in
   play: every point with the depth and position of the still it sits on, which
   is what a cover-versus-depth analysis needs.
 """

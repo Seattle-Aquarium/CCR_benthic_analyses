@@ -41,7 +41,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 
 #: Both spellings of the analysis tool, most likely first. The file on disk is
 #: ``analyze_``; its own docstring, the README and the older notes all say
-#: ``analyse_``. Looking for one name only meant stage 8 reported the tool
+#: ``analyse_``. Looking for one name only meant stage 9 reported the tool
 #: missing while it sat in the scripts folder, which is a worse failure than
 #: looking twice.
 ANALYSER_NAMES = ("analyze_classifications.py", "analyse_classifications.py")
@@ -49,7 +49,7 @@ ANALYSER_NAMES = ("analyze_classifications.py", "analyse_classifications.py")
 #: Sheet name -> builder attribute on that module, in the order they appear in
 #: the workbook. Mirrors the ``sheets`` dict in that module's ``main``; a
 #: builder it does not have is skipped with a warning rather than crashing,
-#: so the two can drift by a sheet without stage 8 failing outright.
+#: so the two can drift by a sheet without stage 9 failing outright.
 SHEETS = (
     ("Overview", "build_overview"),
     ("Transect Completion", "build_transect_completion"),

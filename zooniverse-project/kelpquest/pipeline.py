@@ -1,5 +1,5 @@
 """
-The eight stages, and the result contract they share.
+The ten stages, and the result contract they share.
 
 Every stage is ``run(ctx, progress=None, cancel=None) -> StageResult`` and none
 of them raise for an expected problem -- inspect the result instead. That keeps
@@ -27,6 +27,8 @@ from pathlib import Path
 from . import classify as classify_mod
 from . import discovery, metadata, patches, sampling, zooniverse
 from . import export as export_mod
+from . import retire as retire_mod
+from . import percent_cover as cover_mod
 from . import rejoin as rejoin_mod
 from . import report as report_mod
 from .config import AppConfig, default_output_dir
@@ -40,7 +42,7 @@ Progress = Callable[[float, str], None]
 
 #: Stage order, and the keys used to name a stage everywhere else.
 ORDER = ("transect", "patches", "classify", "metadata", "upload", "export",
-         "rejoin", "report")
+         "retire", "rejoin", "report", "cover")
 
 TITLES = {
     "transect": "Transect folder",
@@ -49,8 +51,10 @@ TITLES = {
     "metadata": "Write metadata",
     "upload": "Upload to Zooniverse",
     "export": "Export classifications",
+    "retire": "Retire in Zooniverse",
     "rejoin": "Rejoin to Toolbox",
     "report": "Build the report",
+    "cover": "Percent cover",
 }
 
 #: Why the next stage is now worth visiting. Shown in the rail once a stage
@@ -62,8 +66,11 @@ NEXT_HINT = {
     "upload": "Both sheets are written.",
     "export": "The subject set exists — come back once volunteers have worked "
               "on it.",
+    "retire": "The classifications are on disk — take the subjects out of "
+              "circulation if the rest is being finished in Toolbox.",
     "rejoin": "The classifications are on disk.",
     "report": "The answers are joined; the report summarises the same export.",
+    "cover": "Once Toolbox review is finished, turn the points into cover.",
 }
 
 
@@ -563,7 +570,7 @@ def run_metadata(ctx: Context, progress: Progress | None = None,
         tel = ctx.transect.telemetry if ctx.transect else None
         if tel is None:
             res.warnings.append(
-                "No telemetry, so no depth or position columns. Pick the UTC "
+                "No telemetry, so no depth or position columns. Pick the "
                 "transect CSV on the Transect page to add them.")
 
         if ctx.preview:
@@ -693,7 +700,68 @@ def run_export(ctx: Context, progress: Progress | None = None,
 
 
 # --------------------------------------------------------------------------
-#  7 - Rejoin
+#  7 - Retire
+# --------------------------------------------------------------------------
+
+
+def run_retire(ctx: Context, progress: Progress | None = None,
+               cancel: threading.Event | None = None) -> StageResult:
+    """Stop Zooniverse serving a transect whose work has moved to Toolbox."""
+
+    def work() -> StageResult:
+        res = StageResult()
+        cfg = ctx.cfg
+        r = cfg.retire
+        if not r.upload_log:
+            raise ValueError(
+                "Point at the transect's upload_log.csv — stage 5 writes it "
+                "into the patches folder, one row per subject created.")
+        workflows = retire_mod.parse_ids(r.workflow_ids)
+        if not workflows:
+            raise ValueError(
+                "Give at least one workflow ID. Retirement is recorded per "
+                "workflow, so one left out goes on serving the subject.")
+
+        ids, counts = retire_mod.subjects_in(r.upload_log, r.transect_id)
+        if not ids:
+            raise ValueError(
+                f"No subjects in {Path(r.upload_log).name}"
+                + (f" for transect '{r.transect_id}'." if r.transect_id
+                   else ".")
+                + " The log lists: "
+                + ", ".join(sorted(retire_mod.transects_in(r.upload_log)))
+                + ".")
+
+        outcome = retire_mod.retire(
+            ids, workflows, transect_id=r.transect_id,
+            unretire=r.unretire, include_future=r.include_future,
+            origin_sets=retire_mod.origin_sets(r.upload_log, r.transect_id),
+            dry_run=ctx.preview,
+            log_dir=Path(r.upload_log).parent,
+            progress=progress, cancel=cancel)
+        outcome.transects = counts
+
+        res.counts = {"subjects": len(ids), "workflows": len(workflows)}
+        held = [p for p in outcome.plans if not p.holds_nothing]
+        res.counts["hold them"] = len(held)
+        if ctx.preview:
+            res.counts["to " + outcome.verb] = sum(p.todo
+                                                   for p in outcome.plans)
+        else:
+            res.counts[outcome.verb + "d"] = outcome.total_sent
+        res.cancelled = outcome.cancelled
+        res.lines.append(outcome.summary())
+        res.warnings.extend(outcome.warnings)
+        res.errors.extend(outcome.errors)
+        if outcome.log_csv:
+            res.outputs = [outcome.log_csv]
+        return res
+
+    return _guard("retire", ctx.preview, work)
+
+
+# --------------------------------------------------------------------------
+#  8 - Rejoin
 # --------------------------------------------------------------------------
 
 
@@ -738,7 +806,7 @@ def run_rejoin(ctx: Context, progress: Progress | None = None,
 
 
 # --------------------------------------------------------------------------
-#  8 - Report
+#  9 - Report
 # --------------------------------------------------------------------------
 
 
@@ -773,6 +841,65 @@ def run_report(ctx: Context, progress: Progress | None = None,
     return _guard("report", ctx.preview, work)
 
 
+# --------------------------------------------------------------------------
+#  10 - Percent cover
+# --------------------------------------------------------------------------
+
+
+def run_percent_cover(ctx: Context, progress: Progress | None = None,
+                      cancel: threading.Event | None = None) -> StageResult:
+    """Finalized annotations into percent cover per image, with telemetry."""
+
+    def work() -> StageResult:
+        res = StageResult()
+        cfg = ctx.cfg
+        if not cfg.cover.annotation_csvs:
+            raise ValueError(
+                "Choose the finalized Toolbox annotation CSV(s) — the export "
+                "taken after the Zooniverse answers were brought back in and "
+                "the remaining points were settled.")
+        if not cfg.cover.telemetry_csvs:
+            raise ValueError("Choose the transect telemetry CSV(s).")
+
+        out_dir = cfg.cover.output_dir or str(
+            Path(cfg.cover.annotation_csvs[0]).parent)
+        # Named after the annotations being converted, not after stage 1's
+        # transect id: this stage is often the only one run on a given
+        # transect, and inheriting that id would label the table with
+        # whichever transect the app happened to be pointed at last.
+        name = (cfg.cover.output_name or "").strip() or cover_mod.suggest_name(
+            cfg.cover.annotation_csvs, cfg.cover.telemetry_csvs,
+            cfg.transect_id)[0]
+        if not name.lower().endswith(".csv"):
+            name += ".csv"
+        target = Path(out_dir) / name
+
+        outcome = cover_mod.build(
+            cfg.cover.annotation_csvs, cfg.cover.telemetry_csvs, target,
+            exclude_labels=cfg.cover.exclude_labels,
+            dry_run=ctx.preview, progress=progress, cancel=cancel)
+
+        res.counts = {"images": outcome.images, "points": outcome.points,
+                      "labels": len(outcome.labels)}
+        if outcome.unmatched:
+            res.counts["no telemetry"] = outcome.unmatched
+        if outcome.review_points:
+            res.counts["needing review"] = outcome.review_points
+        res.cancelled = outcome.cancelled
+        res.lines.append(outcome.summary())
+        res.warnings.extend(outcome.warnings)
+        res.errors.extend(outcome.errors)
+        # The page shows which images are waiting; a count alone is not
+        # something anybody can act on.
+        res.advance["review_points"] = outcome.review_points
+        res.advance["review_images"] = outcome.review_images
+        res.outputs = [p for p in (outcome.output_csv, outcome.review_csv)
+                       if p]
+        return res
+
+    return _guard("cover", ctx.preview, work)
+
+
 #: Every stage, by key. The GUI dispatches through this, so adding a stage is
 #: one entry here and one panel.
 STAGES: dict[str, Callable[..., StageResult]] = {
@@ -782,8 +909,10 @@ STAGES: dict[str, Callable[..., StageResult]] = {
     "metadata": run_metadata,
     "upload": run_upload,
     "export": run_export,
+    "retire": run_retire,
     "rejoin": run_rejoin,
     "report": run_report,
+    "cover": run_percent_cover,
 }
 
 

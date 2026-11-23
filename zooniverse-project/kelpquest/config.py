@@ -173,6 +173,52 @@ class ReportSettings:
 
 
 @dataclass
+class RetireSettings:
+    """Taking a transect's subjects out of circulation once work moves on."""
+
+    #: The transect's upload_log.csv -- this app's record of what it created.
+    #: Not the classifications export: that only knows the subjects
+    #: volunteers reached, and the untouched ones are the whole problem.
+    upload_log: str = ""
+    transect_id: str = ""
+    #: Which workflows to retire in. Retirement is per workflow, so one left
+    #: out goes on serving the subject.
+    workflow_ids: str = ""
+    #: Put them back instead. The undo lives on the same page, because that
+    #: is what makes the action safe to attempt.
+    unretire: bool = False
+    #: Send to every workflow asked, including ones that hold none of these
+    #: subjects. Off: Zooniverse accepts such a request and writes a row,
+    #: but there was nothing there to stop, and a page of identical numbers
+    #: is how a run hides what it really did.
+    include_future: bool = False
+
+
+@dataclass
+class PercentCoverSettings:
+    """Finalized annotations into percent cover per image, with telemetry.
+
+    Lists rather than single paths: a site-season table is several transects
+    concatenated before grouping, which is how the published `CNL_S24` table
+    covers Centennial's six 2024 transects in one file.
+    """
+
+    annotation_csvs: list[str] = field(default_factory=list)
+    telemetry_csvs: list[str] = field(default_factory=list)
+    output_dir: str = ""
+    #: The file to write. Suggested from the annotation files chosen here,
+    #: not from stage 1's transect id: this stage is routinely run on a
+    #: transect the rest of the app was never pointed at, and a name
+    #: inherited from stage 1 would label the table with the wrong one.
+    #: Editable, and once edited it is left alone.
+    output_name: str = ""
+    #: Labels to leave out of the denominator entirely. Empty by default: the
+    #: tables already published count every point, and quietly changing what
+    #: a percent-cover number means is worse than an unticked box.
+    exclude_labels: list[str] = field(default_factory=list)
+
+
+@dataclass
 class AppConfig:
     transect_folder: str = ""
     telemetry_csv: str = ""
@@ -193,6 +239,9 @@ class AppConfig:
     export: ExportSettings = field(default_factory=ExportSettings)
     report: ReportSettings = field(default_factory=ReportSettings)
     rejoin: RejoinSettings = field(default_factory=RejoinSettings)
+    retire: RetireSettings = field(default_factory=RetireSettings)
+    cover: PercentCoverSettings = field(
+        default_factory=PercentCoverSettings)
 
     theme: str = "dark"
 
@@ -237,6 +286,8 @@ _NESTED = {
     "export": ExportSettings,
     "report": ReportSettings,
     "rejoin": RejoinSettings,
+    "retire": RetireSettings,
+    "cover": PercentCoverSettings,
 }
 
 

@@ -52,7 +52,7 @@ def _still_names() -> list[str]:
 @pytest.fixture
 def flight(tmp_path: Path) -> Path:
     """A flight folder: stills under transects/T6_shallow/edited, plus the
-    UTC transect CSV where UTC actually puts it."""
+    transect CSV where ROV Flight Operations actually puts it."""
     root = tmp_path / "2025_01_28_EBM"
     stills = root / "downward" / "HERO1" / "transects" / "T6_shallow" / "edited"
     stills.mkdir(parents=True)
@@ -557,7 +557,7 @@ def test_scan_falls_back_to_the_path_without_telemetry(tmp_path: Path):
     assert t.survey_date == "2025-01-28"
     assert t.transect_number == "T6"
     assert t.telemetry is None
-    assert any("No UTC transect CSV" in n for n in t.notes)
+    assert any("No transect CSV" in n for n in t.notes)
 
 
 def test_scan_finds_the_telemetry_by_itself(flight: Path):

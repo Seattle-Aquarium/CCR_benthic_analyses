@@ -393,3 +393,100 @@ class StageRail(ctk.CTkFrame):
                 fg_color=T.SURFACE_ALT if active else "transparent",
                 text_color=colour,
                 font=T.FONT_H2 if active else T.FONT_BODY)
+
+
+class FileListField(ctk.CTkFrame):
+    """Several files, listed, with Add / Remove / Clear.
+
+    A transect's percent cover is usually one annotation file and one
+    telemetry file, but a site-season table is six of each -- the finalized
+    `CNL_S24` table is Centennial's six 2024 transects concatenated. A single
+    path box cannot express that, and asking somebody to run the stage six
+    times and paste the results together is how a transect gets missed.
+
+    Holds full paths, shows file names: the paths are long enough that a list
+    of them is unreadable, and the name is what distinguishes them.
+    """
+
+    def __init__(self, master, caption: str, kind: str = "CSV",
+                 title: str = "", caption_width: int = 132,
+                 filetypes: tuple[tuple[str, str], ...] = (),
+                 on_change: Callable[[], None] | None = None):
+        super().__init__(master, fg_color="transparent")
+        self.grid_columnconfigure(1, weight=1)
+        self._title = title or caption
+        self._filetypes = filetypes or (("CSV", "*.csv"), ("All files", "*.*"))
+        self._paths: list[str] = []
+        self._on_change = None
+
+        label(self, caption, muted=True, width=caption_width).grid(
+            row=0, column=0, sticky="nw", padx=(0, 8), pady=(2, 0))
+        self.box = textbox(self, height=92)
+        self.box.grid(row=0, column=1, sticky="ew")
+        self.box.configure(state="disabled")
+
+        buttons = ctk.CTkFrame(self, fg_color="transparent")
+        buttons.grid(row=0, column=2, sticky="n", padx=(8, 0))
+        button(buttons, "Add…", self.browse, "ghost", width=92).grid(
+            row=0, column=0, pady=(0, 4))
+        button(buttons, "Clear", self.clear, "ghost", width=92).grid(
+            row=1, column=0)
+
+        self.status = ctk.CTkLabel(self, text="", font=T.FONT_SMALL,
+                                   text_color=T.TEXT_MUTED, anchor="w",
+                                   justify="left")
+        self.status.grid(row=1, column=1, columnspan=2, sticky="ew",
+                         pady=(2, 0))
+        self._redraw()
+        self._on_change = on_change
+
+    def get(self) -> list[str]:
+        return list(self._paths)
+
+    def set(self, paths) -> None:
+        if isinstance(paths, str):
+            paths = [p for p in paths.splitlines() if p.strip()]
+        self._paths = [str(p).strip() for p in (paths or []) if str(p).strip()]
+        self._redraw()
+
+    def browse(self) -> None:
+        start = (str(Path(self._paths[-1]).parent) if self._paths
+                 else str(Path.home()))
+        chosen = filedialog.askopenfilenames(
+            title=self._title, initialdir=start,
+            filetypes=list(self._filetypes))
+        if not chosen:
+            return
+        # Adding the same file twice would double every count it contributes,
+        # which is invisible in the output. Kept in the order first chosen.
+        for path in chosen:
+            if path not in self._paths:
+                self._paths.append(path)
+        self._redraw()
+
+    def clear(self) -> None:
+        self._paths = []
+        self._redraw()
+
+    def note(self, text: str, ok: bool | None = None) -> None:
+        colour = T.TEXT_MUTED if ok is None else (T.OK if ok else T.WARN)
+        self.status.configure(text=text, text_color=colour)
+
+    def _redraw(self) -> None:
+        if not self._paths:
+            set_text(self.box, "No files chosen.")
+        else:
+            missing = [p for p in self._paths if not Path(p).is_file()]
+            lines = []
+            for path in self._paths:
+                mark = "  " if Path(path).is_file() else "? "
+                lines.append(f"{mark}{Path(path).name}")
+            set_text(self.box, "\n".join(lines))
+            if missing:
+                self.note(f"{len(missing)} file(s) marked ? are not on disk.",
+                          ok=False)
+            else:
+                self.note(f"{len(self._paths)} file(s)", ok=True)
+        self.box.configure(state="disabled")
+        if self._on_change:
+            self._on_change()

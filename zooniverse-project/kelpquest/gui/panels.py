@@ -23,8 +23,10 @@ from .. import (
     export,
     labelset,
     metadata,
+    percent_cover,
     rejoin,
     report,
+    retire,
     sampling,
     telemetry,
     zooniverse,
@@ -34,6 +36,7 @@ from . import theme as T
 from .widgets import (
     Card,
     Field,
+    FileListField,
     PathField,
     button,
     checkbox,
@@ -129,13 +132,14 @@ class TransectPanel(StagePanel):
                       "a second transect cannot overwrite this one's upload log."
              ).grid(row=2, column=0, sticky="ew", pady=(6, 0))
 
-        c2 = self.card("Telemetry", "The UTC transect CSV for this transect. It "
+        c2 = self.card("Telemetry", "The transect CSV from ROV Flight "
+                       "Operations. It "
                                     "carries the transect ID, site, date and a "
                                     "row per second, so each still gets its "
                                     "depth and position.")
         self.telemetry = PathField(
             c2.body, "Transect CSV", kind="file",
-            title="Select the UTC transect CSV",
+            title="Select the transect telemetry CSV",
             filetypes=(("CSV", "*.csv"), ("All files", "*.*")),
             on_change=self._telemetry_changed)
         self.telemetry.grid(row=0, column=0, sticky="ew")
@@ -203,7 +207,7 @@ class TransectPanel(StagePanel):
                 + "\n".join(p.name for p in options[:8])
                 + "\n\nPick one with Browse, or set the transect number first.")
         else:
-            self.app.warn("No UTC transect CSVs found near that folder. They "
+            self.app.warn("No transect CSVs found near that folder. They "
                           "normally live under the flight folder in "
                           "logs/transects/transects.")
 
@@ -1071,7 +1075,7 @@ class ExportPanel(StagePanel):
         c2 = self.card("Where to save them",
                        "One CSV per subject set, plus a combined one with "
                        "duplicate classifications dropped. The combined file "
-                       "is what stage 7 reads.")
+                       "is what stage 8 reads.")
         self.output = PathField(
             c2.body, "Export folder", kind="folder",
             title="Where should the exports go?")
@@ -1079,7 +1083,7 @@ class ExportPanel(StagePanel):
         self.combined = Field(c2.body, "Combined CSV", width=260,
                               hint_text="all_classifications.csv",
                               caption_width=150,
-                              validate=lambda s: (True, "stage 7 reads this"))
+                              validate=lambda s: (True, "stage 8 reads this"))
         self.combined.grid(row=1, column=0, sticky="ew", pady=(8, 0))
         hint(c2.body, "Add a row to the Export Log sheet in tracker.xlsx "
                       "afterwards.").grid(row=2, column=0, sticky="ew",
@@ -1197,7 +1201,7 @@ class ExportPanel(StagePanel):
         # The combined file is named per transect, and the name sticks in the
         # config. Moving to the next transect without changing it would
         # overwrite the previous one's combined export, which is the file its
-        # stage 7 reads.
+        # stage 8 reads.
         suggested = self._suggest_combined()
         if self.combined.get() and self.combined.get() != suggested:
             self.combined.note(f"stage 1 says {suggested}", ok=False)
@@ -1256,13 +1260,340 @@ class ExportPanel(StagePanel):
 
 
 # --------------------------------------------------------------------------
-#  7 - Rejoin
+#  7 - Retire
+# --------------------------------------------------------------------------
+
+
+class RetirePanel(StagePanel):
+    key = "retire"
+    title = "7.  Retire in Zooniverse"
+    subtitle = ("When a transect's remaining work is going to be finished in "
+                "Toolbox, stop Zooniverse serving its subjects. Volunteers "
+                "then spend their time on transects nobody has settled, "
+                "rather than on points whose answer is already decided "
+                "somewhere else.")
+    run_text = "Retire these subjects"
+    check_text = "Check only — change nothing on Zooniverse"
+
+    def build(self) -> None:
+        c0 = self.card("Zooniverse account",
+                       "The same sign-in as stages 5 and 6.")
+        self.account = AccountCard(self, c0)
+
+        c1 = self.card(
+            "Which subjects",
+            "The transect's upload_log.csv, written into the patches folder "
+            "by stage 5 — one row per subject, with the id Zooniverse gave "
+            "it. Not the classifications export: that only knows the "
+            "subjects volunteers reached, and the untouched ones are exactly "
+            "the ones still waiting to be served.")
+        self.upload_log = PathField(
+            c1.body, "Upload log", kind="file",
+            title="Select the transect's upload_log.csv",
+            filetypes=(("CSV", "*.csv"),), caption_width=150,
+            on_change=lambda *_a: self._log_changed())
+        self.upload_log.grid(row=0, column=0, sticky="ew")
+        self.transect = Field(c1.body, "Transect ID", width=220,
+                              caption_width=150, hint_text="FPR_S25_T1",
+                              on_change=self._count_subjects)
+        self.transect.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        self.log_box = textbox(c1.body, height=104)
+        self.log_box.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        hint(c1.body, "Leave the transect blank to act on every transect in "
+                      "the log. One log usually holds one transect, but a "
+                      "folder re-used for two would hold both."
+             ).grid(row=3, column=0, sticky="ew", pady=(6, 0))
+
+        c2 = self.card(
+            "Which workflows",
+            "Retirement is recorded per workflow, not per subject. A subject "
+            "moves between subject sets as it retires — yes/no, then "
+            "multiple choice, then an expert set — and those sets hang off "
+            "different workflows, so one left out here carries on serving "
+            "the subject. Ask for all of them: the run works out which ones "
+            "actually hold this transect and leaves the rest alone.")
+        self.workflows = Field(c2.body, "Workflow IDs", width=300,
+                               caption_width=150, hint_text="28901, 29104",
+                               validate=self._check_workflows)
+        self.workflows.grid(row=0, column=0, sticky="ew")
+        row = ctk.CTkFrame(c2.body, fg_color="transparent")
+        row.grid(row=1, column=0, sticky="w", pady=(8, 0))
+        button(row, "List the project's workflows", self._list_workflows,
+               "ghost", width=210).grid(row=0, column=0)
+        button(row, "Use all of them", self._use_all, "ghost",
+               width=130).grid(row=0, column=1, padx=(8, 0))
+        self.workflow_box = textbox(c2.body, height=104)
+        self.workflow_box.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        hint(c2.body, "A check asks each workflow what it holds and what it "
+                      "has already retired — around half a minute per "
+                      "workflow for a transect — and reports both, so a "
+                      "workflow belonging to another season shows nothing to "
+                      "do rather than a number."
+             ).grid(row=3, column=0, sticky="ew", pady=(6, 0))
+
+        c3 = self.card(
+            "What this does, and how to undo it",
+            "It retires; it does not delete. The classifications already "
+            "collected stay, the subjects stay, and they stay in every "
+            "subject set they belong to — Zooniverse simply stops handing "
+            "them to volunteers. Exports keep working afterwards.")
+        self.unretire = ctk.BooleanVar(value=False)
+        checkbox(c3.body, "Put them back instead — serve these subjects "
+                          "again", variable=self.unretire,
+                 command=self._mode_changed).grid(row=0, column=0, sticky="w")
+        self.include_future = ctk.BooleanVar(value=False)
+        checkbox(c3.body, "Also send to workflows that do not hold these "
+                          "subjects yet", variable=self.include_future,
+                 command=self._update_mode_note).grid(
+                     row=1, column=0, sticky="w", pady=(8, 0))
+        self.mode_note = hint(c3.body, "")
+        self.mode_note.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+
+        c4 = self.card("Result")
+        self.result = textbox(c4.body, height=190)
+        self.result.grid(row=0, column=0, sticky="ew")
+
+    # ---- which subjects ------------------------------------------------
+
+    def _log_changed(self) -> None:
+        if hasattr(self, "log_box"):
+            self._show_log()
+
+    def _show_log(self) -> None:
+        """What the log holds, so the transect is picked rather than typed."""
+        path = self.upload_log.get()
+        if not path:
+            set_text(self.log_box, "Choose the transect's upload_log.csv.")
+            return
+        try:
+            counts = retire.transects_in(path)
+        except (OSError, ValueError, FileNotFoundError) as exc:
+            set_text(self.log_box, str(exc))
+            return
+        if not counts:
+            set_text(self.log_box, "That log has no rows — nothing was "
+                                   "uploaded from this folder.")
+            return
+        lines = [f"{Path(path).name} holds {sum(counts.values()):,} "
+                 f"subject(s):", ""]
+        for key, count in sorted(counts.items()):
+            lines.append(f"  {key:<20} {count:>7,} subject(s)")
+        if len(counts) == 1 and not self.transect.get():
+            only = next(iter(counts))
+            if only != "(none)":
+                self.transect.set(only)
+        set_text(self.log_box, "\n".join(lines))
+        self._count_subjects()
+
+    def _count_subjects(self) -> None:
+        """Say how many subjects the current choice comes to."""
+        if not hasattr(self, "transect"):
+            return
+        path = self.upload_log.get()
+        if not path or not Path(path).is_file():
+            return
+        try:
+            ids, _ = retire.subjects_in(path, self.transect.get())
+        except (OSError, ValueError) as exc:
+            self.transect.note(str(exc)[:60], ok=False)
+            return
+        if not ids:
+            self.transect.note("no subjects with that transect id", ok=False)
+        else:
+            self.transect.note(f"{len(ids):,} subject(s)", ok=True)
+
+    # ---- which workflows -----------------------------------------------
+
+    def _check_workflows(self, text: str) -> tuple[bool, str]:
+        ids = retire.parse_ids(text)
+        if not ids:
+            return False, "digits, separated by commas"
+        return True, f"{len(ids)} workflow(s)"
+
+    def _project_workflows(self) -> list[tuple[str, str, bool]] | None:
+        """Ask Zooniverse, or explain on screen why it could not."""
+        usable, why = zooniverse.client_available()
+        if not usable:
+            self.app.warn(why)
+            return None
+        ready, message = zooniverse.credentials_status()
+        if not ready:
+            self.app.warn(message)
+            return None
+        set_text(self.workflow_box, "Asking Zooniverse…")
+        self.update_idletasks()
+        try:
+            return retire.list_workflows()
+        except Exception as exc:
+            set_text(self.workflow_box, f"Could not list the workflows: {exc}")
+            return None
+
+    def _list_workflows(self) -> None:
+        found = self._project_workflows()
+        if found is None:
+            return
+        if not found:
+            set_text(self.workflow_box, "The project has no workflows.")
+            return
+        lines = [f"{'ID':<9} {'active':<8} name"]
+        for wid, name, active in found:
+            lines.append(f"{wid:<9} {'yes' if active else 'no':<8} {name}")
+        lines += ["", "Copy the IDs you want into the box above, or use "
+                      "'Use all of them'."]
+        set_text(self.workflow_box, "\n".join(lines))
+
+    def _use_all(self) -> None:
+        """Every workflow, which is the answer whenever a transect is done.
+
+        A subject is only out of circulation when every workflow that could
+        serve it has retired it, and the project's workflow list is short.
+        """
+        found = self._project_workflows()
+        if not found:
+            return
+        self.workflows.set(", ".join(wid for wid, _n, _a in found))
+        inactive = [f"{n} ({w})" for w, n, a in found if not a]
+        lines = [f"All {len(found)} workflow(s) filled in above."]
+        if inactive:
+            lines += ["", "Inactive, and harmless to include: "
+                          + ", ".join(inactive)]
+        set_text(self.workflow_box, "\n".join(lines))
+
+    # ---- mode ------------------------------------------------------------
+
+    def _mode_changed(self) -> None:
+        # Shadows the class attribute, so the footer button says which of
+        # the two opposite things this run will do.
+        self.run_text = ("Put these subjects back" if self.unretire.get()
+                         else "Retire these subjects")
+        self._update_mode_note()
+        self.app.refresh_footer()
+
+    def _update_mode_note(self) -> None:
+        if not hasattr(self, "mode_note"):
+            return
+        if self.include_future.get():
+            self.mode_note.configure(
+                text="Every subject goes to every workflow asked, even ones "
+                     "holding none of them. Zooniverse accepts that and "
+                     "writes a row, so a subject moved into one of those "
+                     "later arrives already retired — but the run can no "
+                     "longer tell you what it changed, because it changed "
+                     "nothing it could see.")
+        elif self.unretire.get():
+            self.mode_note.configure(
+                text="Un-retiring hands these subjects back to volunteers. "
+                     "Only do that if the work is coming back to Zooniverse — "
+                     f"{retire.RETIRE_LOG_NAME} next to the upload log says "
+                     "what was taken out, and when.")
+        else:
+            self.mode_note.configure(
+                text=f"Every change is appended to {retire.RETIRE_LOG_NAME} "
+                     "next to the upload log: the workflow, the subject and "
+                     "the time, so the undo has something to work from.")
+
+    # ---- panel contract ---------------------------------------------------
+
+    def load(self) -> None:
+        r = self.cfg.retire
+        # The patches folder stage 5 uploaded from is where it left the log.
+        patches_dir = (self.cfg.output_dir
+                       or (default_output_dir(self.cfg.transect_folder)
+                           if self.cfg.transect_folder else ""))
+        self.upload_log.set(r.upload_log or
+                            (str(retire.default_log(patches_dir))
+                             if patches_dir else ""))
+        self.transect.set(r.transect_id or self.cfg.transect_id)
+        self.workflows.set(r.workflow_ids)
+        self.unretire.set(r.unretire)
+        self.include_future.set(r.include_future)
+        self.account.load()
+        self._update_mode_note()
+        self._show_log()
+        if not self.workflow_box.get("1.0", "end").strip():
+            set_text(self.workflow_box,
+                     "Nothing listed yet. 'List the project's workflows' "
+                     "fetches them from\nZooniverse; 'Use all of them' fills "
+                     "the box in, which is the answer\nwhenever a transect is "
+                     "finished with.")
+        if not self.result.get("1.0", "end").strip():
+            set_text(self.result,
+                     "Not run yet.\n\n"
+                     "A check reads how many of these subjects each workflow "
+                     "has already\nretired, so the number it reports is what "
+                     "would actually change.\nNothing is sent to Zooniverse "
+                     "until the check box is cleared.")
+
+    def collect(self) -> None:
+        r = self.cfg.retire
+        r.upload_log = self.upload_log.get()
+        r.transect_id = self.transect.get()
+        r.workflow_ids = self.workflows.get()
+        r.unretire = bool(self.unretire.get())
+        r.include_future = bool(self.include_future.get())
+        self.account.collect()
+
+    def validate(self) -> str | None:
+        if not retire.available():
+            return ("panoptes-client is not installed. Install it with: "
+                    "pip install panoptes-client")
+        path = self.upload_log.get()
+        if not path:
+            return ("Point at the transect's upload_log.csv — stage 5 writes "
+                    "it into the patches folder.")
+        if not Path(path).is_file():
+            return f"There is no file at {path}."
+        if not retire.parse_ids(self.workflows.get()):
+            return ("Give at least one workflow ID. 'List the project's "
+                    "workflows' fetches them.")
+        try:
+            ids, _ = retire.subjects_in(path, self.transect.get())
+        except (OSError, ValueError) as exc:
+            return str(exc)
+        if not ids:
+            held = ", ".join(sorted(retire.transects_in(path)))
+            return (f"No subjects in {Path(path).name} for transect "
+                    f"'{self.transect.get()}'. It holds: {held}.")
+        usable, why = zooniverse.client_available()
+        if not usable:
+            return why
+        ready, message = zooniverse.credentials_status()
+        if not ready:
+            return message
+        return None
+
+    def confirm(self) -> str | None:
+        ids, _ = retire.subjects_in(self.upload_log.get(),
+                                    self.transect.get())
+        workflows = retire.parse_ids(self.workflows.get())
+        where = self.transect.get() or "every transect in the log"
+        if self.unretire.get():
+            return (f"Hand {len(ids):,} subject(s) from {where} back to "
+                    f"volunteers in {len(workflows)} workflow(s)?\n\n"
+                    "They will be served again, and any work done on them "
+                    "from now on will duplicate whatever was finished in "
+                    "Toolbox.")
+        scope = ("every one of those workflows, whether or not it holds "
+                 "them" if self.include_future.get() else
+                 "whichever of those workflows actually hold them")
+        return (f"Stop Zooniverse serving {len(ids):,} subject(s) from "
+                f"{where}?\n\nAsking {len(workflows)} workflow(s); the run "
+                f"acts on {scope}.\n\nNothing is deleted: the "
+                "classifications already collected, the subjects and their "
+                "subject sets all stay, and this page can put them back.")
+
+    def on_result(self, result) -> None:
+        set_text(self.result, result.summary())
+
+
+# --------------------------------------------------------------------------
+#  8 - Rejoin
 # --------------------------------------------------------------------------
 
 
 class RejoinPanel(StagePanel):
     key = "rejoin"
-    title = "7.  Rejoin to Toolbox"
+    title = "8.  Rejoin to Toolbox"
     subtitle = ("Apply the label rules to everything the volunteers said, "
                 "write the Toolbox import, and report where every point "
                 "stands: settled, still being classified, or waiting for a "
@@ -1542,13 +1873,13 @@ class RejoinPanel(StagePanel):
 
 
 # --------------------------------------------------------------------------
-#  8 - Report
+#  9 - Report
 # --------------------------------------------------------------------------
 
 
 class ReportPanel(StagePanel):
     key = "report"
-    title = "8.  Build the report"
+    title = "9.  Build the report"
     subtitle = ("A multi-sheet Excel summary of an export: overview, how far "
                 "along each transect is, per workflow, per subject, per "
                 "volunteer, the answer breakdown, per source still, and "
@@ -1741,5 +2072,217 @@ def _check_float(text: str) -> tuple[bool, str]:
 
 
 #: In rail order. The app builds one of each.
+# --------------------------------------------------------------------------
+#  10 - Percent cover
+# --------------------------------------------------------------------------
+
+
+class PercentCoverPanel(StagePanel):
+    key = "cover"
+    title = "10.  Percent cover"
+    subtitle = ("What the whole pipeline was for: one row per image, the "
+                "share of its points on each label, and the depth, position "
+                "and area the ROV recorded for that second.")
+    run_text = "Build percent cover"
+    check_text = "Check only — do not write the table"
+
+    def build(self) -> None:
+        c1 = self.card(
+            "Finalized Toolbox annotations",
+            "One row per point — the export taken from Toolbox once stage "
+            "7's import has been reviewed and the leftover points settled. "
+            "Several files are concatenated before grouping, which is how a "
+            "whole site-season becomes one table.")
+        self.annotations = FileListField(
+            c1.body, "Annotation CSVs", title="Select Toolbox annotation CSVs",
+            on_change=self._inputs_changed)
+        self.annotations.grid(row=0, column=0, sticky="ew")
+
+        c2 = self.card(
+            "ROV telemetry",
+            "The per-transect CSVs from ROV Flight Operations, one row per "
+            "second. Matched to "
+            "each image by the YYYY_MM_DD_HH-MM-SS timestamp in its name, so "
+            "give every transect the annotations cover.")
+        self.telemetry = FileListField(
+            c2.body, "Telemetry CSVs", title="Select transect telemetry CSVs",
+            on_change=self._inputs_changed)
+        self.telemetry.grid(row=0, column=0, sticky="ew")
+
+        c3 = self.card(
+            "Still to clean",
+            "A point left on 'Review' is unfinished work — the rules could "
+            "not settle it and nobody has since. Counted as it stands, it "
+            "sits in the denominator and makes every real class on that "
+            "image read lower. ('unknown' is not this: it is a real finding "
+            "about the seafloor, and is always counted.)")
+        self.review_box = textbox(c3.body, height=140)
+        self.review_box.grid(row=0, column=0, sticky="ew")
+        self.exclude_review = ctk.BooleanVar(value=False)
+        checkbox(c3.body, "Leave out 'Review' — share those images' "
+                          "remaining points over what is left",
+                 variable=self.exclude_review).grid(
+                     row=1, column=0, sticky="w", pady=(10, 0))
+        hint(c3.body, "The other way out is to label them in Toolbox and "
+                      "export again, which is why a run writes "
+                      f"{percent_cover.REVIEW_NAME} listing every one with "
+                      "its image, row and column."
+             ).grid(row=2, column=0, sticky="ew", pady=(6, 0))
+
+        c4 = self.card(
+            "Where it goes",
+            "The name is taken from the annotation files chosen above, not "
+            "from the transect set up in stage 1 — this stage is usually run "
+            "on its own, long after, and often for a transect this copy of "
+            "the app never patched. Edit it and it stays as you left it.")
+        self.output = PathField(
+            c4.body, "Output folder", kind="folder",
+            title="Where should the percent-cover table go?",
+            on_change=lambda *_a: self._inputs_changed())
+        self.output.grid(row=0, column=0, sticky="ew")
+        self.file_name = Field(c4.body, "File name", width=340,
+                          hint_text="…_percent_cover_telemetry.csv",
+                          on_change=self._name_edited)
+        self.file_name.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        self.name_note = hint(c4.body, "")
+        self.name_note.grid(row=2, column=0, sticky="ew", pady=(6, 0))
+        #: The last name we put there ourselves. Anything else is the user's,
+        #: and choosing another file must not quietly overwrite it.
+        self._suggested = ""
+
+        c5 = self.card("Result")
+        self.result = textbox(c5.body, height=170)
+        self.result.grid(row=0, column=0, sticky="ew")
+
+    def _inputs_changed(self) -> None:
+        if hasattr(self, "name_note"):
+            self._update_name()
+
+    def _name_edited(self) -> None:
+        """Typed over our suggestion, so stop suggesting."""
+        if hasattr(self, "name_note"):
+            self._update_name(keep=True)
+
+    def _update_name(self, keep: bool = False) -> None:
+        suggested, source = percent_cover.suggest_name(
+            self.annotations.get(), self.telemetry.get(), self.cfg.transect_id)
+        current = self.file_name.get()
+        # Refill only while the box still holds what we last put in it. Once
+        # it holds something else, it is the user's answer to the question.
+        if not keep and current in ("", self._suggested):
+            self.file_name.set(suggested)
+            self._suggested = suggested
+            current = suggested
+        where = self.output.get() or "the annotations' folder"
+        if current == suggested:
+            why = f" Named after {source}."
+        else:
+            why = f" Yours; the name from {source} would be {suggested}."
+        self.name_note.configure(text=f"Writes {current} into {where}.{why}")
+
+    def output_name(self) -> str:
+        name = self.file_name.get() or percent_cover.suggest_name(
+            self.annotations.get(), self.telemetry.get(),
+            self.cfg.transect_id)[0]
+        return name if name.lower().endswith(".csv") else name + ".csv"
+
+    def load(self) -> None:
+        c = self.cfg.cover
+        self.annotations.set(c.annotation_csvs)
+        # The telemetry stage 1 already found is almost always the right one.
+        self.telemetry.set(c.telemetry_csvs or
+                           ([self.cfg.telemetry_csv] if self.cfg.telemetry_csv
+                            else []))
+        # The annotations' own folder before stage 1's output folder: that
+        # one belongs to whichever transect was patched last, which is the
+        # very transect this stage is most likely not about.
+        self.output.set(c.output_dir or
+                        (str(Path(c.annotation_csvs[0]).parent)
+                         if c.annotation_csvs else self.cfg.output_dir))
+        self.file_name.set(c.output_name)
+        # What we would have suggested for these same inputs. A saved name
+        # that matches is ours and may be refreshed; anything else was typed
+        # by somebody, and survives choosing a different file.
+        self._suggested = percent_cover.suggest_name(
+            c.annotation_csvs, c.telemetry_csvs, self.cfg.transect_id)[0]
+        self.exclude_review.set(percent_cover.REVIEW_LABEL in c.exclude_labels)
+        self._update_name()
+        if not self.review_box.get("1.0", "end").strip():
+            set_text(self.review_box,
+                     "Run a check to see whether any points are still "
+                     "waiting on a decision.")
+        if not self.result.get("1.0", "end").strip():
+            set_text(self.result,
+                     "Not run yet.\n\n"
+                     "Run this once Toolbox review is finished. A check "
+                     "reports the image and\npoint counts, how many images "
+                     "found a telemetry row, and how many points\nare still "
+                     "undecided — without writing anything.")
+
+    def refresh(self) -> None:
+        self._update_name()
+
+    def collect(self) -> None:
+        c = self.cfg.cover
+        c.annotation_csvs = self.annotations.get()
+        c.telemetry_csvs = self.telemetry.get()
+        c.output_dir = self.output.get()
+        c.output_name = self.output_name()
+        c.exclude_labels = ([percent_cover.REVIEW_LABEL]
+                            if self.exclude_review.get() else [])
+
+    def validate(self) -> str | None:
+        if not percent_cover.available():
+            return (f"The percent-cover tool is missing: {percent_cover.TOOL}. "
+                    "It ships alongside this app in the scripts folder.")
+        if not self.annotations.get():
+            return "Choose at least one finalized Toolbox annotation CSV."
+        if not self.telemetry.get():
+            return "Choose at least one telemetry CSV."
+        for path in self.annotations.get() + self.telemetry.get():
+            if not Path(path).is_file():
+                return f"There is no file at {path}."
+        if not self.output.get():
+            return "Choose where the percent-cover table should go."
+        name = self.file_name.get()
+        if name and (Path(name).name != name):
+            return ("The file name cannot contain a folder — put the folder "
+                    "in the box above.")
+        return None
+
+    def confirm(self) -> str | None:
+        target = Path(self.output.get()) / self.output_name()
+        if target.is_file():
+            return f"{target.name} already exists. Overwrite it?"
+        return None
+
+    def on_result(self, result) -> None:
+        set_text(self.result, result.summary())
+        self._show_review(result)
+
+    def _show_review(self, result) -> None:
+        """Which images are still waiting, and what the two ways out are."""
+        images = result.advance.get("review_images") or {}
+        points = result.advance.get("review_points") or 0
+        if not points:
+            set_text(self.review_box,
+                     "Nothing is waiting — no point carries "
+                     f"'{percent_cover.REVIEW_LABEL}'.")
+            return
+        excluded = percent_cover.REVIEW_LABEL in self.cfg.cover.exclude_labels
+        lines = [f"{points:,} point(s) on {len(images):,} image(s) still "
+                 f"marked '{percent_cover.REVIEW_LABEL}':", ""]
+        for name, count in list(images.items())[:14]:
+            lines.append(f"  {name:<30} {count:>3} point(s)")
+        if len(images) > 14:
+            lines.append(f"  … and {len(images) - 14:,} more image(s)")
+        lines += ["", ("Left out of the cover, as ticked below."
+                       if excluded else
+                       "Counted as cover. Label them in Toolbox and export "
+                       "again, or tick the box below.")]
+        set_text(self.review_box, "\n".join(lines))
+
+
 PANELS = (TransectPanel, PatchPanel, ClassifyPanel, MetadataPanel,
-          UploadPanel, ExportPanel, RejoinPanel, ReportPanel)
+          UploadPanel, ExportPanel, RetirePanel, RejoinPanel, ReportPanel,
+          PercentCoverPanel)

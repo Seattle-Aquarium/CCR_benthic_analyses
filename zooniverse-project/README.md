@@ -14,7 +14,7 @@ zooniverse-project/
 ├── launch.py                           ← PyInstaller entry shim
 ├── kelpquest/                          ← the desktop app
 │   ├── discovery.py                    ← read a transect folder
-│   ├── telemetry.py                    ← the UTC transect CSV: identity + per-still depth
+│   ├── telemetry.py                    ← the transect CSV: identity + per-still depth
 │   ├── sampling.py                     ← scatter annotation points
 │   ├── patches.py                      ← cut and draw the patch images
 │   ├── classify.py                     ← run our YOLO classifier
@@ -44,12 +44,12 @@ It does not need CoralNet-Toolbox upstream: it scatters its own annotation
 points, so the Toolbox sheet becomes something the run *produces*, ready to
 import and verify.
 
-Eight stages down the left, the selected stage's settings in the middle, one
+Ten stages down the left, the selected stage's settings in the middle, one
 shared log and progress bar along the bottom. Finishing a stage fills in the
 next stage's inputs and moves the selection there, so paths are never retyped.
 
 ```
-UTC transect CSV ──┐
+transect CSV ──────┐
                    ▼
 transect folder ─► 1 · Transect folder    scan; identity read from the telemetry
                    │
@@ -68,11 +68,17 @@ transect folder ─► 1 · Transect folder    scan; identity read from the tele
                    ▼       (volunteers classify; subjects move between sets)
                    6 · Export classifications  every set they passed through
                    │
-                   ▼
-                   7 · Rejoin to Toolbox  the label rules + where every point stands
+                   ▼       (optional: finishing the rest in Toolbox instead?)
+                   7 · Retire in Zooniverse   stop serving what has moved on
                    │
                    ▼
-                   8 · Build the report   multi-sheet Excel summary
+                   8 · Rejoin to Toolbox  the label rules + where every point stands
+                   │
+                   ▼
+                   9 · Build the report   multi-sheet Excel summary
+                   │
+                   ▼       (Toolbox review finishes; annotations finalized)
+                  10 · Percent cover      one row per image: cover + telemetry
 ```
 
 Every stage runs on its own, so a step can be redone without redoing the
@@ -93,7 +99,7 @@ Stage 1 only ever reads, so it has no check box.
 
 ### Telemetry does the identity work
 
-Point the Transect page at the UTC transect CSV for the transect — "Find it for
+Point the Transect page at the transect CSV for the transect — "Find it for
 me" looks for it under the flight folder — and it supplies:
 
 | From the CSV | Used for |
@@ -176,7 +182,7 @@ genuinely new.
 
 Tick **Reuse exports already in the folder** and a set whose export is already
 there is taken from disk; the rest are generated. The combine still runs across
-the mixture, so stage 7 gets the same complete combined CSV either way.
+the mixture, so stage 8 gets the same complete combined CSV either way.
 
 A set is matched to a file by `export_log.csv`, which stage 6 writes as it
 downloads, and failing that by the sanitised subject-set name in the filename —
@@ -191,12 +197,100 @@ with the age of the oldest. For a set that has collected votes since, name it
 under **…but re-download** and it is fetched even so.
 
 Give each transect's combined CSV its own name. It is the file that transect's
-stage 7 reads, and the panel flags it when the stored name no longer matches
+stage 8 reads, and the panel flags it when the stored name no longer matches
 the transect stage 1 is pointed at.
+
+### Taking a transect out of circulation
+
+Exporting a transect's classifications does not stop volunteers working on
+it. If the plan is now to finish the rest by hand in Toolbox, every subject
+still being served is work that will be done twice — and the volunteers doing
+it are spending their evening on points whose answer is already settled
+somewhere they cannot see.
+
+Stage 7 stops that. Two things decide what it has to do.
+
+**Which subjects: the upload log, not the export.** `upload_log.csv` sits in
+the patches folder, written by stage 5, one row per subject with the id
+Zooniverse gave it. The classifications export only knows the subjects
+volunteers actually reached — and those are the least of the problem. An
+untouched subject is precisely the one that will be served tomorrow.
+
+**Which workflows: ask all of them.** Retirement is recorded per workflow,
+not per subject. A subject moves between subject sets as it retires — yes/no,
+then multiple choice, then an expert set — and those sets hang off different
+workflows, so retiring in one leaves it servable in the next. **Use all of
+them** fills the box with every workflow in the project.
+
+**Which subjects in which workflow — not the same question.** A workflow can
+only serve a subject that is in one of *its* subject sets, and a project
+accumulates workflows for other transects and earlier seasons entirely.
+Zooniverse will accept a retirement for a subject a workflow has never held:
+it writes the row and returns success. So asking for all of them and sending
+everything everywhere produces a page of identical numbers that say nothing,
+and leaves a retirement record in workflows the transect was never part of.
+
+Each run therefore reads what every workflow holds first, and reports it:
+
+```
+workflow                               holds  retired would send
+Multiple Choice (30752)                    0        0          0
+Yes/No (30787)                             0        0          0
+Yes/No - Expert review (31534)           641        0        641
+Multiple Choice - Expert rev (31535)     154        1        153
+Yes/No - Part 2 (32022)                3,000        -      3,000
+Multiple Choice - Part 2 (32023)         467      455         12
+```
+
+That is a real transect against this project's six workflows. Two hold none
+of it — their subject sets belong to other sites — and are left alone. One
+holds all 3,000 because it is the transect's own set. The last holds the 467
+that have retired out of yes/no and into multiple choice, of which 455 are
+already done, so the run sends **12**. Sending 3,000 there instead would have
+been accepted, reported as 3,000, and changed twelve things.
+
+The `-` is honest too: that workflow's status endpoint returned a 502 on this
+run, so the count is unknown and everything is sent rather than something
+being skipped on a guess.
+
+Reading the status is also how the stage knows a workflow holds a subject at
+all — a `SubjectWorkflowStatus` row exists per subject per workflow that
+holds it, and matches subject-set membership exactly. Asking the subject-set
+endpoint the same question takes about forty minutes for a transect and
+silently drops rows when more than fifty subjects are named at once; this
+takes about a minute and a half. The one case a status row could miss — a set
+just linked whose subjects nobody has been served yet — is covered by the
+upload log, which records the set each subject was created in.
+
+> **Also send to workflows that do not hold these subjects yet** does what the
+> name says: a subject moved into one of those later arrives already retired.
+> It is off by default, because a run that touches everything can no longer
+> tell you what it changed.
+
+#### It retires; it does not delete
+
+Retiring tells Zooniverse to stop handing a subject to volunteers. Everything
+else stays — the classifications already collected, the subject, its metadata,
+its membership of every subject set — so exports keep working afterwards and
+nothing has to be uploaded again.
+
+That is what makes the page safe to attempt, and the undo is on it: **Put them
+back instead** un-retires the same subjects. Every change is appended to
+`retire_log.csv` next to the upload log — workflow, subject, action, time — so
+there is a record, and so the undo has something to work from.
+
+The check is worth running first, and reports exactly what the run will do —
+the same `would send` numbers, workflow by workflow. A transect Zooniverse
+finished with on its own needs no run at all.
+
+> The reason sent is `other`. Zooniverse's vocabulary is fixed —
+> classification_count, consensus, blank, flagged, other — and none of the
+> first four happened here. Claiming consensus would put a number into the
+> project's own statistics that no volunteer ever produced.
 
 ### Where every point stands
 
-Stage 7 applies the label rules and then answers the question the rules do not:
+Stage 8 applies the label rules and then answers the question the rules do not:
 how much is actually done. Every annotation point lands in exactly one of four
 buckets, and the split that matters is the middle two.
 
@@ -235,7 +329,7 @@ waiting *somewhere that export could not see*.
 
 ### The rules
 
-Stage 7 does not decide labels itself. It calls `link_annotations` in
+Stage 8 does not decide labels itself. It calls `link_annotations` in
 `scripts/zooni_to_toolbox_annot.py`, which holds the determination rules that
 mirror the Caesar configuration, so there is one copy of them rather than two
 to keep in step. The panel shows them as configured:
@@ -270,7 +364,7 @@ on a button — `Wood`, `Sugar`, `5-rib` — while the labelset calls those
 other, and a choice it does not cover comes back as
 `zoon_status = multi_consensus_unmapped` and `Label = Review`.
 
-Stage 7 lists those on the page, one row each with its point count and a
+Stage 8 lists those on the page, one row each with its point count and a
 dropdown of the labelset's codes. Pick a label, press **Map these labels**, and
 run the stage again — those points resolve. It writes
 `scripts/label_expansions.json`, which is the same file
@@ -298,6 +392,78 @@ that writes anything.
 | Classify in the same pass | on | cutting and classifying both need the still decoded, so doing both encodes each patch once instead of twice |
 | Weights | — | `best.pt` from a run in `classification_model` |
 | Labelset | shared Dropbox copy | turns a short code into a long label |
+
+### Percent cover, the thing it was all for
+
+Stage 10 turns the finalized point annotations into the table an analysis
+actually reads: **one row per image**, a column per label holding that
+image's share of points, and the ROV's depth, position, heading, width and
+area for the second the image was taken, from the per-transect CSVs that
+ROV Flight Operations (`rov_flight_ops`, in CCR_ROV_survey_methods) writes.
+
+It delegates to `scripts/percent_cover_telemetry.py`, which already does both
+halves, so there is one implementation rather than two to keep in step. Run
+against the published `CNL_S24` table — Centennial's six 2024 transects — it
+reproduces every column and every cell, bar one image that has gained a
+`Review` point since.
+
+Two details that matter more than they look:
+
+- **Each image is divided by its own point total**, not by 50. An image that
+  lost a point would otherwise read 2% short on everything.
+- **Several files are concatenated before grouping.** A site-season table is
+  six transects in one file; grouping each separately and stacking the
+  results would give one row per image *per file*.
+
+An image whose second has no telemetry row is kept, with empty telemetry
+columns and a count in the warnings. Dropping it would quietly shrink the
+transect.
+
+#### Cleaning: the points nobody has settled
+
+`Review` is what the rules leave on a point no workflow could resolve. It is
+not an observation, and counted as one it sits in the denominator and makes
+every real class *on that image* read lower.
+
+So the stage treats it as a cleaning step rather than a tickbox. A check lists
+**which images are still waiting and how many points each**, and a run writes
+`points_needing_review.csv` — image, row, column and the original path for
+every one. From there the two ways out are:
+
+- **label them in Toolbox** and export the annotations again, or
+- **leave `Review` out**, which shares those images' remaining points over
+  what is left.
+
+Neither happens on its own; the table is written either way, and the page says
+which choice is in force.
+
+> `unknown` is **not** treated this way. "I looked, and it cannot be
+> determined from the image" is a real finding about the seafloor, and it is
+> always counted — on Centennial 2024 it appears on 152 of 398 images and
+> averages 1.8% cover. Dropping it would inflate every other class.
+
+#### What the file is called
+
+Stage 10 is the one stage routinely run on its own — months later, often for a
+transect this copy of the app never patched or uploaded. So the name is taken
+from **the annotation files chosen on this page**, not from the transect set
+up back in stage 1:
+
+| Chosen | Written |
+| --- | --- |
+| `FPR_S25_T1.csv` | `FPR_S25_T1_percent_cover_telemetry.csv` |
+| `CNL_S24_T1` … `T6` | `CNL_S24_percent_cover_telemetry.csv` |
+
+Several files collapse to what they share, whole `_`-separated parts only,
+which is how six transects of one site-season become one site-season table
+with a site-season name. The telemetry files are the fallback, and stage 1's
+transect id the last resort.
+
+It is an editable field, and once you type over it your name stays put even
+if you pick different files. The note under it always says what will be
+written and where, and if the name is yours it also says what the suggestion
+would have been — so a table named for the wrong transect takes deliberate
+effort rather than inattention.
 
 ### The edge margin, and why points sit further in than 224 px
 
@@ -403,7 +569,7 @@ do not consult the credential store.
 
 ### One transect, several, or all of them
 
-Stage 8's **Transect IDs** box takes a comma-separated list, and the workbook's
+Stage 9's **Transect IDs** box takes a comma-separated list, and the workbook's
 per-transect sheet then carries a row each — which is how two transects get
 compared. **List the transects in this export** says what is actually in the
 file, with classification and subject counts, because an export of the shared

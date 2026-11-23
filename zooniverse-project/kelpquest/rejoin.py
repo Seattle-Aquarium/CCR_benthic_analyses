@@ -550,7 +550,7 @@ class ExpansionResult:
             out += [f"  {raw}  →  {code}"
                     for raw, code in self.added.items()]
             out.append("")
-            out.append("Run stage 7 again — those points will resolve now.")
+            out.append("Run stage 8 again — those points will resolve now.")
         for raw, code, why in self.rejected:
             out.append(f"Not mapped: {raw} → {code or '(nothing chosen)'} — "
                        f"{why}")
