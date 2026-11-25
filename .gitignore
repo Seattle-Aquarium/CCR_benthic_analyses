@@ -74,3 +74,6 @@ build/
 
 data_output/patches/
 results/patches/
+
+# slide-resolution copies of the survey photos, rebuilt from Dropbox by RunMe.R
+/perpendicular_transects/results/thumbnails/
